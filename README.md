@@ -1,0 +1,1 @@
+A next-generation intermediate representation purpose-built for AI and quantum computing workloads. Designed to bridge the gap between high-level ML frameworks and heterogeneous hardware (GPUs, QPUs, TPUs) while enabling advanced compiler optimizations for tensor operations and quantum circuits.
