@@ -1,6 +1,5 @@
 <img width="1262" height="602" alt="image" src="https://github.com/user-attachments/assets/3880ecec-ff3f-4b44-b256-c3a9f07ee813" />
 
-
 <!--
   LIFT — Language for Intelligent Frameworks and Technologies
   README v2.0  |  Phoenix Edition  |  Corrected & Honest
@@ -8,7 +7,21 @@
 
 <div align="center">
 
-```                                            
+```
+    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+    ░░                                                ░░
+    ░░   ██╗     ██╗███████╗████████╗                ░░
+    ░░   ██║     ██║██╔════╝╚══██╔══╝                ░░
+    ░░   ██║     ██║█████╗     ██║                   ░░
+    ░░   ██║     ██║██╔══╝     ██║                   ░░
+    ░░   ███████╗██║██║        ██║                   ░░
+    ░░   ╚══════╝╚═╝╚═╝        ╚═╝                   ░░
+    ░░                                                ░░
+    ░░   Language for Intelligent Frameworks          ░░
+    ░░   and Technologies                             ░░
+    ░░                                                ░░
+    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+```
 
 # LIFT
 
@@ -582,21 +595,20 @@ metrics {
 
 | Component | Status | Works today | Next milestone |
 |-----------|--------|-------------|----------------|
-| `lift-core` | ✅ Alpha | SSA IR, types, ops, verifier, printer | Incremental compilation |
-| `lift-ast` | ✅ Alpha | Lexer, parser, error recovery | Error quality |
-| `lift-tensor` | 🚧 Active | MatMul, Add, ReLU, Conv2D, basic passes | Attention, KV cache, quantisation |
-| `lift-quantum` | 📐 Design | Type system designed | Gate ops, noise model |
-| `lift-hybrid` | 📐 Design | Architecture decided | All ops |
-| `lift-sim` | 🚧 Active | Shape propagation, FLOP count | QC simulator, GNN predictor |
-| `lift-predict` | 📐 Design | Architecture designed | GNN training pipeline |
-| `lift-opt` | 🚧 Active | Pass manager, const-fold, DCE | Fusion, quantum passes |
-| `lift-import` | 🚧 Active | PyTorch FX ~80%, OpenQASM3 ~60% | ONNX, Qiskit, Cirq |
-| `lift-export` | 🚧 Active | LLVM ~70%, OpenQASM3 ~40% | CUDA backend |
-| `lift-config` | 🚧 Active | Core .lith syntax ~60% | Validation, inheritance |
-| `lift-python` | 📐 Design | PyO3 scaffold only | Full Python API |
-| `lift-cli` | 🚧 Active | `lift analyse`, `lift verify` | compile, simulate, predict |
+| `lift-core` |  Alpha | SSA IR, types, ops, verifier, printer | Incremental compilation |
+| `lift-ast` | Alpha | Lexer, parser, error recovery | Error quality |
+| `lift-tensor` |  Active | MatMul, Add, ReLU, Conv2D, basic passes | Attention, KV cache, quantisation |
+| `lift-quantum` |  Design | Type system designed | Gate ops, noise model |
+| `lift-hybrid` |  Design | Architecture decided | All ops |
+| `lift-sim` |  Active | Shape propagation, FLOP count | QC simulator, GNN predictor |
+| `lift-predict` |  Design | Architecture designed | GNN training pipeline |
+| `lift-opt` |  Active | Pass manager, const-fold, DCE | Fusion, quantum passes |
+| `lift-import` |  Active | PyTorch FX ~80%, OpenQASM3 ~60% | ONNX, Qiskit, Cirq |
+| `lift-export` |  Active | LLVM ~70%, OpenQASM3 ~40% | CUDA backend |
+| `lift-config` |  Active | Core .lith syntax ~60% | Validation, inheritance |
+| `lift-python` |  Design | PyO3 scaffold only | Full Python API |
+| `lift-cli` |  Active | `lift analyse`, `lift verify` | compile, simulate, predict |
 
-**Legend:** ✅ Alpha-stable · 🚧 Active · 📐 Design only
 
 ---
 
@@ -696,7 +708,7 @@ We are not claiming a finished product. We are claiming a correct architecture a
 ```bibtex
 @software{lift2025,
   title  = {LIFT: Language for Intelligent Frameworks and Technologies},
-  author = {Martial Fossouo and Contributors},
+  author = {Martial-Christian and Contributors},
   year   = {2025},
   url    = {https://github.com/lift-framework/lift},
   note   = {Unified IR for AI and Quantum Computing. Research Alpha.}
