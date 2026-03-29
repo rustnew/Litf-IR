@@ -1,0 +1,51 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/lift-core",
+    "crates/lift-ast",
+    "crates/lift-tensor",
+    "crates/lift-quantum",
+    "crates/lift-hybrid",
+    "crates/lift-sim",
+    "crates/lift-predict",
+    "crates/lift-opt",
+    "crates/lift-import",
+    "crates/lift-export",
+    "crates/lift-config",
+    "crates/lift-cli",
+]
+
+[workspace.package]
+version = "0.2.0"
+edition = "2021"
+rust-version = "1.80"
+license = "MIT"
+repository = "https://github.com/lift-framework/lift"
+description = "LIFT — Language for Intelligent Frameworks and Technologies: Unified IR for AI and Quantum Computing"
+
+[workspace.dependencies]
+# Internal crates
+lift-core = { path = "crates/lift-core" }
+lift-ast = { path = "crates/lift-ast" }
+lift-tensor = { path = "crates/lift-tensor" }
+lift-quantum = { path = "crates/lift-quantum" }
+lift-hybrid = { path = "crates/lift-hybrid" }
+lift-sim = { path = "crates/lift-sim" }
+lift-predict = { path = "crates/lift-predict" }
+lift-opt = { path = "crates/lift-opt" }
+lift-import = { path = "crates/lift-import" }
+lift-export = { path = "crates/lift-export" }
+lift-config = { path = "crates/lift-config" }
+
+# External dependencies
+slotmap = { version = "1.0", features = ["serde"] }
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+clap = { version = "4.5", features = ["derive"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+[profile.release]
+opt-level = 3
+lto = "thin"

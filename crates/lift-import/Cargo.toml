@@ -1,0 +1,15 @@
+[package]
+name = "lift-import"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "LIFT-IMPORT: Importers — PyTorch FX, ONNX, Qiskit, OpenQASM 3"
+
+[dependencies]
+lift-core = { workspace = true }
+lift-tensor = { workspace = true }
+lift-quantum = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

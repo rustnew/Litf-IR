@@ -1,0 +1,11 @@
+[package]
+name = "lift-ast"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "LIFT-AST: Lexer, parser, and AST for the .lif source language"
+
+[dependencies]
+lift-core = { workspace = true }
+thiserror = { workspace = true }

@@ -1,0 +1,12 @@
+[package]
+name = "lift-tensor"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "LIFT-TENSOR: AI dialect — tensor types, attention, KV cache, MoE, quantisation"
+
+[dependencies]
+lift-core = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }

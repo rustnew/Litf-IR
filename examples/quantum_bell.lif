@@ -1,0 +1,9 @@
+#dialect quantum
+
+module @bell_state {
+    func @bell(%q0: qubit, %q1: qubit) -> (qubit, qubit) {
+        %q2 = "quantum.h"(%q0) : (qubit) -> qubit
+        %q3, %q4 = "quantum.cx"(%q2, %q1) : (qubit, qubit) -> (qubit, qubit)
+        return %q3, %q4
+    }
+}

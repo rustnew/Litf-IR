@@ -1,0 +1,13 @@
+[package]
+name = "lift-export"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "LIFT-EXPORT: Backends — LLVM IR, OpenQASM 3, CUDA PTX (planned), XLA (planned)"
+
+[dependencies]
+lift-core = { workspace = true }
+lift-tensor = { workspace = true }
+lift-quantum = { workspace = true }
+thiserror = { workspace = true }

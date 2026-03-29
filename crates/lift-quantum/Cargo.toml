@@ -1,0 +1,12 @@
+[package]
+name = "lift-quantum"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "LIFT-QUANTUM: Quantum dialect — qubits (linear types), gates, noise attributes, layout mapping"
+
+[dependencies]
+lift-core = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }

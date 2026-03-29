@@ -1,0 +1,14 @@
+[package]
+name = "lift-opt"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "LIFT-OPT: Pass manager and optimisation passes — constant folding, DCE, tensor fusion, gate cancellation"
+
+[dependencies]
+lift-core = { workspace = true }
+lift-tensor = { workspace = true }
+lift-quantum = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }

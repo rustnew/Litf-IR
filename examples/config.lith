@@ -1,0 +1,18 @@
+[target]
+backend = "cuda"
+device = "A100"
+precision = "fp16"
+
+[budget]
+max_flops = 1000000000000
+max_memory_bytes = 80000000000
+
+[optimisation]
+level = O2
+max_iterations = 10
+
+[simulation]
+shape_propagation = true
+flop_counting = true
+memory_analysis = true
+noise_simulation = true

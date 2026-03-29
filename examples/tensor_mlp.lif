@@ -1,0 +1,13 @@
+#dialect tensor
+
+module @mlp {
+    func @forward(%x: tensor<1x784xf32>, %w1: tensor<784x256xf32>, %b1: tensor<256xf32>, %w2: tensor<256x10xf32>, %b2: tensor<10xf32>) -> tensor<1x10xf32> {
+        %h1 = "tensor.matmul"(%x, %w1) : (tensor<1x784xf32>, tensor<784x256xf32>) -> tensor<1x256xf32>
+        %h2 = "tensor.add"(%h1, %b1) : (tensor<1x256xf32>, tensor<256xf32>) -> tensor<1x256xf32>
+        %h3 = "tensor.relu"(%h2) : (tensor<1x256xf32>) -> tensor<1x256xf32>
+        %h4 = "tensor.matmul"(%h3, %w2) : (tensor<1x256xf32>, tensor<256x10xf32>) -> tensor<1x10xf32>
+        %h5 = "tensor.add"(%h4, %b2) : (tensor<1x10xf32>, tensor<10xf32>) -> tensor<1x10xf32>
+        %out = "tensor.softmax"(%h5) : (tensor<1x10xf32>) -> tensor<1x10xf32>
+        return %out
+    }
+}
