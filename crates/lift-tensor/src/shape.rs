@@ -10,6 +10,7 @@ impl ShapeInference {
         inputs: &[&TensorTypeInfo],
     ) -> Result<Vec<TensorTypeInfo>, String> {
         match op {
+            // ── Binary element-wise (broadcast) ──
             TensorOp::Add | TensorOp::Sub | TensorOp::Mul | TensorOp::Div => {
                 if inputs.len() != 2 {
                     return Err(format!("{} requires 2 inputs", op.name()));
@@ -22,22 +23,35 @@ impl ShapeInference {
                 }])
             }
 
+            // ── Unary shape-preserving ──
             TensorOp::Neg | TensorOp::ReLU | TensorOp::GeLU | TensorOp::SiLU |
-            TensorOp::Sigmoid | TensorOp::Tanh => {
+            TensorOp::Sigmoid | TensorOp::Tanh |
+            TensorOp::LeakyReLU | TensorOp::ELU | TensorOp::Mish |
+            TensorOp::HardSwish | TensorOp::HardSigmoid |
+            TensorOp::Softmax | TensorOp::Cumsum |
+            TensorOp::Quantize | TensorOp::Dequantize |
+            TensorOp::QuantizeInt4 | TensorOp::DequantizeInt4 |
+            TensorOp::QuantizeFp8 | TensorOp::DequantizeFp8 |
+            TensorOp::Checkpoint | TensorOp::Offload |
+            TensorOp::GradReLU | TensorOp::GradGeLU | TensorOp::GradSoftmax => {
                 if inputs.is_empty() {
                     return Err(format!("{} requires at least 1 input", op.name()));
                 }
                 Ok(vec![inputs[0].clone()])
             }
 
-            TensorOp::Softmax => {
+            // ── Normalisation (shape-preserving) ──
+            TensorOp::LayerNorm | TensorOp::RMSNorm | TensorOp::BatchNorm |
+            TensorOp::GroupNorm | TensorOp::InstanceNorm |
+            TensorOp::GradLayerNorm => {
                 if inputs.is_empty() {
-                    return Err("softmax requires 1 input".into());
+                    return Err(format!("{} requires at least 1 input", op.name()));
                 }
                 Ok(vec![inputs[0].clone()])
             }
 
-            TensorOp::MatMul => {
+            // ── MatMul ──
+            TensorOp::MatMul | TensorOp::SparseMatMul => {
                 if inputs.len() != 2 {
                     return Err("matmul requires 2 inputs".into());
                 }
@@ -49,7 +63,6 @@ impl ShapeInference {
                 let m = a[a.len() - 2].clone();
                 let n = b[b.len() - 1].clone();
 
-                // Check inner dimensions match
                 let k_a = &a[a.len() - 1];
                 let k_b = &b[b.len() - 2];
                 if let (Some(ka), Some(kb)) = (k_a.static_value(), k_b.static_value()) {
@@ -60,7 +73,6 @@ impl ShapeInference {
                     }
                 }
 
-                // Batch dimensions
                 let mut result_shape = Vec::new();
                 let batch_a = &a[..a.len() - 2];
                 let batch_b = &b[..b.len() - 2];
@@ -76,13 +88,14 @@ impl ShapeInference {
                 }])
             }
 
+            // ── Linear ──
             TensorOp::Linear => {
                 if inputs.len() < 2 {
                     return Err("linear requires at least 2 inputs (x, W)".into());
                 }
                 let x = &inputs[0].shape;
                 let w = &inputs[1].shape;
-                if x.len() < 1 || w.len() != 2 {
+                if x.is_empty() || w.len() != 2 {
                     return Err("linear: x must be at least 1D, W must be 2D".into());
                 }
                 let mut result_shape = x[..x.len() - 1].to_vec();
@@ -95,14 +108,8 @@ impl ShapeInference {
                 }])
             }
 
-            TensorOp::LayerNorm | TensorOp::RMSNorm => {
-                if inputs.is_empty() {
-                    return Err("layernorm requires at least 1 input".into());
-                }
-                Ok(vec![inputs[0].clone()])
-            }
-
-            TensorOp::Conv2D => {
+            // ── Conv2D ──
+            TensorOp::Conv2D | TensorOp::DepthwiseConv2D | TensorOp::DilatedConv2D => {
                 if inputs.len() < 2 {
                     return Err("conv2d requires at least 2 inputs (input, kernel)".into());
                 }
@@ -112,7 +119,6 @@ impl ShapeInference {
                     return Err("conv2d: input and kernel must be 4D (NCHW)".into());
                 }
 
-                // Simplified: assume stride=1, padding=0
                 let n = input[0].clone();
                 let cout = kernel[0].clone();
                 let h_out = match (&input[2], &kernel[2]) {
@@ -135,24 +141,187 @@ impl ShapeInference {
                 }])
             }
 
-            TensorOp::Attention => {
-                // Attention: Q, K, V -> output with same shape as Q
+            // ── Conv1D ──
+            TensorOp::Conv1D => {
+                if inputs.len() < 2 {
+                    return Err("conv1d requires at least 2 inputs".into());
+                }
+                let input = &inputs[0].shape;
+                let kernel = &inputs[1].shape;
+                if input.len() != 3 || kernel.len() != 3 {
+                    return Err("conv1d: input [N,C,L] and kernel [Cout,Cin,K]".into());
+                }
+                let n = input[0].clone();
+                let cout = kernel[0].clone();
+                let l_out = match (&input[2], &kernel[2]) {
+                    (Dimension::Constant(il), Dimension::Constant(kl)) => {
+                        Dimension::Constant(il - kl + 1)
+                    }
+                    _ => Dimension::Symbolic("L_out".into()),
+                };
+                Ok(vec![TensorTypeInfo {
+                    shape: vec![n, cout, l_out],
+                    dtype: inputs[0].dtype,
+                    layout: inputs[0].layout,
+                }])
+            }
+
+            // ── Conv3D ──
+            TensorOp::Conv3D => {
+                if inputs.len() < 2 {
+                    return Err("conv3d requires at least 2 inputs".into());
+                }
+                let input = &inputs[0].shape;
+                let kernel = &inputs[1].shape;
+                if input.len() != 5 || kernel.len() != 5 {
+                    return Err("conv3d: input [N,C,D,H,W] and kernel [Cout,Cin,Kd,Kh,Kw]".into());
+                }
+                let n = input[0].clone();
+                let cout = kernel[0].clone();
+                let dims: Vec<Dimension> = (2..5).map(|i| {
+                    match (&input[i], &kernel[i]) {
+                        (Dimension::Constant(iv), Dimension::Constant(kv)) => {
+                            Dimension::Constant(iv - kv + 1)
+                        }
+                        _ => Dimension::Symbolic(format!("dim{}_out", i)),
+                    }
+                }).collect();
+                Ok(vec![TensorTypeInfo {
+                    shape: vec![n, cout, dims[0].clone(), dims[1].clone(), dims[2].clone()],
+                    dtype: inputs[0].dtype,
+                    layout: inputs[0].layout,
+                }])
+            }
+
+            // ── Pooling ──
+            TensorOp::MaxPool2D | TensorOp::AvgPool2D => {
+                if inputs.is_empty() {
+                    return Err(format!("{} requires at least 1 input", op.name()));
+                }
+                // Simplified: returns same shape (caller should use attrs for kernel/stride)
+                Ok(vec![inputs[0].clone()])
+            }
+
+            TensorOp::AdaptiveAvgPool2D => {
+                if inputs.is_empty() {
+                    return Err("adaptive_avgpool2d requires 1 input".into());
+                }
+                Ok(vec![inputs[0].clone()])
+            }
+
+            TensorOp::GlobalAvgPool => {
+                if inputs.is_empty() {
+                    return Err("global_avgpool requires 1 input".into());
+                }
+                let shape = &inputs[0].shape;
+                if shape.len() < 3 {
+                    return Err("global_avgpool: input must be at least 3D [N,C,...]".into());
+                }
+                // [N, C, ...] -> [N, C, 1, 1, ...]
+                let mut out = vec![shape[0].clone(), shape[1].clone()];
+                for _ in 2..shape.len() {
+                    out.push(Dimension::Constant(1));
+                }
+                Ok(vec![TensorTypeInfo {
+                    shape: out,
+                    dtype: inputs[0].dtype,
+                    layout: inputs[0].layout,
+                }])
+            }
+
+            // ── Attention variants ──
+            TensorOp::Attention | TensorOp::MultiHeadAttention |
+            TensorOp::MultiQueryAttention | TensorOp::GroupedQueryAttention |
+            TensorOp::FlashAttention | TensorOp::SlidingWindowAttention |
+            TensorOp::CrossAttention | TensorOp::PagedAttention |
+            TensorOp::GradAttention => {
                 if inputs.len() < 3 {
                     return Err("attention requires at least 3 inputs (Q, K, V)".into());
                 }
                 Ok(vec![inputs[0].clone()])
             }
 
+            // ── Recurrent ──
+            TensorOp::LSTMCell => {
+                if inputs.len() < 2 {
+                    return Err("lstm_cell requires input and hidden state".into());
+                }
+                // Returns (h_new, c_new) with same shape as hidden
+                Ok(vec![inputs[1].clone(), inputs[1].clone()])
+            }
+
+            TensorOp::GRUCell | TensorOp::RNNCell => {
+                if inputs.len() < 2 {
+                    return Err(format!("{} requires input and hidden state", op.name()));
+                }
+                Ok(vec![inputs[1].clone()])
+            }
+
+            // ── Shape / zero-flop ops ──
+            TensorOp::Reshape | TensorOp::Transpose | TensorOp::Squeeze |
+            TensorOp::Unsqueeze | TensorOp::Permute | TensorOp::Expand |
+            TensorOp::Slice | TensorOp::Pad | TensorOp::Tile => {
+                // These need target shape from attributes; passthrough for now
+                if inputs.is_empty() {
+                    return Err(format!("{} requires at least 1 input", op.name()));
+                }
+                Ok(vec![inputs[0].clone()])
+            }
+
+            // ── Concat ──
+            TensorOp::Concat => {
+                if inputs.is_empty() {
+                    return Err("concat requires at least 1 input".into());
+                }
+                Ok(vec![inputs[0].clone()])
+            }
+
+            // ── TopK / Sort ──
+            TensorOp::TopK | TensorOp::Sort => {
+                if inputs.is_empty() {
+                    return Err(format!("{} requires 1 input", op.name()));
+                }
+                Ok(vec![inputs[0].clone()])
+            }
+
+            // ── FFT / IFFT ──
+            TensorOp::FFT | TensorOp::IFFT => {
+                if inputs.is_empty() {
+                    return Err(format!("{} requires 1 input", op.name()));
+                }
+                Ok(vec![inputs[0].clone()])
+            }
+
+            // ── SVD: returns U, S, V ──
+            TensorOp::SVD => {
+                if inputs.is_empty() {
+                    return Err("svd requires 1 input".into());
+                }
+                Ok(vec![inputs[0].clone()])
+            }
+
+            // ── Where: condition, x, y -> x ──
+            TensorOp::Where | TensorOp::Clamp => {
+                if inputs.len() < 2 {
+                    return Err(format!("{} requires at least 2 inputs", op.name()));
+                }
+                Ok(vec![inputs[0].clone()])
+            }
+
             _ => {
-                // For ops not yet handled, return empty (caller must handle)
-                Ok(Vec::new())
+                // For ops not yet handled, passthrough first input or empty
+                if !inputs.is_empty() {
+                    Ok(vec![inputs[0].clone()])
+                } else {
+                    Ok(Vec::new())
+                }
             }
         }
     }
 
     pub fn compute_flops(op: &TensorOp, inputs: &[&TensorTypeInfo]) -> Option<u64> {
         match op {
-            TensorOp::MatMul => {
+            TensorOp::MatMul | TensorOp::SparseMatMul => {
                 if inputs.len() != 2 { return None; }
                 let a = &inputs[0].shape;
                 let b = &inputs[1].shape;
@@ -169,20 +338,19 @@ impl ShapeInference {
 
             TensorOp::Add | TensorOp::Sub | TensorOp::Mul | TensorOp::Div => {
                 if inputs.is_empty() { return None; }
-                let n = element_count(&inputs[0].shape)? as u64;
-                Some(n)
+                Some(element_count(&inputs[0].shape)? as u64)
             }
 
-            TensorOp::ReLU | TensorOp::Sigmoid | TensorOp::Tanh => {
+            TensorOp::ReLU | TensorOp::Sigmoid | TensorOp::Tanh |
+            TensorOp::LeakyReLU | TensorOp::ELU | TensorOp::HardSigmoid => {
                 if inputs.is_empty() { return None; }
-                let n = element_count(&inputs[0].shape)? as u64;
-                Some(n)
+                Some(element_count(&inputs[0].shape)? as u64)
             }
 
-            TensorOp::GeLU | TensorOp::SiLU => {
+            TensorOp::GeLU | TensorOp::SiLU | TensorOp::Mish | TensorOp::HardSwish => {
                 if inputs.is_empty() { return None; }
                 let n = element_count(&inputs[0].shape)? as u64;
-                Some(5 * n)
+                Some(8 * n)
             }
 
             TensorOp::Softmax => {
@@ -191,7 +359,14 @@ impl ShapeInference {
                 Some(5 * n)
             }
 
-            TensorOp::LayerNorm | TensorOp::RMSNorm => {
+            TensorOp::LayerNorm | TensorOp::RMSNorm |
+            TensorOp::GroupNorm | TensorOp::InstanceNorm => {
+                if inputs.is_empty() { return None; }
+                let n = element_count(&inputs[0].shape)? as u64;
+                Some(7 * n)
+            }
+
+            TensorOp::BatchNorm => {
                 if inputs.is_empty() { return None; }
                 let n = element_count(&inputs[0].shape)? as u64;
                 Some(5 * n)
@@ -208,10 +383,10 @@ impl ShapeInference {
                     .max(1);
                 let k = x.last()?.static_value()? as u64;
                 let n = w.last()?.static_value()? as u64;
-                Some(2 * m * n * k + n) // + bias
+                Some(2 * m * n * k + n)
             }
 
-            TensorOp::Conv2D => {
+            TensorOp::Conv2D | TensorOp::DepthwiseConv2D | TensorOp::DilatedConv2D => {
                 if inputs.len() < 2 { return None; }
                 let kernel = &inputs[1].shape;
                 let cout = kernel[0].static_value()? as u64;
@@ -222,24 +397,101 @@ impl ShapeInference {
                 let n = input[0].static_value()? as u64;
                 let ih = input[2].static_value()? as u64;
                 let iw = input[3].static_value()? as u64;
-                let oh = ih - kh + 1;
-                let ow = iw - kw + 1;
+                let oh = ih.saturating_sub(kh) + 1;
+                let ow = iw.saturating_sub(kw) + 1;
                 Some(2 * n * cout * cin * kh * kw * oh * ow)
             }
 
-            TensorOp::Attention => {
-                // Standard attention: 4*B*H*S*S*D
+            TensorOp::Conv1D => {
+                if inputs.len() < 2 { return None; }
+                let kernel = &inputs[1].shape;
+                let cout = kernel[0].static_value()? as u64;
+                let cin = kernel[1].static_value()? as u64;
+                let k = kernel[2].static_value()? as u64;
+                let input = &inputs[0].shape;
+                let n = input[0].static_value()? as u64;
+                let il = input[2].static_value()? as u64;
+                let ol = il.saturating_sub(k) + 1;
+                Some(2 * n * cout * cin * k * ol)
+            }
+
+            TensorOp::Conv3D => {
+                if inputs.len() < 2 { return None; }
+                let kernel = &inputs[1].shape;
+                let cout = kernel.get(0)?.static_value()? as u64;
+                let cin = kernel.get(1)?.static_value()? as u64;
+                let kd = kernel.get(2)?.static_value()? as u64;
+                let kh = kernel.get(3)?.static_value()? as u64;
+                let kw = kernel.get(4)?.static_value()? as u64;
+                let input = &inputs[0].shape;
+                let n = input.get(0)?.static_value()? as u64;
+                let id = input.get(2)?.static_value()? as u64;
+                let ih = input.get(3)?.static_value()? as u64;
+                let iw = input.get(4)?.static_value()? as u64;
+                let od = id.saturating_sub(kd) + 1;
+                let oh = ih.saturating_sub(kh) + 1;
+                let ow = iw.saturating_sub(kw) + 1;
+                Some(2 * n * cout * cin * kd * kh * kw * od * oh * ow)
+            }
+
+            // Attention variants: 2*B*H*(S^2*D + S*D^2)
+            TensorOp::Attention | TensorOp::MultiHeadAttention |
+            TensorOp::MultiQueryAttention | TensorOp::GroupedQueryAttention |
+            TensorOp::FlashAttention | TensorOp::SlidingWindowAttention |
+            TensorOp::CrossAttention => {
                 if inputs.is_empty() { return None; }
                 let shape = &inputs[0].shape;
                 if shape.len() < 3 { return None; }
                 let b = shape[0].static_value().unwrap_or(1) as u64;
                 let s = shape[shape.len() - 2].static_value()? as u64;
                 let d = shape.last()?.static_value()? as u64;
-                let h = if shape.len() >= 4 { shape[1].static_value().unwrap_or(1) as u64 } else { 1 };
+                let h = if shape.len() >= 4 {
+                    shape[1].static_value().unwrap_or(1) as u64
+                } else { 1 };
                 Some(4 * b * h * s * s * d)
             }
 
-            TensorOp::Reshape | TensorOp::Transpose => Some(0),
+            // Recurrent
+            TensorOp::LSTMCell => {
+                // 4 * (input_size + hidden_size) * hidden_size * 2
+                if inputs.len() < 2 { return None; }
+                let input_size = inputs[0].shape.last()?.static_value()? as u64;
+                let hidden_size = inputs[1].shape.last()?.static_value()? as u64;
+                Some(8 * (input_size + hidden_size) * hidden_size)
+            }
+
+            TensorOp::GRUCell => {
+                if inputs.len() < 2 { return None; }
+                let input_size = inputs[0].shape.last()?.static_value()? as u64;
+                let hidden_size = inputs[1].shape.last()?.static_value()? as u64;
+                Some(6 * (input_size + hidden_size) * hidden_size)
+            }
+
+            TensorOp::RNNCell => {
+                if inputs.len() < 2 { return None; }
+                let input_size = inputs[0].shape.last()?.static_value()? as u64;
+                let hidden_size = inputs[1].shape.last()?.static_value()? as u64;
+                Some(2 * (input_size + hidden_size) * hidden_size)
+            }
+
+            // FFT: 5*N*log2(N)
+            TensorOp::FFT | TensorOp::IFFT => {
+                if inputs.is_empty() { return None; }
+                let n = element_count(&inputs[0].shape)? as u64;
+                if n == 0 { return Some(0); }
+                let log2n = (n as f64).log2().ceil() as u64;
+                Some(5 * n * log2n)
+            }
+
+            // Pooling
+            TensorOp::MaxPool2D | TensorOp::AvgPool2D |
+            TensorOp::AdaptiveAvgPool2D | TensorOp::GlobalAvgPool => {
+                if inputs.is_empty() { return None; }
+                Some(element_count(&inputs[0].shape)? as u64)
+            }
+
+            // Zero-flop ops
+            _ if op.is_zero_flop() => Some(0),
 
             _ => None,
         }
@@ -247,11 +499,10 @@ impl ShapeInference {
 
     pub fn compute_memory_bytes(op: &TensorOp, inputs: &[&TensorTypeInfo]) -> Option<u64> {
         match op {
-            TensorOp::MatMul => {
+            TensorOp::MatMul | TensorOp::SparseMatMul => {
                 if inputs.len() != 2 { return None; }
-                let a_bytes = tensor_bytes(&inputs[0])? as u64;
-                let b_bytes = tensor_bytes(&inputs[1])? as u64;
-                // Output size
+                let a_bytes = tensor_bytes(inputs[0])? as u64;
+                let b_bytes = tensor_bytes(inputs[1])? as u64;
                 let out_shape = Self::infer_output_shape(op, inputs).ok()?;
                 let out_bytes = if let Some(out) = out_shape.first() {
                     tensor_info_bytes(out)? as u64
@@ -259,7 +510,6 @@ impl ShapeInference {
                 Some(a_bytes + b_bytes + out_bytes)
             }
             _ => {
-                // Generic: sum of all input sizes
                 let total: u64 = inputs.iter()
                     .filter_map(|i| tensor_bytes(i).map(|b| b as u64))
                     .sum();

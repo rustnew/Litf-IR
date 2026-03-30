@@ -94,6 +94,78 @@ impl DeviceTopology {
         }
         topo
     }
+
+    /// Heavy-hex lattice (IBM topology): grid with extra bridge qubits.
+    pub fn heavy_hex(n: usize) -> Self {
+        // Simplified heavy-hex: linear backbone with additional connectivity
+        let mut topo = Self::new("heavy_hex", n);
+        for i in 0..n.saturating_sub(1) {
+            topo.add_edge(i, i + 1, 0.995);
+        }
+        // Add cross-links every 4 qubits (characteristic of heavy-hex)
+        let mut i = 0;
+        while i + 3 < n {
+            topo.add_edge(i, i + 3, 0.99);
+            i += 4;
+        }
+        topo
+    }
+
+    /// All-to-all connectivity (trapped-ion systems).
+    pub fn all_to_all(n: usize) -> Self {
+        let mut topo = Self::new("all_to_all", n);
+        for i in 0..n {
+            for j in (i + 1)..n {
+                topo.add_edge(i, j, 0.98);
+            }
+        }
+        topo
+    }
+
+    /// Binary tree topology.
+    pub fn tree(n: usize) -> Self {
+        let mut topo = Self::new("tree", n);
+        for i in 0..n {
+            let left = 2 * i + 1;
+            let right = 2 * i + 2;
+            if left < n { topo.add_edge(i, left, 0.99); }
+            if right < n { topo.add_edge(i, right, 0.99); }
+        }
+        topo
+    }
+
+    /// Custom topology from an adjacency list.
+    pub fn custom(name: &str, adjacency: &[(usize, usize)], fidelity: f64) -> Self {
+        let max_q = adjacency.iter()
+            .flat_map(|&(a, b)| [a, b])
+            .max()
+            .map_or(0, |m| m + 1);
+        let mut topo = Self::new(name, max_q);
+        for &(a, b) in adjacency {
+            topo.add_edge(a, b, fidelity);
+        }
+        topo
+    }
+
+    /// Average connectivity (edges per qubit).
+    pub fn avg_connectivity(&self) -> f64 {
+        if self.num_qubits == 0 { return 0.0; }
+        (2.0 * self.edges.len() as f64) / self.num_qubits as f64
+    }
+
+    /// Diameter of the graph (longest shortest path).
+    pub fn diameter(&self) -> usize {
+        let mut max_dist = 0;
+        for i in 0..self.num_qubits {
+            for j in (i + 1)..self.num_qubits {
+                if let Some(path) = self.shortest_path(i, j) {
+                    let dist = path.len().saturating_sub(1);
+                    if dist > max_dist { max_dist = dist; }
+                }
+            }
+        }
+        max_dist
+    }
 }
 
 #[cfg(test)]

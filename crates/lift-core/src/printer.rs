@@ -61,17 +61,17 @@ impl<'a> Printer<'a> {
         for (i, &param_ty) in func.params.iter().enumerate() {
             if i > 0 { sig.push_str(", "); }
             let pname = self.fresh_value_name();
-            write!(sig, "%{}: {}", pname, self.format_type(param_ty)).unwrap();
+            let _ = write!(sig, "%{}: {}", pname, self.format_type(param_ty));
         }
 
         sig.push_str(") -> ");
         if func.returns.len() == 1 {
-            write!(sig, "{}", self.format_type(func.returns[0])).unwrap();
+            let _ = write!(sig, "{}", self.format_type(func.returns[0]));
         } else {
             sig.push('(');
             for (i, &ret_ty) in func.returns.iter().enumerate() {
                 if i > 0 { sig.push_str(", "); }
-                write!(sig, "{}", self.format_type(ret_ty)).unwrap();
+                let _ = write!(sig, "{}", self.format_type(ret_ty));
             }
             sig.push(')');
         }
@@ -106,7 +106,7 @@ impl<'a> Printer<'a> {
                     if i > 0 { args.push_str(", "); }
                     let vname = self.get_value_name(arg);
                     if let Some(val) = self.ctx.get_value(arg) {
-                        write!(args, "%{}: {}", vname, self.format_type(val.ty)).unwrap();
+                        let _ = write!(args, "%{}: {}", vname, self.format_type(val.ty));
                     }
                 }
                 self.write_line(&format!("^{}({}):", block_name, args));
@@ -132,20 +132,20 @@ impl<'a> Printer<'a> {
                 for (i, &result) in op.results.iter().enumerate() {
                     if i > 0 { line.push_str(", "); }
                     let vname = self.get_value_name(result);
-                    write!(line, "%{}", vname).unwrap();
+                    let _ = write!(line, "%{}", vname);
                 }
                 line.push_str(" = ");
             }
 
             // Operation name
-            write!(line, "\"{}\"", op_name).unwrap();
+            let _ = write!(line, "\"{}\"", op_name);
 
             // Inputs
             line.push('(');
             for (i, &input) in op.inputs.iter().enumerate() {
                 if i > 0 { line.push_str(", "); }
                 let vname = self.get_value_name(input);
-                write!(line, "%{}", vname).unwrap();
+                let _ = write!(line, "%{}", vname);
             }
             line.push(')');
 
@@ -154,7 +154,7 @@ impl<'a> Printer<'a> {
                 line.push_str(" {");
                 for (i, (key, val)) in op.attrs.iter().enumerate() {
                     if i > 0 { line.push_str(", "); }
-                    write!(line, "{} = {}", key, self.format_attr(val)).unwrap();
+                    let _ = write!(line, "{} = {}", key, self.format_attr(val));
                 }
                 line.push('}');
             }
@@ -164,14 +164,14 @@ impl<'a> Printer<'a> {
             for (i, &input) in op.inputs.iter().enumerate() {
                 if i > 0 { line.push_str(", "); }
                 if let Some(val) = self.ctx.get_value(input) {
-                    write!(line, "{}", self.format_type(val.ty)).unwrap();
+                    let _ = write!(line, "{}", self.format_type(val.ty));
                 }
             }
             line.push_str(") -> ");
 
             if op.results.len() == 1 {
                 if let Some(val) = self.ctx.get_value(op.results[0]) {
-                    write!(line, "{}", self.format_type(val.ty)).unwrap();
+                    let _ = write!(line, "{}", self.format_type(val.ty));
                 }
             } else if op.results.is_empty() {
                 line.push_str("()");
@@ -180,7 +180,7 @@ impl<'a> Printer<'a> {
                 for (i, &result) in op.results.iter().enumerate() {
                     if i > 0 { line.push_str(", "); }
                     if let Some(val) = self.ctx.get_value(result) {
-                        write!(line, "{}", self.format_type(val.ty)).unwrap();
+                        let _ = write!(line, "{}", self.format_type(val.ty));
                     }
                 }
                 line.push(')');
