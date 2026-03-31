@@ -1,3 +1,10 @@
+//! LIFT Core: SSA-based intermediate representation foundation.
+//!
+//! This crate provides the core data structures and algorithms for the LIFT
+//! compiler framework, including types, values, operations, blocks, regions,
+//! functions, modules, attributes, a verifier, an IR printer, a pass manager,
+//! and a dialect registry.
+
 pub mod types;
 pub mod values;
 pub mod operations;

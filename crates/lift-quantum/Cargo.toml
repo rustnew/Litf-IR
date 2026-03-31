@@ -4,7 +4,12 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
+authors.workspace = true
+repository.workspace = true
+readme = "../../README.md"
 description = "LIFT-QUANTUM: Quantum dialect — qubits (linear types), gates, noise attributes, layout mapping"
+keywords = ["quantum", "quantum-computing", "gates", "compiler", "ir"]
+categories = ["compilers", "science"]
 
 [dependencies]
 lift-core = { workspace = true }

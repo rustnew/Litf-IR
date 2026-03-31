@@ -4,7 +4,12 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
+authors.workspace = true
+repository.workspace = true
+readme = "../../README.md"
 description = "LIFT-HYBRID: Fusion dialect — classical-quantum data encoding, joint gradient computation"
+keywords = ["hybrid", "quantum-classical", "variational", "compiler", "ir"]
+categories = ["compilers", "science"]
 
 [dependencies]
 lift-core = { workspace = true }

@@ -1,3 +1,9 @@
+//! LIFT AST: Lexer, parser, and AST for the `.lif` source language.
+//!
+//! This crate provides tokenisation, parsing, and IR construction from
+//! LIFT source files. Use [`Lexer`] to tokenise, [`Parser`] to parse,
+//! and [`IrBuilder`] to lower the AST into the core IR.
+
 pub mod lexer;
 pub mod token;
 pub mod parser;

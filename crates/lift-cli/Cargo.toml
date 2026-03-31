@@ -4,7 +4,12 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
+authors.workspace = true
+repository.workspace = true
+readme = "../../README.md"
 description = "LIFT CLI: Command-line interface — verify, analyse, print, compile, simulate, predict"
+keywords = ["cli", "compiler", "ir", "quantum", "deep-learning"]
+categories = ["compilers", "command-line-utilities"]
 
 [dependencies]
 lift-core = { workspace = true }

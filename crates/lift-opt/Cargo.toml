@@ -4,7 +4,12 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
+authors.workspace = true
+repository.workspace = true
+readme = "../../README.md"
 description = "LIFT-OPT: Pass manager and optimisation passes — constant folding, DCE, tensor fusion, gate cancellation"
+keywords = ["optimisation", "compiler", "passes", "fusion", "quantum"]
+categories = ["compilers", "science"]
 
 [dependencies]
 lift-core = { workspace = true }

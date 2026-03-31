@@ -4,7 +4,12 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
+authors.workspace = true
+repository.workspace = true
+readme = "../../README.md"
 description = "LIFT-SIM: Static analysis engine — shape propagation, FLOP counting, memory analysis, noise simulation"
+keywords = ["simulation", "cost-model", "roofline", "compiler", "quantum"]
+categories = ["compilers", "science"]
 
 [dependencies]
 lift-core = { workspace = true }

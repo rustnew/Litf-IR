@@ -1,3 +1,10 @@
+//! LIFT Opt: Optimisation passes for the LIFT compiler framework.
+//!
+//! Provides 11 passes: canonicalisation, constant folding, dead code
+//! elimination, tensor fusion, common subexpression elimination,
+//! flash attention replacement, quantisation annotation, gate cancellation,
+//! rotation merge, noise-aware scheduling, and layout mapping.
+
 pub mod dce;
 pub mod constant_fold;
 pub mod tensor_fusion;

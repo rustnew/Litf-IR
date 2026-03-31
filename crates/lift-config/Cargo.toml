@@ -4,7 +4,12 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
+authors.workspace = true
+repository.workspace = true
+readme = "../../README.md"
 description = "LIFT-CONFIG: .lith configuration language parser and validator"
+keywords = ["config", "configuration", "parser", "compiler", "ir"]
+categories = ["compilers", "config"]
 
 [dependencies]
 thiserror = { workspace = true }
