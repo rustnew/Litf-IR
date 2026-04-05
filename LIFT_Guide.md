@@ -634,14 +634,14 @@ op.flops_formula();     // "2*B*H*(S^2*D + S*D^2)"
 | 17 | `Rx90` | — | Fixed RX(π/2) |
 | 18 | `Rx180` | — | Fixed RX(π) |
 
-#### 5.1.3 Portes 2-qubits (14 portes)
+#### 5.1.3 2-Qubit Gates (14 gates)
 
-| # | Porte | Description | Natif pour |
-|---|-------|-------------|-----------|
+| # | Gate | Description | Native for |
+|---|------|-------------|------------|
 | 19 | `CX` | CNOT | IBM |
 | 20 | `CZ` | Controlled-Z | IBM, Rigetti |
 | 21 | `CY` | Controlled-Y | — |
-| 22 | `SWAP` | Échange de qubits | — |
+| 22 | `SWAP` | Qubit swap | — |
 | 23 | `ISWAP` | iSWAP | Rigetti |
 | 24 | `ECR` | Echoed Cross-Resonance | IBM Eagle |
 | 25 | `RZX` | ZX rotation | IBM |
@@ -1462,52 +1462,52 @@ Produces a report: op count, FLOPs, memory, quantum analysis.
 lift print model.lif
 ```
 
-Affiche l'IR en format lisible.
+Displays the IR in human-readable format.
 
-#### 13.1.4 `lift optimise` — Optimiser
+#### 13.1.4 `lift optimise` — Optimise
 
 ```bash
 lift optimise model.lif
 lift optimise model.lif --config config.lith --output optimised.lif
 ```
 
-Applique les passes d'optimisation configurées.
+Applies the configured optimisation passes.
 
-#### 13.1.5 `lift predict` — Prédire la performance
+#### 13.1.5 `lift predict` — Predict performance
 
 ```bash
 lift predict model.lif --device a100
 lift predict model.lif --device h100
 ```
 
-Prédit le temps d'exécution avec le modèle roofline.
+Predicts execution time using the roofline model.
 
-#### 13.1.6 `lift export` — Exporter
+#### 13.1.6 `lift export` — Export
 
 ```bash
 lift export model.lif --backend llvm --output model.ll
 lift export quantum.lif --backend qasm --output circuit.qasm
 ```
 
-Exporte vers LLVM IR ou OpenQASM 3.0.
+Exports to LLVM IR or OpenQASM 3.0.
 
 ---
 
-## 14. Combinaisons et pipelines complets
+## 14. Combinations and Complete Pipelines
 
-### 14.1 Pipeline IA complet (Transformer)
+### 14.1 Complete AI Pipeline (Transformer)
 
 ```rust
-// 1. Importer un modèle ONNX
+// 1. Import an ONNX model
 let ctx = OnnxImporter::new().import("bert.onnx")?;
 
-// 2. Vérifier
+// 2. Verify
 verifier::verify(&ctx)?;
 
-// 3. Analyser
+// 3. Analyse
 let report = analyze_module(&ctx);
 
-// 4. Optimiser
+// 4. Optimise
 let mut pm = PassManager::new();
 pm.add_pass(Box::new(Canonicalize));
 pm.add_pass(Box::new(ConstantFolding));
@@ -1522,36 +1522,36 @@ pm.add_pass(Box::new(QuantisationPass {
 pm.add_pass(Box::new(DeadCodeElimination));
 pm.run_all(&mut ctx);
 
-// 5. Prédire la performance
+// 5. Predict performance
 let h100 = CostModel::h100();
 let pred = predict_performance(&analyze_module(&ctx), &h100);
 
-// 6. Exporter vers LLVM
+// 6. Export to LLVM
 let llvm = LlvmExporter::new().export(&ctx)?;
 std::fs::write("bert_optimised.ll", llvm)?;
 ```
 
-### 14.2 Pipeline quantique complet (Bell State)
+### 14.2 Complete Quantum Pipeline (Bell State)
 
 ```rust
-// 1. Parser le circuit
+// 1. Parse the circuit
 let ctx = load_lif_file("quantum_bell.lif")?;
 
-// 2. Analyser le bruit
+// 2. Analyse noise
 let quantum = analyze_quantum_ops(&ctx);
 let sc = QuantumCostModel::superconducting_default();
 let fidelity = sc.circuit_fidelity(
     quantum.one_qubit_gates, quantum.two_qubit_gates
 );
 
-// 3. QEC si nécessaire
+// 3. QEC if needed
 if fidelity < 0.99 {
     let analysis = QecAnalysis::analyse(2, 5,
         QecCode::SurfaceCode { distance: 3 }, 0.001);
-    println!("Qubits physiques nécessaires: {}", analysis.physical_qubits);
+    println!("Physical qubits needed: {}", analysis.physical_qubits);
 }
 
-// 4. Optimiser
+// 4. Optimise
 let mut pm = PassManager::new();
 pm.add_pass(Box::new(GateCancellation));
 pm.add_pass(Box::new(RotationMerge));
@@ -1559,18 +1559,18 @@ pm.add_pass(Box::new(NoiseAwareSchedule));
 pm.add_pass(Box::new(LayoutMapping));
 pm.run_all(&mut ctx);
 
-// 5. Exporter vers QASM
+// 5. Export to QASM
 let qasm = QasmExporter::new().export(&ctx)?;
 std::fs::write("bell_optimised.qasm", qasm)?;
 ```
 
-### 14.3 Pipeline hybride complet (VQE)
+### 14.3 Complete Hybrid Pipeline (VQE)
 
 ```rust
-// 1. Configurer l'encodage
+// 1. Configure encoding
 let encoding = EncodingConfig::new(EncodingStrategy::AngleEncoding, 4);
 
-// 2. Configurer le gradient
+// 2. Configure gradient
 let grad_config = JointGradientConfig {
     classical_method: GradientMethod::Backprop,
     quantum_method: GradientMethod::ParameterShift,
@@ -1578,7 +1578,7 @@ let grad_config = JointGradientConfig {
     num_quantum_params: 20,
 };
 
-// 3. Budget réactif pour contrôler les ressources
+// 3. Reactive budget to control resources
 let budget = Budget {
     max_flops: Some(1_000_000_000),
     max_memory_bytes: Some(8_000_000_000),
@@ -1588,34 +1588,34 @@ let budget = Budget {
 };
 let mut rb = ReactiveBudget::new(budget);
 
-// 4. Boucle d'optimisation VQE
+// 4. VQE optimisation loop
 for iteration in 0..100 {
-    // Exécuter le circuit quantique
+    // Execute the quantum circuit
     rb.consume(10_000, 1_000, 0.5, 0.999);
     
     if rb.check_remaining().is_err() {
-        println!("Budget épuisé à l'itération {}", iteration);
+        println!("Budget exhausted at iteration {}", iteration);
         break;
     }
     
     let util = rb.utilisation();
-    println!("Itération {}: FLOP {:.1}%, Temps {:.1}%",
+    println!("Iteration {}: FLOP {:.1}%, Time {:.1}%",
         iteration,
         util.flop_ratio.unwrap() * 100.0,
         util.time_ratio.unwrap() * 100.0
     );
 }
 
-// 5. Estimer l'empreinte carbone
+// 5. Estimate carbon footprint
 let energy = EnergyModel::a100();
 let carbon = energy.carbon_grams(rb.elapsed_ms, 1);
-println!("Empreinte carbone: {:.4} g CO₂", carbon);
+println!("Carbon footprint: {:.4} g CO₂", carbon);
 ```
 
-### 14.4 Pipeline CLI complet
+### 14.4 Complete CLI Pipeline
 
 ```bash
-# Vérifier, analyser, optimiser, prédire et exporter en une séquence
+# Verify, analyse, optimise, predict and export in one sequence
 lift verify model.lif
 lift analyse model.lif --format json > analysis.json
 lift optimise model.lif --config production.lith --output optimised.lif
@@ -1625,11 +1625,11 @@ lift export optimised.lif --backend llvm --output model.ll
 
 ---
 
-## 15. Exemples concrets
+## 15. Concrete Examples
 
-### 15.1 MLP (Perceptron multi-couches)
+### 15.1 MLP (Multi-Layer Perceptron)
 
-Fichier `tensor_mlp.lif` :
+File `tensor_mlp.lif`:
 
 ```
 #dialect tensor
@@ -1651,7 +1651,7 @@ module @mlp {
 
 ### 15.2 Self-Attention (Transformer)
 
-Fichier `attention.lif` :
+File `attention.lif`:
 
 ```
 #dialect tensor
@@ -1667,9 +1667,9 @@ module @transformer {
 }
 ```
 
-### 15.3 État de Bell (Quantique)
+### 15.3 Bell State (Quantum)
 
-Fichier `quantum_bell.lif` :
+File `quantum_bell.lif`:
 
 ```
 #dialect quantum
@@ -1683,9 +1683,9 @@ module @bell_state {
 }
 ```
 
-### 15.4 Configuration de production
+### 15.4 Production Configuration
 
-Fichier `production.lith` :
+File `production.lith`:
 
 ```ini
 [target]
@@ -1716,16 +1716,16 @@ shots = 4096
 
 ---
 
-## Résumé des combinaisons par tâche
+## Summary of Combinations by Task
 
-| Tâche | Crates à combiner |
-|-------|-------------------|
-| **Entraîner un LLM** | lift-tensor + lift-opt (TensorFusion, FlashAttention) + lift-sim (CostModel) + lift-export (LLVM) |
-| **Inférence quantisée** | lift-tensor + lift-opt (QuantisationPass) + lift-predict + lift-export (LLVM) |
-| **Circuit quantique** | lift-quantum + lift-opt (GateCancellation, RotationMerge, LayoutMapping) + lift-export (QASM) |
+| Task | Crates to combine |
+|------|-------------------|
+| **Train an LLM** | lift-tensor + lift-opt (TensorFusion, FlashAttention) + lift-sim (CostModel) + lift-export (LLVM) |
+| **Quantised inference** | lift-tensor + lift-opt (QuantisationPass) + lift-predict + lift-export (LLVM) |
+| **Quantum circuit** | lift-quantum + lift-opt (GateCancellation, RotationMerge, LayoutMapping) + lift-export (QASM) |
 | **VQE / QAOA** | lift-hybrid + lift-quantum + lift-opt (NoiseAwareSchedule) + lift-sim (QuantumCostModel) |
 | **Quantum ML** | lift-hybrid (QuantumKernel, encoding) + lift-tensor + lift-quantum |
-| **Analyse de coût** | lift-sim (CostModel, EnergyModel) + lift-predict |
+| **Cost analysis** | lift-sim (CostModel, EnergyModel) + lift-predict |
 | **QEC planning** | lift-quantum (qec, topology) + lift-sim (QuantumCostModel) |
 | **Import/Optimise/Export** | lift-import + lift-opt + lift-export |
 | **Stable Diffusion** | lift-tensor (UNet ops) + lift-opt (TensorFusion) + lift-export |
