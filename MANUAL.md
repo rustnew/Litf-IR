@@ -1,71 +1,71 @@
-# LIFT — Manuel Complet des Problemes et Solutions
+# LIFT — Comprehensive Manual of Problems and Solutions
 
-> **LIFT** (Layered Intermediate Framework for Tensors & Qubits) est un compilateur
-> unifie qui transforme des descriptions de haut niveau en code executable optimise
-> pour GPU, CPU et processeurs quantiques.
-
----
-
-## Table des matieres
-
-- [Partie I — Architecture de LIFT](#partie-i--architecture-de-lift)
-- [Partie II — Problemes d'IA classique](#partie-ii--problemes-dia-classique)
-- [Partie III — Problemes quantiques](#partie-iii--problemes-quantiques)
-- [Partie IV — Problemes hybrides IA + Quantique](#partie-iv--problemes-hybrides-ia--quantique)
-- [Partie V — Capacites transversales](#partie-v--capacites-transversales)
-- [Partie VI — Reference rapide](#partie-vi--reference-rapide)
+> **LIFT** (Layered Intermediate Framework for Tensors & Qubits) is a unified compiler
+> that transforms high-level descriptions into optimised executable code
+> for GPUs, CPUs, and quantum processors.
 
 ---
 
-# Partie I — Architecture de LIFT
+## Table of Contents
 
-## 1.1 Les 12 crates du framework
+- [Part I — LIFT Architecture](#part-i--lift-architecture)
+- [Part II — Classical AI Problems](#part-ii--classical-ai-problems)
+- [Part III — Quantum Problems](#part-iii--quantum-problems)
+- [Part IV — Hybrid AI + Quantum Problems](#part-iv--hybrid-ai--quantum-problems)
+- [Part V — Cross-Cutting Capabilities](#part-v--cross-cutting-capabilities)
+- [Part VI — Quick Reference](#part-vi--quick-reference)
+
+---
+
+# Part I — LIFT Architecture
+
+## 1.1 The 12 Framework Crates
 
 | Crate | Role |
 |-------|------|
-| **lift-core** | IR SSA, types, verifieur, imprimante, registre de dialectes |
-| **lift-ast** | Lexer, parser, constructeur d'IR depuis `.lif` |
-| **lift-tensor** | 90+ operations IA/ML, inference de forme, FLOPs |
-| **lift-quantum** | 50+ portes, bruit, topologie, QEC, Kraus |
-| **lift-hybrid** | Encodage, gradients, VQC/VQE/QAOA, transfert GPU-QPU |
-| **lift-opt** | 11 passes d'optimisation |
-| **lift-sim** | Analyse statique, cout GPU/quantique, energie, budget |
-| **lift-predict** | Prediction roofline GPU et fidelite/shots quantique |
-| **lift-export** | Export LLVM IR et OpenQASM 3.0 |
-| **lift-config** | Parsing des fichiers `.lith` |
-| **lift-import** | Import depuis formats externes |
-| **lift-cli** | Interface ligne de commande |
+| **lift-core** | SSA IR, types, verifier, printer, dialect registry |
+| **lift-ast** | Lexer, parser, IR builder from `.lif` files |
+| **lift-tensor** | 90+ AI/ML operations, shape inference, FLOPs |
+| **lift-quantum** | 50+ gates, noise, topology, QEC, Kraus channels |
+| **lift-hybrid** | Encoding, gradients, VQC/VQE/QAOA, GPU-QPU transfer |
+| **lift-opt** | 11 optimisation passes |
+| **lift-sim** | Static analysis, GPU/quantum cost models, energy, budgets |
+| **lift-predict** | GPU roofline prediction and quantum fidelity/shots |
+| **lift-export** | Export to LLVM IR and OpenQASM 3.0 |
+| **lift-config** | `.lith` configuration file parsing |
+| **lift-import** | Import from external formats |
+| **lift-cli** | Command-line interface |
 
-## 1.2 Le pipeline en 6 etapes
+## 1.2 The 6-Stage Pipeline
 
 ```
 .lif → [1. PARSE & VERIFY] → [2. ANALYSE] → [3. OPTIMISE] → [4. PREDICT] → [5. EXPORT] → [6. FEEDBACK]
 ```
 
-1. **Parse & Verify** : Lexer → Parser → SSA → verification types + linearite qubits
-2. **Analyse** : FLOPs, memoire, profondeur circuit, fidelite estimee
-3. **Optimise** : 11 passes classiques + quantiques + hybrides
-4. **Predict** : Roofline GPU + modele de bruit QPU
-5. **Export** : LLVM IR (GPU/CPU) + OpenQASM 3.0 (QPU)
-6. **Feedback** : Budget, energie, CO2, comparaison predictions/reel
+1. **Parse & Verify**: Lexer → Parser → SSA → type checking + qubit linearity
+2. **Analyse**: FLOPs, memory, circuit depth, estimated fidelity
+3. **Optimise**: 11 classical + quantum + hybrid passes
+4. **Predict**: GPU roofline + QPU noise model
+5. **Export**: LLVM IR (GPU/CPU) + OpenQASM 3.0 (QPU)
+6. **Feedback**: Budget, energy, CO2, predicted vs. actual comparison
 
-## 1.3 Les trois dialectes
+## 1.3 The Three Dialects
 
-| Dialecte | Prefixe | Domaine | Exemple |
-|----------|---------|---------|---------|
-| **tensor** | `tensor.` | IA / ML classique | `tensor.conv2d`, `tensor.attention` |
-| **quantum** | `quantum.` | Calcul quantique | `quantum.h`, `quantum.cx` |
-| **hybrid** | `hybrid.` | Liaison classique-quantique | `hybrid.encode`, `hybrid.vqc_layer` |
+| Dialect | Prefix | Domain | Example |
+|---------|--------|--------|---------|
+| **tensor** | `tensor.` | Classical AI / ML | `tensor.conv2d`, `tensor.attention` |
+| **quantum** | `quantum.` | Quantum computing | `quantum.h`, `quantum.cx` |
+| **hybrid** | `hybrid.` | Classical-quantum bridge | `hybrid.encode`, `hybrid.vqc_layer` |
 
 ---
 
-# Partie II — Problemes d'IA classique
+# Part II — Classical AI Problems
 
-## 2.1 Vision par ordinateur (CNN)
+## 2.1 Computer Vision (CNN)
 
-### Probleme
+### Problem
 
-Classifier, detecter ou segmenter des images : radiographies medicales, photos satellite, controle qualite industriel, vehicules autonomes.
+Classify, detect, or segment images: medical X-rays, satellite photos, industrial quality control, autonomous vehicles.
 
 ### Solution LIFT
 
@@ -87,35 +87,35 @@ func @image_classifier(%img: tensor<1x3x224x224xf32>,
 }
 ```
 
-### Comment LIFT l'exploite
+### How LIFT Exploits This
 
-| Etape | Action de LIFT |
-|-------|----------------|
-| **Parse** | Construit le graphe SSA, verifie que `conv2d` recoit des tenseurs 4D compatibles |
-| **Analyse** | Calcule les FLOPs exacts (`2 * N * C * H * W * K * K * F`), la VRAM, le pic memoire |
-| **Optimise** | **Tensor fusion** : `conv2d + batchnorm + relu → fused_conv_bn_relu` (-30% memoire). **DCE** : elimine les poids inutilises |
-| **Predict** | Roofline A100/H100 : determine si le CNN est compute-bound ou memory-bound |
-| **Export** | LLVM IR avec appels cuDNN (convolutions) et cuBLAS (matmuls) |
-| **Budget** | Verifie que la VRAM ne depasse pas 80 Go (A100) |
+| Stage | LIFT Action |
+|-------|-------------|
+| **Parse** | Builds the SSA graph, verifies that `conv2d` receives compatible 4D tensors |
+| **Analyse** | Computes exact FLOPs (`2 * N * C * H * W * K * K * F`), VRAM, peak memory |
+| **Optimise** | **Tensor fusion**: `conv2d + batchnorm + relu → fused_conv_bn_relu` (-30% memory). **DCE**: removes unused weights |
+| **Predict** | Roofline A100/H100: determines whether the CNN is compute-bound or memory-bound |
+| **Export** | LLVM IR with cuDNN calls (convolutions) and cuBLAS calls (matmuls) |
+| **Budget** | Verifies that VRAM does not exceed 80 GB (A100) |
 
-### Operations utilisees
+### Operations Used
 
 `Conv2D`, `Conv1D`, `Conv3D`, `DepthwiseConv2D`, `DilatedConv2D`, `ConvTranspose2D`, `MaxPool2D`, `AvgPool2D`, `AdaptiveAvgPool2D`, `GlobalAvgPool`, `ReLU`, `BatchNorm`, `MatMul`, `Linear`, `Softmax`.
 
-### Variantes
+### Variants
 
-- **Classification** : CNN → softmax → etiquette
-- **Detection d'objets** : backbone → region proposals → bounding boxes
-- **Segmentation** : U-Net (`UNetDownBlock`, `UNetUpBlock`)
-- **Super-resolution** : `ConvTranspose2D` pour l'upsampling
+- **Classification**: CNN → softmax → label
+- **Object detection**: backbone → region proposals → bounding boxes
+- **Segmentation**: U-Net (`UNetDownBlock`, `UNetUpBlock`)
+- **Super-resolution**: `ConvTranspose2D` for upsampling
 
 ---
 
-## 2.2 Traitement du langage naturel (Transformers)
+## 2.2 Natural Language Processing (Transformers)
 
-### Probleme
+### Problem
 
-Traduire, resumer, generer ou comprendre du texte : chatbots, moteurs de recherche, analyse de sentiment, generation de code.
+Translate, summarise, generate, or understand text: chatbots, search engines, sentiment analysis, code generation.
 
 ### Solution LIFT
 
@@ -136,42 +136,42 @@ func @transformer_block(%x: tensor<1x512x768xf32>,
 }
 ```
 
-### Comment LIFT l'exploite
+### How LIFT Exploits This
 
-| Etape | Action de LIFT |
-|-------|----------------|
-| **Analyse** | Calcule le cout O(n^2) de l'attention pour la longueur de sequence |
-| **Optimise** | **FlashAttention** : remplace `attention` par `flash_attention` (O(n) memoire). **CSE** : elimine les calculs redondants. **FusedAttentionLayerNorm** : un seul kernel |
-| **Predict** | Inference LLM = memory-bound. Entrainement = compute-bound. LIFT identifie le regime |
-| **Export** | Kernels fusionnes pour l'attention |
+| Stage | LIFT Action |
+|-------|-------------|
+| **Analyse** | Computes the O(n^2) cost of attention for the sequence length |
+| **Optimise** | **FlashAttention**: replaces `attention` with `flash_attention` (O(n) memory). **CSE**: eliminates redundant computations. **FusedAttentionLayerNorm**: single kernel |
+| **Predict** | LLM inference = memory-bound. Training = compute-bound. LIFT identifies the regime |
+| **Export** | Fused kernels for attention |
 
-### 8 variantes d'attention
+### 8 Attention Variants
 
-| Operation | Usage | Memoire |
-|-----------|-------|---------|
+| Operation | Usage | Memory |
+|-----------|-------|--------|
 | `Attention` | Standard | O(n^2) |
 | `MultiHeadAttention` | GPT, BERT | O(n^2) |
-| `MultiQueryAttention` | PaLM, Falcon (inference rapide) | O(n) par tete |
-| `GroupedQueryAttention` | LLaMA 2 (compromis) | O(n * G/H) |
-| `FlashAttention` | Entrainement et inference | O(n) |
-| `SlidingWindowAttention` | Mistral (sequences longues) | O(n * w) |
-| `CrossAttention` | Traduction, multimodal | O(n * m) |
-| `PagedAttention` | Serving LLM (vLLM) | O(n) par page |
+| `MultiQueryAttention` | PaLM, Falcon (fast inference) | O(n) per head |
+| `GroupedQueryAttention` | LLaMA 2 (trade-off) | O(n * G/H) |
+| `FlashAttention` | Training and inference | O(n) |
+| `SlidingWindowAttention` | Mistral (long sequences) | O(n * w) |
+| `CrossAttention` | Translation, multimodal | O(n * m) |
+| `PagedAttention` | LLM serving (vLLM) | O(n) per page |
 
-### Cas d'usage
+### Use Cases
 
-- **Chatbot / LLM** : N blocs transformer + `PagedAttention` pour le serving
-- **Traduction** : Encoder (`MultiHeadAttention`) + Decoder (`CrossAttention`)
-- **Analyse de sentiment** : BERT + classification
-- **Generation de code** : GPT + `SlidingWindowAttention` pour contexte long
+- **Chatbot / LLM**: N transformer blocks + `PagedAttention` for serving
+- **Translation**: Encoder (`MultiHeadAttention`) + Decoder (`CrossAttention`)
+- **Sentiment analysis**: BERT + classification
+- **Code generation**: GPT + `SlidingWindowAttention` for long context
 
 ---
 
-## 2.3 Systemes de recommandation
+## 2.3 Recommendation Systems
 
-### Probleme
+### Problem
 
-Recommander produits, films, musique a des utilisateurs selon leur historique.
+Recommend products, movies, or music to users based on their history.
 
 ### Solution LIFT
 
@@ -191,26 +191,26 @@ func @recommender(%user_id: tensor<1xi64>,
 }
 ```
 
-### Comment LIFT l'exploite
+### How LIFT Exploits This
 
-| Etape | Action de LIFT |
-|-------|----------------|
-| **Analyse** | Taille des tables d'embedding (100k * 64 * 4 = 25 MiB utilisateurs) |
-| **Optimise** | **SparseEmbedding** pour grandes tables. **FusedLinearReLU** pour les couches denses |
-| **Predict** | Systemes de recommandation = memory-bound (gros embeddings) |
-| **Budget** | Verifie que les tables tiennent en VRAM pour le serving temps reel |
+| Stage | LIFT Action |
+|-------|-------------|
+| **Analyse** | Embedding table size (100k * 64 * 4 = 25 MiB for users) |
+| **Optimise** | **SparseEmbedding** for large tables. **FusedLinearReLU** for dense layers |
+| **Predict** | Recommendation systems = memory-bound (large embeddings) |
+| **Budget** | Verifies that tables fit in VRAM for real-time serving |
 
-### Operations cles
+### Key Operations
 
 `Embedding`, `SparseEmbedding`, `Linear`, `ReLU`, `Sigmoid`, `Concat`, `Gather`, `Scatter`, `TopK`.
 
 ---
 
-## 2.4 Series temporelles (LSTM / GRU / RNN)
+## 2.4 Time Series (LSTM / GRU / RNN)
 
-### Probleme
+### Problem
 
-Predire des valeurs futures a partir de sequences passees : prevision meteo, cours boursiers, maintenance predictive, ECG.
+Predict future values from past sequences: weather forecasting, stock prices, predictive maintenance, ECG.
 
 ### Solution LIFT
 
@@ -224,29 +224,29 @@ func @forecast(%seq: tensor<1x100x16xf32>,
 }
 ```
 
-### Comment LIFT l'exploite
+### How LIFT Exploits This
 
-| Etape | Action de LIFT |
-|-------|----------------|
-| **Analyse** | FLOPs par pas de temps = 4 portes LSTM * matmul. 100 pas = 100x le cout |
-| **Optimise** | **Constant folding** : biais constants. **Canonicalize** : expressions redondantes |
-| **Predict** | Entrainement = compute-bound. Inference = memory-bound (etats caches) |
+| Stage | LIFT Action |
+|-------|-------------|
+| **Analyse** | FLOPs per time step = 4 LSTM gates * matmul. 100 steps = 100x the cost |
+| **Optimise** | **Constant folding**: constant biases. **Canonicalize**: redundant expressions |
+| **Predict** | Training = compute-bound. Inference = memory-bound (cached states) |
 
-### Cellules recurrentes
+### Recurrent Cells
 
 | Operation | Description |
 |-----------|-------------|
-| `LSTMCell` | Long Short-Term Memory (4 portes) |
-| `GRUCell` | Gated Recurrent Unit (3 portes) |
+| `LSTMCell` | Long Short-Term Memory (4 gates) |
+| `GRUCell` | Gated Recurrent Unit (3 gates) |
 | `RNNCell` | RNN vanilla (tanh) |
 
 ---
 
-## 2.5 Reseaux de neurones sur graphes (GNN)
+## 2.5 Graph Neural Networks (GNN)
 
-### Probleme
+### Problem
 
-Traiter des donnees en graphe : molecules, reseaux sociaux, systemes de transport, proteines.
+Process graph-structured data: molecules, social networks, transportation systems, proteins.
 
 ### Solution LIFT
 
@@ -262,32 +262,32 @@ func @gnn_classify(%nodes: tensor<100x16xf32>,
 }
 ```
 
-### Comment LIFT l'exploite
+### How LIFT Exploits This
 
-| Etape | Action de LIFT |
-|-------|----------------|
-| **Analyse** | FLOPs du message passing : `N * N * D` (dense) ou `E * D` (sparse) |
-| **Optimise** | **SparseMatMul** si adjacence < 10% non-zero |
-| **Predict** | GNN = memory-bound (lookups irreguliers dans le graphe) |
+| Stage | LIFT Action |
+|-------|-------------|
+| **Analyse** | Message passing FLOPs: `N * N * D` (dense) or `E * D` (sparse) |
+| **Optimise** | **SparseMatMul** if adjacency < 10% non-zero |
+| **Predict** | GNN = memory-bound (irregular graph lookups) |
 
-### Types d'agregation GNN
+### GNN Aggregation Types
 
 Sum, Mean, Max, Min (via `AggregationType`).
 
-### Cas d'usage
+### Use Cases
 
-- **Proprietes moleculaires** : solubilite, toxicite
-- **Decouverte de medicaments** : interaction proteine-ligand
-- **Reseaux sociaux** : detection de communautes
-- **Transport** : prediction de trafic
+- **Molecular properties**: solubility, toxicity
+- **Drug discovery**: protein-ligand interaction
+- **Social networks**: community detection
+- **Transportation**: traffic prediction
 
 ---
 
-## 2.6 Modeles generatifs et diffusion
+## 2.6 Generative Models and Diffusion
 
-### Probleme
+### Problem
 
-Generer des images, de l'audio ou de la video a partir d'un bruit ou d'une description textuelle : Stable Diffusion, DALL-E, synthese vocale.
+Generate images, audio, or video from noise or a text description: Stable Diffusion, DALL-E, voice synthesis.
 
 ### Solution LIFT
 
@@ -302,26 +302,26 @@ func @diffusion_step(%noisy: tensor<1x4x64x64xf32>,
 }
 ```
 
-### Comment LIFT l'exploite
+### How LIFT Exploits This
 
-| Etape | Action de LIFT |
-|-------|----------------|
-| **Analyse** | Cout total = N_etapes_debruitage * FLOPs_par_etape (20-50 passes U-Net) |
-| **Optimise** | **FlashAttention** pour les blocs cross-attention. **Tensor fusion** pour les residuels. **Checkpoint** pour economiser la memoire |
-| **Predict** | 1 pas SD 1.5 sur A100 ~ 50 ms. LIFT estime et identifie l'attention comme goulot |
-| **Energie** | 50 pas * 50 ms = 2.5 s / image. LIFT calcule la conso pour 1M images/jour |
+| Stage | LIFT Action |
+|-------|-------------|
+| **Analyse** | Total cost = N_denoising_steps * FLOPs_per_step (20-50 U-Net passes) |
+| **Optimise** | **FlashAttention** for cross-attention blocks. **Tensor fusion** for residuals. **Checkpoint** to save memory |
+| **Predict** | 1 SD 1.5 step on A100 ~ 50 ms. LIFT estimates and identifies attention as bottleneck |
+| **Energy** | 50 steps * 50 ms = 2.5 s / image. LIFT computes consumption for 1M images/day |
 
-### Operations cles
+### Key Operations
 
 `UNetDownBlock`, `UNetUpBlock`, `TimestepEmbedding`, `CrossAttention`, `GroupNorm`, `SiLU`, `Conv2D`, `ConvTranspose2D`.
 
 ---
 
-## 2.7 Calcul scientifique (FFT, SVD, systemes lineaires)
+## 2.7 Scientific Computing (FFT, SVD, Linear Systems)
 
-### Probleme
+### Problem
 
-Traitement du signal (FFT), decomposition de matrices (SVD, valeurs propres), resolution de systemes lineaires (Ax = b).
+Signal processing (FFT), matrix decomposition (SVD, eigenvalues), linear system solving (Ax = b).
 
 ### Solution LIFT
 
@@ -340,149 +340,149 @@ func @solve_system(%A: tensor<1000x1000xf32>,
 }
 ```
 
-### Comment LIFT l'exploite
+### How LIFT Exploits This
 
-| Etape | Action de LIFT |
-|-------|----------------|
-| **Analyse** | FFT : O(n log n). SVD : O(min(m,n)^2 * max(m,n)). Couts exacts |
-| **Optimise** | **Constant folding** : pre-calcule les masques constants |
-| **Export** | LLVM IR avec appels cuFFT (GPU) ou FFTW (CPU) |
+| Stage | LIFT Action |
+|-------|-------------|
+| **Analyse** | FFT: O(n log n). SVD: O(min(m,n)^2 * max(m,n)). Exact costs |
+| **Optimise** | **Constant folding**: pre-computes constant masks |
+| **Export** | LLVM IR with cuFFT calls (GPU) or FFTW (CPU) |
 
 ### Operations
 
 `FFT`, `IFFT`, `SVD`, `Eig`, `Solve`, `Einsum`, `Cumsum`, `Sort`, `TopK`, `Where`, `Clamp`.
 
-### Cas d'usage
+### Use Cases
 
-- **Traitement du signal** : filtrage, spectrogramme, compression audio
-- **Analyse de donnees** : PCA via SVD, moindres carres
-- **Simulation physique** : equations differentielles
-- **Imagerie** : reconstruction Fourier (IRM, CT-scan)
+- **Signal processing**: filtering, spectrogram, audio compression
+- **Data analysis**: PCA via SVD, least squares
+- **Physical simulation**: differential equations
+- **Imaging**: Fourier reconstruction (MRI, CT scan)
 
 ---
 
-## 2.8 IA embarquee et quantification
+## 2.8 Edge AI and Quantisation
 
-### Probleme
+### Problem
 
-Deployer des modeles sur dispositifs a ressources limitees : smartphones, IoT, drones, cameras embarquees.
+Deploy models on resource-constrained devices: smartphones, IoT, drones, embedded cameras.
 
 ### Solution LIFT
 
 ```
 func @quantized_model(%img: tensor<1x3x224x224xf32>,
                        %w: tensor<64x3x3x3xf32>) -> tensor<1x10xf32> {
-  %w_q = tensor.quantize_int4 %w        // poids en INT4 (8x moins de memoire)
+  %w_q = tensor.quantize_int4 %w        // weights in INT4 (8x less memory)
   %conv = tensor.conv2d %img, %w_q
   %out = tensor.dequantize_int4 %conv
   return %out
 }
 ```
 
-### Comment LIFT l'exploite
+### How LIFT Exploits This
 
-| Etape | Action de LIFT |
-|-------|----------------|
-| **Optimise** | **QuantisationPass** : annote les ops compatibles INT8/INT4/FP8, insere `quantize`/`dequantize` automatiquement |
-| **Analyse** | Recalcule FLOPs et memoire apres quantification. INT4 divise la memoire par 8 |
-| **Predict** | Estime le speedup sur le materiel cible |
-| **Budget** | Verifie que le modele tient sur le dispositif (ex : 4 Go smartphone) |
+| Stage | LIFT Action |
+|-------|-------------|
+| **Optimise** | **QuantisationPass**: annotates INT8/INT4/FP8-compatible ops, automatically inserts `quantize`/`dequantize` |
+| **Analyse** | Recomputes FLOPs and memory after quantisation. INT4 divides memory by 8 |
+| **Predict** | Estimates speedup on target hardware |
+| **Budget** | Verifies the model fits on the device (e.g. 4 GB smartphone) |
 
-### Niveaux de quantification
+### Quantisation Levels
 
-| Operation | Precision | Reduction memoire | Usage |
-|-----------|-----------|-------------------|-------|
-| `Quantize` / `Dequantize` | INT8 | 4x | Inference serveur |
+| Operation | Precision | Memory Reduction | Usage |
+|-----------|-----------|-----------------|-------|
+| `Quantize` / `Dequantize` | INT8 | 4x | Server inference |
 | `QuantizeInt4` / `DequantizeInt4` | INT4 | 8x | Smartphones, edge |
-| `QuantizeFp8` / `DequantizeFp8` | FP8 (E4M3/E5M2) | 2x | Entrainement H100 |
+| `QuantizeFp8` / `DequantizeFp8` | FP8 (E4M3/E5M2) | 2x | H100 training |
 
 ---
 
 ## 2.9 Mixture of Experts (MoE)
 
-### Probleme
+### Problem
 
-Construire des modeles massivement parametres (100B+) ou seule une fraction des parametres est activee par requete : Mixtral, Switch Transformer.
+Build massively parameterised models (100B+) where only a fraction of parameters are activated per request: Mixtral, Switch Transformer.
 
 ### Solution LIFT
 
 ```
 func @moe_layer(%x: tensor<1x512x768xf32>,
                  %gate: tensor<768x8xf32>) -> tensor<1x512x768xf32> {
-  %tokens, %weights = tensor.moe_dispatch %x, %gate   // routeur : top-2 / 8 experts
+  %tokens, %weights = tensor.moe_dispatch %x, %gate   // router: top-2 / 8 experts
   %expert_out = tensor.linear %tokens, %experts
   %combined = tensor.moe_combine %expert_out, %weights
   return %combined
 }
 ```
 
-### Comment LIFT l'exploite
+### How LIFT Exploits This
 
-| Etape | Action de LIFT |
-|-------|----------------|
-| **Analyse** | Seuls 2/8 experts actifs → FLOPs effectifs = 25% du total |
-| **Optimise** | **Tensor fusion** : fusionne dispatch + expert + combine si meme GPU |
-| **Predict** | MoE = memory-bound (gros parametres) malgre des FLOPs moderes |
-| **Parallelisme** | Sharding des experts via `ParallelSplit` + `ParallelAllReduce` |
+| Stage | LIFT Action |
+|-------|-------------|
+| **Analyse** | Only 2/8 experts active → effective FLOPs = 25% of total |
+| **Optimise** | **Tensor fusion**: fuses dispatch + expert + combine if on same GPU |
+| **Predict** | MoE = memory-bound (large parameters) despite moderate FLOPs |
+| **Parallelism** | Expert sharding via `ParallelSplit` + `ParallelAllReduce` |
 
 ---
 
-## 2.10 Entrainement distribue et parallelisme
+## 2.10 Distributed Training and Parallelism
 
-### Probleme
+### Problem
 
-Entrainer des modeles trop grands pour un seul GPU sur des clusters multi-GPU.
+Train models too large for a single GPU on multi-GPU clusters.
 
 ### Solution LIFT
 
 ```
-// Parallelisme de donnees
+// Data parallelism
 %grad_local = tensor.grad_matmul %x, %w
 %grad_global = tensor.parallel_all_reduce %grad_local
 
-// Parallelisme de pipeline
+// Pipeline parallelism
 tensor.pipeline_send %activations, %device_1
 %received = tensor.pipeline_receive %device_1
 
-// Parallelisme de tenseur
+// Tensor parallelism
 %shards = tensor.parallel_split %weight, %num_gpus
 ```
 
-### Comment LIFT l'exploite
+### How LIFT Exploits This
 
-| Etape | Action de LIFT |
-|-------|----------------|
-| **Analyse** | Volume de communication AllReduce : `2*(N-1)/N * taille_grad * N_GPU` |
-| **Predict** | Ratio communication / calcul. Si > 30%, parallelisme inefficace |
-| **Energie** | 8x A100, 24h = 92.4 kWh, 37 kg CO2 |
+| Stage | LIFT Action |
+|-------|-------------|
+| **Analyse** | AllReduce communication volume: `2*(N-1)/N * grad_size * N_GPU` |
+| **Predict** | Communication / compute ratio. If > 30%, parallelism is inefficient |
+| **Energy** | 8x A100, 24h = 92.4 kWh, 37 kg CO2 |
 
-### Operations de parallelisme
+### Parallelism Operations
 
 `ParallelSplit`, `ParallelAllReduce`, `PipelineSend`, `PipelineReceive`, `Checkpoint`, `Offload`, `GradAccumulate`.
 
-### Operations de gradient
+### Gradient Operations
 
 `GradMatMul`, `GradReLU`, `GradSoftmax`, `GradLayerNorm`, `GradAttention`, `GradConv2D`, `GradLinear`, `GradGeLU`.
 
 ---
 
-# Partie III — Problemes quantiques
+# Part III — Quantum Problems
 
-## 3.1 Simulation quantique (Hamiltonien)
+## 3.1 Quantum Simulation (Hamiltonian)
 
-### Probleme
+### Problem
 
-Simuler l'evolution d'un systeme quantique sous l'action d'un Hamiltonien : physique des materiaux, chimie quantique, physique des particules.
+Simulate the evolution of a quantum system under a Hamiltonian: materials physics, quantum chemistry, particle physics.
 
 ### Solution LIFT
 
 ```
 func @hamiltonian_sim(%q0: qubit, %q1: qubit, %q2: qubit, %q3: qubit)
     -> (qubit, qubit, qubit, qubit) {
-  // Trotterisation : e^{-iHt} approche par produit de portes
-  %q0a = quantum.rx %q0       // terme X du Hamiltonien
+  // Trotterisation: e^{-iHt} approximated by product of gates
+  %q0a = quantum.rx %q0       // X term of the Hamiltonian
   %q1a = quantum.rx %q1
-  // Interaction ZZ
+  // ZZ interaction
   %q0b, %q1b = quantum.cx %q0a, %q1a
   %q1c = quantum.rz %q1b      // e^{-i*J*t*ZZ}
   %q0c, %q1d = quantum.cx %q0b, %q1c
@@ -495,78 +495,78 @@ func @hamiltonian_sim(%q0: qubit, %q1: qubit, %q2: qubit, %q3: qubit)
 }
 ```
 
-### Comment LIFT l'exploite
+### How LIFT Exploits This
 
-| Etape | Action de LIFT |
-|-------|----------------|
-| **Verify** | Verifie la linearite : chaque qubit consomme exactement une fois (no-cloning) |
-| **Analyse** | Compte portes 1Q/2Q, estime fidelite et profondeur |
-| **Optimise** | **Rotation merge** : `Rz(a)*Rz(b) → Rz(a+b)`. **Gate cancellation** : `X*X → I`, `H*H → I` |
-| **Predict** | Nombre de shots pour precision donnee sur l'observable |
-| **Topologie** | Adapte le circuit au QPU (grid, heavy-hex) avec insertion de SWAP |
+| Stage | LIFT Action |
+|-------|-------------|
+| **Verify** | Checks linearity: each qubit consumed exactly once (no-cloning) |
+| **Analyse** | Counts 1Q/2Q gates, estimates fidelity and depth |
+| **Optimise** | **Rotation merge**: `Rz(a)*Rz(b) → Rz(a+b)`. **Gate cancellation**: `X*X → I`, `H*H → I` |
+| **Predict** | Number of shots for a given precision on the observable |
+| **Topology** | Adapts the circuit to the QPU (grid, heavy-hex) with SWAP insertion |
 
-### Portes quantiques disponibles
+### Available Quantum Gates
 
-**1-qubit standard** : H, X, Y, Z, S, S†, T, T†, SX
+**1-qubit standard**: H, X, Y, Z, S, S†, T, T†, SX
 
-**1-qubit parametriques** : RX, RY, RZ, P, U1, U2, U3
+**1-qubit parametric**: RX, RY, RZ, P, U1, U2, U3
 
-**2-qubit** : CX (CNOT), CZ, CY, SWAP, iSWAP, ECR, RZX, XX, YY, ZZ, CP, CPhase, XY
+**2-qubit**: CX (CNOT), CZ, CY, SWAP, iSWAP, ECR, RZX, XX, YY, ZZ, CP, CPhase, XY
 
-**3-qubit** : CCX (Toffoli), CSWAP (Fredkin)
+**3-qubit**: CCX (Toffoli), CSWAP (Fredkin)
 
-**Multi-controle** : MCX, MCZ
+**Multi-controlled**: MCX, MCZ
 
-**Controle** : Measure, MeasureAll, Reset, Barrier, Init, Delay, VirtualRZ, IfElse
+**Control**: Measure, MeasureAll, Reset, Barrier, Init, Delay, VirtualRZ, IfElse
 
 ---
 
-## 3.2 Correction d'erreurs quantiques (QEC)
+## 3.2 Quantum Error Correction (QEC)
 
-### Probleme
+### Problem
 
-Les qubits physiques sont bruites. Pour executer des algorithmes fiables, il faut encoder l'information dans des qubits logiques proteges par des codes correcteurs.
+Physical qubits are noisy. To run reliable algorithms, information must be encoded in logical qubits protected by error-correcting codes.
 
 ### Solution LIFT
 
-LIFT integre un module QEC complet (`lift-quantum::qec`) :
+LIFT includes a complete QEC module (`lift-quantum::qec`):
 
 ```rust
-// Analyse QEC : 10 qubits logiques, profondeur 100, surface code d=7
+// QEC analysis: 10 logical qubits, depth 100, surface code d=7
 let analysis = QecAnalysis::analyse(
-    10,                                    // qubits logiques
-    100,                                   // profondeur circuit
-    QecCode::SurfaceCode { distance: 7 },  // code surface
-    0.001,                                 // taux d'erreur physique 0.1%
+    10,                                    // logical qubits
+    100,                                   // circuit depth
+    QecCode::SurfaceCode { distance: 7 },  // surface code
+    0.001,                                 // physical error rate 0.1%
 );
-// Resultat : 490 qubits physiques, erreur logique ~10^-8
+// Result: 490 physical qubits, logical error ~10^-8
 ```
 
-### Codes QEC supportes
+### Supported QEC Codes
 
-| Code | Qubits phys. / logique | Distance | Seuil erreur | Usage |
-|------|------------------------|----------|--------------|-------|
+| Code | Phys. qubits / logical | Distance | Error threshold | Usage |
+|------|------------------------|----------|----------------|-------|
 | **Surface Code** | d^2 | d | ~1% | Standard NISQ/FTQC |
-| **Steane Code** | 7 | 3 | ~0.5% | Petits circuits |
-| **Shor Code** | 9 | 3 | ~0.3% | Pedagogique |
-| **Repetition Code** | d | d | ~3% | Bit-flip uniquement |
-| **LDPC Code** | n/k | ~sqrt(n) | ~0.8% | Overhead reduit |
+| **Steane Code** | 7 | 3 | ~0.5% | Small circuits |
+| **Shor Code** | 9 | 3 | ~0.3% | Educational |
+| **Repetition Code** | d | d | ~3% | Bit-flip only |
+| **LDPC Code** | n/k | ~sqrt(n) | ~0.8% | Reduced overhead |
 
-### Comment LIFT l'exploite
+### How LIFT Exploits This
 
-| Etape | Action de LIFT |
-|-------|----------------|
-| **Analyse** | Calcule qubits physiques, taux d'erreur logique, profondeur syndrome |
-| **Suggest** | `suggest_distance()` recommande la distance minimale pour un taux d'erreur cible |
-| **Budget** | Verifie que le QPU a assez de qubits physiques (ex : IBM Eagle = 127) |
+| Stage | LIFT Action |
+|-------|-------------|
+| **Analyse** | Computes physical qubits, logical error rate, syndrome depth |
+| **Suggest** | `suggest_distance()` recommends the minimum distance for a target error rate |
+| **Budget** | Verifies the QPU has enough physical qubits (e.g. IBM Eagle = 127) |
 
 ---
 
-## 3.3 Circuits variationnels (VQE)
+## 3.3 Variational Circuits (VQE)
 
-### Probleme
+### Problem
 
-Trouver l'etat fondamental d'un Hamiltonien moleculaire : energie de liaison, geometrie d'equilibre, proprietes electroniques.
+Find the ground state of a molecular Hamiltonian: binding energy, equilibrium geometry, electronic properties.
 
 ### Solution LIFT
 
@@ -582,7 +582,7 @@ func @vqe(%q0: qubit, %q1: qubit, %q2: qubit, %q3: qubit)
   %q0b, %q1b = quantum.cx %q0a, %q1a
   %q1c, %q2b = quantum.cx %q1b, %q2a
   %q2c, %q3b = quantum.cx %q2b, %q3a
-  // Couche parametrisee
+  // Parameterised layer
   %q0c = quantum.rz %q0b
   %q1d = quantum.rz %q1c
   %q2d = quantum.rz %q2c
@@ -591,51 +591,51 @@ func @vqe(%q0: qubit, %q1: qubit, %q2: qubit, %q3: qubit)
 }
 ```
 
-### Comment LIFT l'exploite
+### How LIFT Exploits This
 
-| Etape | Action de LIFT |
-|-------|----------------|
-| **Hybrid** | `hybrid.vqe_ansatz` gere la boucle classique-quantique |
-| **Gradient** | **Parameter shift** : gradients exacts en 2N evaluations. **Adjoint** : 1 evaluation (simulateurs) |
-| **Noise** | Fidelite porte par porte. Si < seuil, recommande un circuit plus court ou meilleur QPU |
-| **Budget reactif** | Arrete l'optimisation VQE si le budget temps est ecoule |
+| Stage | LIFT Action |
+|-------|-------------|
+| **Hybrid** | `hybrid.vqe_ansatz` manages the classical-quantum loop |
+| **Gradient** | **Parameter shift**: exact gradients in 2N evaluations. **Adjoint**: 1 evaluation (simulators) |
+| **Noise** | Gate-by-gate fidelity. If < threshold, recommends a shorter circuit or better QPU |
+| **Reactive budget** | Stops VQE optimisation if the time budget is exhausted |
 
-### Types d'ansatz
+### Ansatz Types
 
 | Type | Description | Usage |
 |------|-------------|-------|
-| `HardwareEfficient` | RY + CX alternatifs | NISQ, circuits courts |
-| `StronglyEntangling` | Entanglement total | Expressivite maximale |
-| `TwoLocal` | Couches locales + entanglement | Compromis |
-| `UCCSD` | Unitary Coupled Cluster | Chimie quantique |
-| `Custom` | Defini par l'utilisateur | Recherche |
+| `HardwareEfficient` | Alternating RY + CX | NISQ, short circuits |
+| `StronglyEntangling` | Full entanglement | Maximum expressivity |
+| `TwoLocal` | Local layers + entanglement | Trade-off |
+| `UCCSD` | Unitary Coupled Cluster | Quantum chemistry |
+| `Custom` | User-defined | Research |
 
 ---
 
-## 3.4 Optimisation combinatoire (QAOA)
+## 3.4 Combinatorial Optimisation (QAOA)
 
-### Probleme
+### Problem
 
-Resoudre des problemes NP-difficiles : coupe maximale (MaxCut), voyageur de commerce, coloration de graphe, allocation de ressources.
+Solve NP-hard problems: maximum cut (MaxCut), travelling salesman, graph colouring, resource allocation.
 
 ### Solution LIFT
 
 ```
 func @qaoa_maxcut(%q0: qubit, %q1: qubit, %q2: qubit, %q3: qubit)
     -> (qubit, qubit, qubit, qubit) {
-  // Superposition initiale
+  // Initial superposition
   %q0a = quantum.h %q0
   %q1a = quantum.h %q1
   %q2a = quantum.h %q2
   %q3a = quantum.h %q3
-  // Couche probleme (ZZ interactions = aretes du graphe)
+  // Problem layer (ZZ interactions = graph edges)
   %q0b, %q1b = quantum.cx %q0a, %q1a
-  %q1c = quantum.rz %q1b          // gamma * poids arete (0,1)
+  %q1c = quantum.rz %q1b          // gamma * edge weight (0,1)
   %q0c, %q1d = quantum.cx %q0b, %q1c
   %q2b, %q3b = quantum.cx %q2a, %q3a
-  %q3c = quantum.rz %q3b          // gamma * poids arete (2,3)
+  %q3c = quantum.rz %q3b          // gamma * edge weight (2,3)
   %q2c, %q3d = quantum.cx %q2b, %q3c
-  // Couche mixer
+  // Mixer layer
   %q0d = quantum.rx %q0c          // beta
   %q1e = quantum.rx %q1d
   %q2d = quantum.rx %q2c
@@ -644,35 +644,35 @@ func @qaoa_maxcut(%q0: qubit, %q1: qubit, %q2: qubit, %q3: qubit)
 }
 ```
 
-### Comment LIFT l'exploite
+### How LIFT Exploits This
 
-| Etape | Action de LIFT |
-|-------|----------------|
-| **Hybrid** | `hybrid.qaoa_layer` empile P couches, optimise 2P parametres (gamma, beta) |
-| **Topologie** | Insere des SWAP pour adapter le graphe probleme a la topologie QPU |
-| **Noise-aware** | Reordonne les CX sur les paires de qubits ayant la meilleure fidelite |
-| **Layout mapping** | SABRE mappe qubits logiques → physiques en minimisant les SWAP |
-| **Predict** | Shots necessaires pour distinguer la meilleure solution |
+| Stage | LIFT Action |
+|-------|-------------|
+| **Hybrid** | `hybrid.qaoa_layer` stacks P layers, optimises 2P parameters (gamma, beta) |
+| **Topology** | Inserts SWAPs to adapt the problem graph to the QPU topology |
+| **Noise-aware** | Reorders CX gates onto qubit pairs with the best fidelity |
+| **Layout mapping** | SABRE maps logical → physical qubits, minimising SWAPs |
+| **Predict** | Shots needed to distinguish the best solution |
 
 ---
 
-## 3.5 Etats intriques et protocoles quantiques
+## 3.5 Entangled States and Quantum Protocols
 
-### Probleme
+### Problem
 
-Preparer des etats intriques pour la communication quantique, teleportation, distribution de cles (QKD), benchmarking de processeurs.
+Prepare entangled states for quantum communication, teleportation, key distribution (QKD), processor benchmarking.
 
 ### Solution LIFT
 
 ```
-// Etat de Bell |Phi+> = (|00> + |11>) / sqrt(2)
+// Bell state |Phi+> = (|00> + |11>) / sqrt(2)
 func @bell_state(%q0: qubit, %q1: qubit) -> (qubit, qubit) {
   %q0a = quantum.h %q0
   %q0b, %q1a = quantum.cx %q0a, %q1
   return %q0b, %q1a
 }
 
-// Etat GHZ a 4 qubits
+// 4-qubit GHZ state
 func @ghz_state(%q0: qubit, %q1: qubit, %q2: qubit, %q3: qubit)
     -> (qubit, qubit, qubit, qubit) {
   %q0a = quantum.h %q0
@@ -683,29 +683,29 @@ func @ghz_state(%q0: qubit, %q1: qubit, %q2: qubit, %q3: qubit)
 }
 ```
 
-### Comment LIFT l'exploite
+### How LIFT Exploits This
 
-| Etape | Action de LIFT |
-|-------|----------------|
-| **Verify** | Linearite stricte : chaque qubit consomme exactement une fois |
-| **Analyse** | Bell = 2 portes, fidelite ~0.99. GHZ(4) = 4 portes, fidelite ~0.97 |
-| **Export** | OpenQASM 3.0 executable sur IBM Quantum ou Amazon Braket |
-| **QEC** | Calcule le code correcteur necessaire pour proteger les qubits EPR |
+| Stage | LIFT Action |
+|-------|-------------|
+| **Verify** | Strict linearity: each qubit consumed exactly once |
+| **Analyse** | Bell = 2 gates, fidelity ~0.99. GHZ(4) = 4 gates, fidelity ~0.97 |
+| **Export** | OpenQASM 3.0 executable on IBM Quantum or Amazon Braket |
+| **QEC** | Computes the error-correcting code needed to protect EPR qubits |
 
 ---
 
-# Partie IV — Problemes hybrides IA + Quantique
+# Part IV — Hybrid AI + Quantum Problems
 
-## 4.1 Imagerie medicale hybride (CNN + VQC)
+## 4.1 Hybrid Medical Imaging (CNN + VQC)
 
-### Probleme
+### Problem
 
-Classifier des radiographies thoraciques (pneumonie / normal) en combinant un CNN pour l'extraction de features et un circuit quantique variationnel pour la decision, potentiellement plus performant sur de petits jeux de donnees.
+Classify chest X-rays (pneumonia / normal) by combining a CNN for feature extraction and a variational quantum circuit for the decision, potentially more performant on small datasets.
 
 ### Solution LIFT
 
 ```
-// 1. CNN encoder (GPU) : image → vecteur 4D
+// 1. CNN encoder (GPU): image → 4D vector
 func @cnn_encoder(%img: tensor<1x1x128x128xf32>) -> tensor<1x4xf32> {
   %c1 = tensor.conv2d %img, %w1
   %r1 = tensor.relu %c1
@@ -717,11 +717,11 @@ func @cnn_encoder(%img: tensor<1x1x128x128xf32>) -> tensor<1x4xf32> {
   return %features
 }
 
-// 2. Transfert + encodage
+// 2. Transfer + encoding
 %encoded = hybrid.encode %features           // angle encoding
 %qubits = hybrid.gpu_to_qpu %encoded         // GPU → QPU
 
-// 3. VQC classifier (QPU) : 4 qubits
+// 3. VQC classifier (QPU): 4 qubits
 func @vqc(%q0: qubit, %q1: qubit, %q2: qubit, %q3: qubit)
     -> (qubit, qubit, qubit, qubit) {
   %q0a = quantum.ry %q0
@@ -737,43 +737,43 @@ func @vqc(%q0: qubit, %q1: qubit, %q2: qubit, %q3: qubit)
   return %q0c, %q1c, %q2c, %q3c
 }
 
-// 4. Mesure + post-traitement
+// 4. Measurement + post-processing
 %results = hybrid.measure_expectation %qubits
 %class = hybrid.qpu_to_gpu %results
 %probs = tensor.softmax %class
 ```
 
-### Comment LIFT l'exploite (pipeline complet)
+### How LIFT Exploits This (full pipeline)
 
-| Composant | Parse | Analyse | Optimise | Predict | Export |
+| Component | Parse | Analyse | Optimise | Predict | Export |
 |-----------|-------|---------|----------|---------|--------|
-| **CNN** | Types tensoriels 4D | ~10 MFLOP, ~500 KiB | Fusion conv+relu, DCE | A100 : 0.001 ms | LLVM IR |
-| **Interface** | Transfert GPU-QPU | Cout encoding O(4) | Fusion encode+linear | Latence ~1 ms | Script |
-| **VQC** | Linearite qubit | 10 portes, fidelite ~0.97 | Rotation merge | IBM : 7.9 ms | OpenQASM |
+| **CNN** | 4D tensor types | ~10 MFLOP, ~500 KiB | Conv+relu fusion, DCE | A100: 0.001 ms | LLVM IR |
+| **Interface** | GPU-QPU transfer | Encoding cost O(4) | Encode+linear fusion | Latency ~1 ms | Script |
+| **VQC** | Qubit linearity | 10 gates, fidelity ~0.97 | Rotation merge | IBM: 7.9 ms | OpenQASM |
 
-### Strategies d'encodage
+### Encoding Strategies
 
-| Strategie | Qubits | Profondeur | Usage |
-|-----------|--------|------------|-------|
-| `AngleEncoding` | N | 1 | Vecteurs petits (< 20 features) |
-| `AmplitudeEncoding` | log2(N) | N | Vecteurs grands (compression) |
-| `BasisEncoding` | N | 1 | Donnees binaires |
-| `IQPEncoding` | N | 2N | Expressivite elevee |
-| `HamiltonianEncoding` | N | N | Physique-inspire |
+| Strategy | Qubits | Depth | Usage |
+|----------|--------|-------|-------|
+| `AngleEncoding` | N | 1 | Small vectors (< 20 features) |
+| `AmplitudeEncoding` | log2(N) | N | Large vectors (compression) |
+| `BasisEncoding` | N | 1 | Binary data |
+| `IQPEncoding` | N | 2N | High expressivity |
+| `HamiltonianEncoding` | N | N | Physics-inspired |
 | `KernelEncoding` | N | 3N | Quantum kernel methods |
 
 ---
 
-## 4.2 Decouverte de medicaments (GNN + VQE)
+## 4.2 Drug Discovery (GNN + VQE)
 
-### Probleme
+### Problem
 
-Trouver de nouvelles molecules therapeutiques en combinant un GNN pour le screening rapide et un VQE pour le calcul precis de l'energie des meilleurs candidats.
+Find new therapeutic molecules by combining a GNN for rapid screening and a VQE for precise energy calculation of the best candidates.
 
 ### Solution LIFT
 
 ```
-// Etape 1 : GNN screening (GPU) — filtre 10 000 molecules
+// Step 1: GNN screening (GPU) — filters 10,000 molecules
 func @molecule_screen(%atoms: tensor<50x16xf32>,
                        %bonds: tensor<50x50xf32>) -> tensor<1x1xf32> {
   %msg = tensor.gnn_message_passing %atoms, %bonds, %w
@@ -782,142 +782,142 @@ func @molecule_screen(%atoms: tensor<50x16xf32>,
   return %score
 }
 
-// Etape 2 : VQE energie (QPU) — top-K molecules
+// Step 2: VQE energy (QPU) — top-K molecules
 %circuit = hybrid.vqe_ansatz %qubits          // UCCSD ansatz
-%energy = hybrid.measure_expectation %circuit  // energie de liaison
+%energy = hybrid.measure_expectation %circuit  // binding energy
 ```
 
-### Comment LIFT l'exploite
+### How LIFT Exploits This
 
-| Etape | Action de LIFT |
-|-------|----------------|
-| **GNN** | Filtre 10 000 molecules en secondes. Optimise les lookups sparse |
-| **VQE** | Energie des 10 meilleurs candidats. Budget reactif arrete si convergence |
-| **Gradient** | Adjoint differentiation (1 evaluation = le plus efficace) |
-| **Noise** | Fidelite suffisante pour precision chimique (1.6 mHartree) ? |
-| **QEC** | Si erreurs trop grandes, recommande un code correcteur |
+| Stage | LIFT Action |
+|-------|-------------|
+| **GNN** | Filters 10,000 molecules in seconds. Optimises sparse lookups |
+| **VQE** | Energy of the 10 best candidates. Reactive budget stops on convergence |
+| **Gradient** | Adjoint differentiation (1 evaluation = most efficient) |
+| **Noise** | Fidelity sufficient for chemical accuracy (1.6 mHartree)? |
+| **QEC** | If errors too large, recommends an error-correcting code |
 
 ---
 
-## 4.3 Finance quantique (QAOA + ML classique)
+## 4.3 Quantum Finance (QAOA + Classical ML)
 
-### Probleme
+### Problem
 
-Optimiser un portefeuille d'investissement : modele classique pour predire les rendements + QAOA pour la selection discrete d'actifs sous contraintes.
+Optimise an investment portfolio: classical model to predict returns + QAOA for discrete asset selection under constraints.
 
 ### Solution LIFT
 
 ```
-// Etape 1 : Prediction rendements (LSTM sur GPU)
+// Step 1: Return prediction (LSTM on GPU)
 func @returns(%prices: tensor<1x252x50xf32>) -> tensor<1x50xf32> {
   %h, %c = tensor.lstm_cell %prices, %h0, %c0, %w
   %returns = tensor.linear %h, %wfc
   return %returns
 }
 
-// Etape 2 : Selection portefeuille (QAOA sur QPU)
-// Chaque qubit = decision d'inclure un actif
-// Hamiltonien = max rendement - min risque - contrainte budget
+// Step 2: Portfolio selection (QAOA on QPU)
+// Each qubit = decision to include an asset
+// Hamiltonian = max return - min risk - budget constraint
 %layer = hybrid.qaoa_layer %qubits, %gamma, %beta
 %samples = hybrid.measure_samples %qubits, 4096
 %best = tensor.topk %samples, 10
 ```
 
-### Comment LIFT l'exploite
+### How LIFT Exploits This
 
-| Etape | Action de LIFT |
-|-------|----------------|
-| **LSTM** | Predit rendements de 50 actifs. Identifie goulot memoire (etats caches) |
-| **QAOA** | 50 qubits = 50 actifs, P=3 couches. Adapte a heavy-hex (127 qubits) |
-| **Budget** | Total < 10 s (contrainte trading). Repartition : 1 ms LSTM + 9 s QAOA |
-| **Energie** | Cout energetique de 4096 shots sur QPU supraconducteur |
+| Stage | LIFT Action |
+|-------|-------------|
+| **LSTM** | Predicts returns for 50 assets. Identifies memory bottleneck (cached states) |
+| **QAOA** | 50 qubits = 50 assets, P=3 layers. Adapted to heavy-hex (127 qubits) |
+| **Budget** | Total < 10 s (trading constraint). Split: 1 ms LSTM + 9 s QAOA |
+| **Energy** | Energy cost of 4096 shots on superconducting QPU |
 
 ---
 
-## 4.4 Apprentissage automatique quantique (QML)
+## 4.4 Quantum Machine Learning (QML)
 
-### Probleme
+### Problem
 
-Utiliser des noyaux quantiques (quantum kernels) pour des taches de classification ou regression ou les espaces de features quantiques offrent un avantage.
+Use quantum kernels for classification or regression tasks where quantum feature spaces offer an advantage.
 
 ### Solution LIFT
 
 ```
-// Quantum Kernel : calcule la similarite dans l'espace de Hilbert
+// Quantum Kernel: computes similarity in Hilbert space
 %encoded_x = hybrid.encode %x, "iqp"          // IQP encoding
 %encoded_y = hybrid.encode %y, "iqp"
 %kernel = hybrid.quantum_kernel %encoded_x, %encoded_y
 %similarity = hybrid.measure_expectation %kernel
 
-// Classification avec kernel quantique
+// Classification with quantum kernel
 %svm_result = tensor.matmul %kernel_matrix, %alpha
 %class = tensor.sigmoid %svm_result
 ```
 
-### Comment LIFT l'exploite
+### How LIFT Exploits This
 
-| Etape | Action de LIFT |
-|-------|----------------|
-| **Encoding** | IQP encoding pour expressivite maximale (profondeur 2N) |
-| **Kernel** | `hybrid.quantum_kernel` calcule les elements de la matrice de Gram |
-| **Predict** | Nombre de shots pour estimer chaque element avec precision epsilon |
-| **Analyse** | Cout total = N^2 * shots * circuit_time (N = taille du dataset) |
+| Stage | LIFT Action |
+|-------|-------------|
+| **Encoding** | IQP encoding for maximum expressivity (depth 2N) |
+| **Kernel** | `hybrid.quantum_kernel` computes Gram matrix elements |
+| **Predict** | Number of shots to estimate each element with precision epsilon |
+| **Analyse** | Total cost = N^2 * shots * circuit_time (N = dataset size) |
 
-### Feature Maps disponibles
+### Available Feature Maps
 
 | Feature Map | Description | Usage |
 |-------------|-------------|-------|
-| `ZZFeatureMap` | Interactions ZZ entre features | Classification standard |
-| `PauliFeatureMap` | Produits de Pauli | Expressivite elevee |
-| `AngleEncoding` | Rotation simple | Donnees continues |
-| `AmplitudeEncoding` | Amplitudes d'etat | Compression de donnees |
+| `ZZFeatureMap` | ZZ interactions between features | Standard classification |
+| `PauliFeatureMap` | Pauli products | High expressivity |
+| `AngleEncoding` | Simple rotation | Continuous data |
+| `AmplitudeEncoding` | State amplitudes | Data compression |
 
 ---
 
-## 4.5 Science des materiaux (VQE + Tenseur)
+## 4.5 Materials Science (VQE + Tensor)
 
-### Probleme
+### Problem
 
-Predire les proprietes de nouveaux materiaux (supraconducteurs, batteries, catalyseurs) en combinant des simulations quantiques precises avec des modeles ML pour le screening.
+Predict properties of new materials (superconductors, batteries, catalysts) by combining precise quantum simulations with ML models for screening.
 
 ### Solution LIFT
 
 ```
-// ML rapide : prediction de proprietes (GPU)
+// Fast ML: property prediction (GPU)
 func @material_screen(%composition: tensor<1x32xf32>) -> tensor<1x5xf32> {
   %h1 = tensor.linear %composition, %w1
   %a1 = tensor.gelu %h1
   %h2 = tensor.linear %a1, %w2
   %props = tensor.sigmoid %h2
-  return %props                              // 5 proprietes predites
+  return %props                              // 5 predicted properties
 }
 
-// VQE precis pour les candidats prometteurs (QPU)
-%ansatz = hybrid.vqe_ansatz %qubits          // UCCSD pour chimie
-%energy = hybrid.measure_expectation %ansatz  // energie du materiau
+// Precise VQE for promising candidates (QPU)
+%ansatz = hybrid.vqe_ansatz %qubits          // UCCSD for chemistry
+%energy = hybrid.measure_expectation %ansatz  // material energy
 ```
 
-### Comment LIFT l'exploite
+### How LIFT Exploits This
 
-| Etape | Action de LIFT |
-|-------|----------------|
-| **Screening** | MLP rapide sur GPU, filtre des milliers de compositions |
-| **VQE** | Calcul quantique precis des meilleurs candidats |
-| **Co-execution** | `hybrid.co_execute` pour paralleliser screening et VQE |
-| **Sync** | `SyncPolicy::Pipeline` pour traiter les candidats en flux |
+| Stage | LIFT Action |
+|-------|-------------|
+| **Screening** | Fast MLP on GPU, filters thousands of compositions |
+| **VQE** | Precise quantum computation for the best candidates |
+| **Co-execution** | `hybrid.co_execute` to parallelise screening and VQE |
+| **Sync** | `SyncPolicy::Pipeline` to process candidates in a stream |
 
 ---
 
-## 4.6 Detection d'anomalies hybride
+## 4.6 Hybrid Anomaly Detection
 
-### Probleme
+### Problem
 
-Detecter des anomalies dans des donnees complexes (fraude financiere, cyberattaque, defauts industriels) en combinant un autoencodeur classique et un circuit quantique pour la detection dans un espace de features quantique.
+Detect anomalies in complex data (financial fraud, cyberattacks, industrial defects) by combining a classical autoencoder and a quantum circuit for detection in a quantum feature space.
 
 ### Solution LIFT
 
 ```
-// Autoencodeur classique (GPU) : compression des features
+// Classical autoencoder (GPU): feature compression
 func @encoder(%data: tensor<1x100xf32>) -> tensor<1x8xf32> {
   %h1 = tensor.linear %data, %w1
   %a1 = tensor.relu %h1
@@ -925,59 +925,59 @@ func @encoder(%data: tensor<1x100xf32>) -> tensor<1x8xf32> {
   return %latent
 }
 
-// Detection quantique : mesure de distance dans l'espace de Hilbert
+// Quantum detection: distance measurement in Hilbert space
 %encoded = hybrid.encode %latent, "angle"
 %circuit = hybrid.vqc_layer %encoded
 %anomaly_score = hybrid.measure_expectation %circuit
 ```
 
-### Comment LIFT l'exploite
+### How LIFT Exploits This
 
-| Etape | Action de LIFT |
-|-------|----------------|
-| **Encoder** | Compresse 100 features → 8 dimensions. Analyse FLOPs et memoire |
-| **VQC** | Mesure la distance dans l'espace quantique. Les anomalies ont un score different |
-| **Co-execute** | `hybrid.co_execute` + `SyncPolicy::Asynchronous` pour le temps reel |
-| **Budget** | Latence < 10 ms pour detection en temps reel |
+| Stage | LIFT Action |
+|-------|-------------|
+| **Encoder** | Compresses 100 features → 8 dimensions. Analyses FLOPs and memory |
+| **VQC** | Measures distance in quantum space. Anomalies have a different score |
+| **Co-execute** | `hybrid.co_execute` + `SyncPolicy::Asynchronous` for real-time |
+| **Budget** | Latency < 10 ms for real-time detection |
 
 ---
 
-# Partie V — Capacites transversales
+# Part V — Cross-Cutting Capabilities
 
-Ces capacites s'appliquent a **tous** les problemes decrits dans les parties II, III et IV.
+These capabilities apply to **all** problems described in Parts II, III, and IV.
 
-## 5.1 Pipeline d'optimisation (11 passes)
+## 5.1 Optimisation Pipeline (11 Passes)
 
-LIFT dispose de 11 passes d'optimisation organisees en trois familles :
+LIFT provides 11 optimisation passes organised into three families:
 
-### Passes classiques (IA)
+### Classical Passes (AI)
 
-| Passe | Description | Gain |
-|-------|-------------|------|
-| **Canonicalize** | Simplifie `x+0 → x`, `reshape(reshape(x)) → reshape(x)`, `mul(x,1) → x` | Reduction du graphe |
-| **Constant Folding** | Evalue les expressions constantes a la compilation | Moins d'ops au runtime |
-| **Dead Code Elimination** | Supprime les operations dont les resultats ne sont jamais utilises | -10 a -30% d'ops |
-| **Tensor Fusion** | Fusionne `conv2d + batchnorm + relu` en un seul kernel | -30% memoire, -20% latence |
-| **Flash Attention** | Remplace l'attention standard O(n^2) par FlashAttention O(n) | -90% memoire pour seq longues |
-| **Common Subexpr Elim** | Detecte et elimine les calculs redondants | Variable |
-| **Quantisation Pass** | Annote les ops compatibles INT8/INT4/FP8 | 2-8x moins de memoire |
+| Pass | Description | Gain |
+|------|-------------|------|
+| **Canonicalize** | Simplifies `x+0 → x`, `reshape(reshape(x)) → reshape(x)`, `mul(x,1) → x` | Graph reduction |
+| **Constant Folding** | Evaluates constant expressions at compile time | Fewer ops at runtime |
+| **Dead Code Elimination** | Removes operations whose results are never used | -10 to -30% ops |
+| **Tensor Fusion** | Fuses `conv2d + batchnorm + relu` into a single kernel | -30% memory, -20% latency |
+| **Flash Attention** | Replaces standard O(n^2) attention with FlashAttention O(n) | -90% memory for long sequences |
+| **Common Subexpr Elim** | Detects and eliminates redundant computations | Variable |
+| **Quantisation Pass** | Annotates INT8/INT4/FP8-compatible ops | 2-8x less memory |
 
-### Passes quantiques
+### Quantum Passes
 
-| Passe | Description | Gain |
-|-------|-------------|------|
-| **Gate Cancellation** | Supprime les paires auto-inverses : `H*H → I`, `X*X → I` | Moins de portes |
-| **Rotation Merge** | Fusionne les rotations consecutives : `Rz(a)*Rz(b) → Rz(a+b)` | Profondeur reduite |
-| **Noise-Aware Schedule** | Reordonne les portes 2Q sur les paires de qubits haute fidelite | Meilleure fidelite |
-| **Layout Mapping** | Algorithme SABRE : mappe qubits logiques → physiques, minimise les SWAP | Circuit executable |
+| Pass | Description | Gain |
+|------|-------------|------|
+| **Gate Cancellation** | Removes self-inverse pairs: `H*H → I`, `X*X → I` | Fewer gates |
+| **Rotation Merge** | Fuses consecutive rotations: `Rz(a)*Rz(b) → Rz(a+b)` | Reduced depth |
+| **Noise-Aware Schedule** | Reorders 2Q gates onto high-fidelity qubit pairs | Better fidelity |
+| **Layout Mapping** | SABRE algorithm: maps logical → physical qubits, minimises SWAPs | Executable circuit |
 
-### Utilisation CLI
+### CLI Usage
 
 ```bash
 lift optimise model.lif --config config.lith -o optimised.lif
 ```
 
-### Utilisation programmatique (Rust)
+### Programmatic Usage (Rust)
 
 ```rust
 let mut pm = PassManager::new();
@@ -992,43 +992,43 @@ let results = pm.run_all(&mut ctx);
 
 ---
 
-## 5.2 Prediction de performance
+## 5.2 Performance Prediction
 
-### Modele roofline (GPU classique)
+### Roofline Model (Classical GPU)
 
-LIFT modelise deux GPU NVIDIA avec des parametres precis :
+LIFT models two NVIDIA GPUs with precise parameters:
 
-| GPU | TFLOPS FP16 | Bande passante | VRAM |
-|-----|-------------|----------------|------|
-| **A100** | 312 TFLOPS | 2039 GB/s | 80 Go |
-| **H100** | 989 TFLOPS | 3350 GB/s | 80 Go |
+| GPU | TFLOPS FP16 | Bandwidth | VRAM |
+|-----|-------------|-----------|------|
+| **A100** | 312 TFLOPS | 2039 GB/s | 80 GB |
+| **H100** | 989 TFLOPS | 3350 GB/s | 80 GB |
 
-Pour chaque modele, LIFT calcule :
+For each model, LIFT computes:
 
-- **Temps compute** = FLOPs / TFLOPS
-- **Temps memoire** = Bytes / Bande passante
-- **Temps predit** = max(compute, memoire) → identifie le goulot
-- **Intensite arithmetique** = FLOPs / Bytes → compare au point de croisement
-- **Nombre de GPU** = ceil(memoire_totale / VRAM_par_GPU)
+- **Compute time** = FLOPs / TFLOPS
+- **Memory time** = Bytes / Bandwidth
+- **Predicted time** = max(compute, memory) → identifies the bottleneck
+- **Arithmetic intensity** = FLOPs / Bytes → compared to the crossover point
+- **Number of GPUs** = ceil(total_memory / VRAM_per_GPU)
 
-### Modele quantique
+### Quantum Model
 
-LIFT modelise trois types de QPU :
+LIFT models three types of QPU:
 
-| QPU | Temps 1Q | Temps 2Q | Fidelite 1Q | Fidelite 2Q | Qubits |
-|-----|----------|----------|-------------|-------------|--------|
-| **Supraconducteur** (IBM) | 0.02 us | 0.3 us | 99.9% | 99.0% | 127 |
-| **Ions pieges** (IonQ) | 10 us | 200 us | 99.97% | 99.5% | 32 |
-| **Atomes neutres** | 1 us | 5 us | 99.5% | 98.0% | 256 |
+| QPU | 1Q Time | 2Q Time | 1Q Fidelity | 2Q Fidelity | Qubits |
+|-----|---------|---------|-------------|-------------|--------|
+| **Superconducting** (IBM) | 0.02 us | 0.3 us | 99.9% | 99.0% | 127 |
+| **Trapped ions** (IonQ) | 10 us | 200 us | 99.97% | 99.5% | 32 |
+| **Neutral atoms** | 1 us | 5 us | 99.5% | 98.0% | 256 |
 
-Pour chaque circuit, LIFT calcule :
+For each circuit, LIFT computes:
 
-- **Fidelite estimee** = prod(fidelite_1Q^n1Q * fidelite_2Q^n2Q)
-- **Temps de circuit** = n1Q * t1Q + n2Q * t2Q + nMeas * tMeas
-- **Shots necessaires** = 1 / (precision^2 * fidelite^2)
-- **Temps total** = shots * temps_circuit
+- **Estimated fidelity** = prod(fidelity_1Q^n1Q * fidelity_2Q^n2Q)
+- **Circuit time** = n1Q * t1Q + n2Q * t2Q + nMeas * tMeas
+- **Required shots** = 1 / (precision^2 * fidelity^2)
+- **Total time** = shots * circuit_time
 
-### Utilisation CLI
+### CLI Usage
 
 ```bash
 lift predict model.lif --device a100 --quantum-device ibm_kyoto
@@ -1036,33 +1036,33 @@ lift predict model.lif --device a100 --quantum-device ibm_kyoto
 
 ---
 
-## 5.3 Modelisation du bruit quantique
+## 5.3 Quantum Noise Modelling
 
-LIFT modelise 8 types de bruit quantique :
+LIFT models 8 types of quantum noise:
 
-| Modele de bruit | Formule de fidelite | Usage |
-|-----------------|---------------------|-------|
+| Noise Model | Fidelity Formula | Usage |
+|-------------|-----------------|-------|
 | **Ideal** | F = 1.0 | Reference |
-| **Depolarisant** | F = 1 - p | Bruit generique |
-| **Amortissement amplitude** | F = 1 - gamma/2 | Decroissance T1 |
-| **Amortissement phase** | F = 1 - gamma/2 | Dephasing T2 |
-| **Bit-flip** | F = 1 - p | Erreur classique |
-| **Phase-flip** | F = 1 - p | Erreur de phase |
-| **Relaxation thermique** | F = (1 + e^{-t/T1} + 2*e^{-t/T2}) / 4 | Realiste (IBM) |
-| **Kraus** | F ≈ 0.99 (approx.) | Canal quantique general |
+| **Depolarising** | F = 1 - p | Generic noise |
+| **Amplitude damping** | F = 1 - gamma/2 | T1 decay |
+| **Phase damping** | F = 1 - gamma/2 | T2 dephasing |
+| **Bit-flip** | F = 1 - p | Classical error |
+| **Phase-flip** | F = 1 - p | Phase error |
+| **Thermal relaxation** | F = (1 + e^{-t/T1} + 2*e^{-t/T2}) / 4 | Realistic (IBM) |
+| **Kraus** | F ≈ 0.99 (approx.) | General quantum channel |
 
-### Canaux de Kraus
+### Kraus Channels
 
-LIFT dispose d'une algebre complete de canaux de Kraus (`lift-quantum::kraus`) :
+LIFT provides a complete Kraus channel algebra (`lift-quantum::kraus`):
 
-- **Depolarisant** : `KrausChannel::depolarizing(p, n_qubits)`
-- **Amortissement amplitude** : `KrausChannel::amplitude_damping(gamma)`
-- **Amortissement phase** : `KrausChannel::phase_damping(lambda)`
-- **Canal de Pauli** : `KrausChannel::pauli(px, py, pz)`
-- **Composition** : `channel1.compose(&channel2)`
-- **Fidelite moyenne** : `channel.average_gate_fidelity()`
+- **Depolarising**: `KrausChannel::depolarizing(p, n_qubits)`
+- **Amplitude damping**: `KrausChannel::amplitude_damping(gamma)`
+- **Phase damping**: `KrausChannel::phase_damping(lambda)`
+- **Pauli channel**: `KrausChannel::pauli(px, py, pz)`
+- **Composition**: `channel1.compose(&channel2)`
+- **Average fidelity**: `channel.average_gate_fidelity()`
 
-### Suivi du bruit porte par porte
+### Gate-by-Gate Noise Tracking
 
 ```rust
 let mut circuit = CircuitNoise::new();
@@ -1070,102 +1070,102 @@ let g1q = GateNoise::with_depolarizing(0.999, 0.02);  // 1Q gate
 let g2q = GateNoise::with_depolarizing(0.99, 0.3);    // 2Q gate
 
 circuit.add_gate(&g1q, false);  // RY
-circuit.add_gate(&g2q, true);   // CX — source dominante d'erreur
+circuit.add_gate(&g2q, true);   // CX — dominant error source
 // circuit.total_fidelity, circuit.gate_count, circuit.meets_threshold(0.90)
 ```
 
 ---
 
-## 5.4 Topologie des processeurs quantiques
+## 5.4 Quantum Processor Topology
 
-LIFT modelise 5 topologies de QPU :
+LIFT models 5 QPU topologies:
 
-| Topologie | Constructeur | Qubits | Connectivite |
-|-----------|-------------|--------|-------------|
-| **Grid** (n x m) | Google Sycamore | n*m | 4 voisins max |
-| **Heavy-hex** | IBM Eagle/Osprey | 127 | 2-3 voisins |
-| **All-to-all** | IonQ | variable | Tous connectes |
-| **Linear** | Chain simple | variable | 2 voisins |
-| **Tree** | Hierarchique | variable | log(n) profondeur |
+| Topology | Manufacturer | Qubits | Connectivity |
+|----------|-------------|--------|-------------|
+| **Grid** (n x m) | Google Sycamore | n*m | 4 neighbours max |
+| **Heavy-hex** | IBM Eagle/Osprey | 127 | 2-3 neighbours |
+| **All-to-all** | IonQ | variable | Fully connected |
+| **Linear** | Simple chain | variable | 2 neighbours |
+| **Tree** | Hierarchical | variable | log(n) depth |
 
-### Fonctionnalites
+### Features
 
-Pour chaque topologie, LIFT fournit :
+For each topology, LIFT provides:
 
-- **Connectivite** : `are_connected(q0, q1)` — deux qubits sont-ils voisins ?
-- **Plus court chemin** : `shortest_path(from, to)` — BFS sur le graphe
-- **Distance SWAP** : `swap_distance(from, to)` — nombre de SWAP necessaires
-- **Voisins** : `neighbors(q)` — qubits adjacents
-- **Diametre** : `diameter()` — plus long plus court chemin
-- **Connectivite moyenne** : `avg_connectivity()` — degre moyen
+- **Connectivity**: `are_connected(q0, q1)` — are two qubits neighbours?
+- **Shortest path**: `shortest_path(from, to)` — BFS on the graph
+- **SWAP distance**: `swap_distance(from, to)` — number of SWAPs required
+- **Neighbours**: `neighbors(q)` — adjacent qubits
+- **Diameter**: `diameter()` — longest shortest path
+- **Average connectivity**: `avg_connectivity()` — mean degree
 
-### Impact sur la compilation
+### Impact on Compilation
 
-La topologie determine le cout du **layout mapping** (passe SABRE) :
+The topology determines the cost of **layout mapping** (SABRE pass):
 
-| Topologie | SWAP q0→q3 (4 qubits) | Impact fidelite |
-|-----------|----------------------|-----------------|
-| All-to-all | 0 SWAP | Aucun |
-| Grid 2x2 | 1 SWAP | 3 portes CX supplementaires |
-| Linear | 2 SWAP | 6 portes CX supplementaires |
-| Heavy-hex | Variable | Depend du placement |
+| Topology | SWAP q0→q3 (4 qubits) | Fidelity Impact |
+|----------|----------------------|-----------------|
+| All-to-all | 0 SWAP | None |
+| Grid 2x2 | 1 SWAP | 3 additional CX gates |
+| Linear | 2 SWAP | 6 additional CX gates |
+| Heavy-hex | Variable | Depends on placement |
 
 ---
 
-## 5.5 Estimation energetique et empreinte carbone
+## 5.5 Energy Estimation and Carbon Footprint
 
-LIFT estime la consommation energetique a trois niveaux :
+LIFT estimates energy consumption at three levels:
 
-### Inference GPU
+### GPU Inference
 
 ```
-Energie (J) = TDP (W) * PUE * temps (s) * n_GPU
-CO2 (g) = Energie (kWh) * facteur_emission (g/kWh)
+Energy (J) = TDP (W) * PUE * time (s) * n_GPU
+CO2 (g) = Energy (kWh) * emission_factor (g/kWh)
 ```
 
-| GPU | TDP | PUE | Facteur emission |
-|-----|-----|-----|-----------------|
+| GPU | TDP | PUE | Emission Factor |
+|-----|-----|-----|----------------|
 | **A100** | 400 W | 1.1 | 400 g CO2/kWh |
 | **H100** | 700 W | 1.1 | 400 g CO2/kWh |
 
-### Entrainement (cluster)
+### Training (cluster)
 
-Exemple calcule par LIFT : **8x A100 pendant 24 heures** :
-- Energie = 8 * 400 W * 1.1 * 86400 s = 92.4 kWh
-- CO2 = 92.4 * 400 = 36 960 g = **37 kg CO2**
+Example computed by LIFT: **8x A100 for 24 hours**:
+- Energy = 8 * 400 W * 1.1 * 86400 s = 92.4 kWh
+- CO2 = 92.4 * 400 = 36,960 g = **37 kg CO2**
 
-### Execution quantique
+### Quantum Execution
 
-Le cout energetique d'un QPU supraconducteur est domine par la **cryogenie** :
-- Puissance cryostat : ~25 kW (pour maintenir 15 mK)
-- Puissance par qubit : negligeable vs. cryostat
-- `energy.quantum_energy_joules(circuit_time_us, n_qubits)` : inclut le cout cryogenique
+The energy cost of a superconducting QPU is dominated by **cryogenics**:
+- Cryostat power: ~25 kW (to maintain 15 mK)
+- Power per qubit: negligible vs. cryostat
+- `energy.quantum_energy_joules(circuit_time_us, n_qubits)`: includes cryogenic cost
 
 ---
 
-## 5.6 Budget et contraintes de deploiement
+## 5.6 Budget and Deployment Constraints
 
-### Budget statique
+### Static Budget
 
-Verifie des contraintes hard avant la compilation :
+Checks hard constraints before compilation:
 
 ```rust
 let budget = Budget {
     max_flops: Some(10_000_000_000),       // 10 GFLOP max
-    max_memory_bytes: Some(80_000_000_000), // 80 Go VRAM
-    max_time_ms: Some(100.0),              // 100 ms latence max
-    min_fidelity: Some(0.90),              // 90% fidelite min
+    max_memory_bytes: Some(80_000_000_000), // 80 GB VRAM
+    max_time_ms: Some(100.0),              // 100 ms max latency
+    min_fidelity: Some(0.90),              // 90% min fidelity
     max_circuit_depth: None,
 };
 
-budget.check_flops(report.total_flops)?;      // Ok ou Err
-budget.check_memory(report.total_memory)?;     // Ok ou Err
-budget.check_fidelity(analysis.fidelity)?;     // Ok ou Err
+budget.check_flops(report.total_flops)?;      // Ok or Err
+budget.check_memory(report.total_memory)?;     // Ok or Err
+budget.check_fidelity(analysis.fidelity)?;     // Ok or Err
 ```
 
-### Budget reactif
+### Reactive Budget
 
-Suit la consommation en temps reel lors de boucles iteratives (VQE, QAOA) :
+Tracks consumption in real time during iterative loops (VQE, QAOA):
 
 ```rust
 let mut tracker = ReactiveBudget::new(budget);
@@ -1173,7 +1173,7 @@ let mut tracker = ReactiveBudget::new(budget);
 for i in 0..max_iterations {
     tracker.consume(flops, memory, time_ms, fidelity_decay);
     if tracker.check_remaining().is_err() {
-        println!("Budget epuise a l'iteration {}", i);
+        println!("Budget exhausted at iteration {}", i);
         break;
     }
 }
@@ -1184,7 +1184,7 @@ let util = tracker.utilisation();
 
 ---
 
-## 5.7 Export vers les backends
+## 5.7 Export to Backends
 
 ### LLVM IR (GPU / CPU)
 
@@ -1192,10 +1192,10 @@ let util = tracker.utilisation();
 lift export model.lif --backend llvm -o model.ll
 ```
 
-LIFT genere du LLVM IR qui peut etre compile par `llc` vers :
-- **CUDA PTX** : execution sur GPU NVIDIA
-- **x86-64** : execution sur CPU (avec AVX-512 si disponible)
-- **ARM** : deploiement embarque
+LIFT generates LLVM IR that can be compiled by `llc` to:
+- **CUDA PTX**: execution on NVIDIA GPUs
+- **x86-64**: execution on CPU (with AVX-512 if available)
+- **ARM**: embedded deployment
 
 ### OpenQASM 3.0 (QPU)
 
@@ -1203,13 +1203,13 @@ LIFT genere du LLVM IR qui peut etre compile par `llc` vers :
 lift export model.lif --backend qasm -o circuit.qasm
 ```
 
-LIFT genere du OpenQASM 3.0 compatible avec :
+LIFT generates OpenQASM 3.0 compatible with:
 - **IBM Quantum** (Qiskit Runtime)
 - **Amazon Braket**
 - **Azure Quantum**
-- **Simulateurs** (Qiskit Aer, Cirq)
+- **Simulators** (Qiskit Aer, Cirq)
 
-### Utilisation programmatique
+### Programmatic Usage
 
 ```rust
 // Export LLVM
@@ -1225,7 +1225,7 @@ let qasm_code = qasm_exporter.export(&ctx)?;
 
 ## 5.8 Configuration (.lith)
 
-Le fichier `.lith` configure le pipeline LIFT avec un format INI simple :
+The `.lith` file configures the LIFT pipeline using a simple INI format:
 
 ```ini
 [target]
@@ -1252,39 +1252,39 @@ shots = 4096
 error_rate = 0.001
 ```
 
-### Niveaux d'optimisation
+### Optimisation Levels
 
-| Niveau | Passes activees |
-|--------|----------------|
-| **O0** | Aucune (IR brut) |
+| Level | Enabled Passes |
+|-------|---------------|
+| **O0** | None (raw IR) |
 | **O1** | Canonicalize, DCE |
 | **O2** | + Tensor fusion, Gate cancellation, Rotation merge |
 | **O3** | + Flash attention, CSE, Noise-aware schedule, Layout mapping, Quantisation |
 
 ---
 
-# Partie VI — Reference rapide
+# Part VI — Quick Reference
 
-## 6.1 Catalogue des 90+ operations tensorielles
+## 6.1 Catalogue of 90+ Tensor Operations
 
-### Arithmetique
+### Arithmetic
 
-| Operation | Syntaxe `.lif` | Description |
-|-----------|---------------|-------------|
-| `Add` | `tensor.add` | Addition element par element |
-| `Sub` | `tensor.sub` | Soustraction |
-| `Mul` | `tensor.mul` | Multiplication element par element |
+| Operation | `.lif` Syntax | Description |
+|-----------|--------------|-------------|
+| `Add` | `tensor.add` | Element-wise addition |
+| `Sub` | `tensor.sub` | Subtraction |
+| `Mul` | `tensor.mul` | Element-wise multiplication |
 | `Div` | `tensor.div` | Division |
 | `Neg` | `tensor.neg` | Negation |
-| `MatMul` | `tensor.matmul` | Produit matriciel |
-| `Linear` | `tensor.linear` | Couche lineaire (matmul + biais) |
-| `Conv2D` | `tensor.conv2d` | Convolution 2D |
-| `Embedding` | `tensor.embedding` | Lookup dans table d'embeddings |
+| `MatMul` | `tensor.matmul` | Matrix product |
+| `Linear` | `tensor.linear` | Linear layer (matmul + bias) |
+| `Conv2D` | `tensor.conv2d` | 2D convolution |
+| `Embedding` | `tensor.embedding` | Embedding table lookup |
 
 ### Activations
 
-| Operation | Syntaxe `.lif` | Formule |
-|-----------|---------------|---------|
+| Operation | `.lif` Syntax | Formula |
+|-----------|--------------|---------|
 | `ReLU` | `tensor.relu` | max(0, x) |
 | `GeLU` | `tensor.gelu` | x * Phi(x) |
 | `SiLU` | `tensor.silu` | x * sigmoid(x) |
@@ -1292,42 +1292,42 @@ error_rate = 0.001
 | `Softmax` | `tensor.softmax` | e^x_i / sum(e^x_j) |
 | `Tanh` | `tensor.tanh` | (e^x - e^-x) / (e^x + e^-x) |
 | `LeakyReLU` | `tensor.leaky_relu` | max(alpha*x, x) |
-| `ELU` | `tensor.elu` | x si x>0, alpha*(e^x-1) sinon |
+| `ELU` | `tensor.elu` | x if x>0, alpha*(e^x-1) otherwise |
 | `Mish` | `tensor.mish` | x * tanh(softplus(x)) |
 | `HardSwish` | `tensor.hard_swish` | x * relu6(x+3) / 6 |
 | `HardSigmoid` | `tensor.hard_sigmoid` | relu6(x+3) / 6 |
 
 ### Normalisation
 
-| Operation | Syntaxe `.lif` | Usage |
-|-----------|---------------|-------|
+| Operation | `.lif` Syntax | Usage |
+|-----------|--------------|-------|
 | `LayerNorm` | `tensor.layernorm` | Transformers |
 | `RMSNorm` | `tensor.rmsnorm` | LLaMA, Mistral |
-| `BatchNorm` | `tensor.batchnorm` | CNN (entrainement) |
+| `BatchNorm` | `tensor.batchnorm` | CNN (training) |
 | `GroupNorm` | `tensor.groupnorm` | Diffusion models |
 | `InstanceNorm` | `tensor.instancenorm` | Style transfer |
 
-### Forme
+### Shape
 
-| Operation | Syntaxe `.lif` | Zero-FLOP |
-|-----------|---------------|-----------|
-| `Reshape` | `tensor.reshape` | Oui |
-| `Transpose` | `tensor.transpose` | Oui |
-| `Concat` | `tensor.concat` | Oui |
-| `Split` | `tensor.split` | Oui |
-| `Gather` | `tensor.gather` | Oui |
-| `Scatter` | `tensor.scatter` | Oui |
-| `Squeeze` | `tensor.squeeze` | Oui |
-| `Unsqueeze` | `tensor.unsqueeze` | Oui |
-| `Permute` | `tensor.permute` | Oui |
-| `Expand` | `tensor.expand` | Oui |
-| `Slice` | `tensor.slice` | Oui |
-| `Pad` | `tensor.pad` | Oui |
-| `Tile` | `tensor.tile` | Oui |
+| Operation | `.lif` Syntax | Zero-FLOP |
+|-----------|--------------|-----------|
+| `Reshape` | `tensor.reshape` | Yes |
+| `Transpose` | `tensor.transpose` | Yes |
+| `Concat` | `tensor.concat` | Yes |
+| `Split` | `tensor.split` | Yes |
+| `Gather` | `tensor.gather` | Yes |
+| `Scatter` | `tensor.scatter` | Yes |
+| `Squeeze` | `tensor.squeeze` | Yes |
+| `Unsqueeze` | `tensor.unsqueeze` | Yes |
+| `Permute` | `tensor.permute` | Yes |
+| `Expand` | `tensor.expand` | Yes |
+| `Slice` | `tensor.slice` | Yes |
+| `Pad` | `tensor.pad` | Yes |
+| `Tile` | `tensor.tile` | Yes |
 
-### Attention (8 variantes)
+### Attention (8 variants)
 
-| Operation | Syntaxe `.lif` |
+| Operation | `.lif` Syntax |
 |-----------|---------------|
 | `Attention` | `tensor.attention` |
 | `MultiHeadAttention` | `tensor.multi_head_attention` |
@@ -1338,9 +1338,9 @@ error_rate = 0.001
 | `CrossAttention` | `tensor.cross_attention` |
 | `PagedAttention` | `tensor.paged_attention` |
 
-### Convolution (6 variantes)
+### Convolution (6 variants)
 
-| Operation | Syntaxe `.lif` |
+| Operation | `.lif` Syntax |
 |-----------|---------------|
 | `Conv1D` | `tensor.conv1d` |
 | `Conv2D` | `tensor.conv2d` |
@@ -1351,7 +1351,7 @@ error_rate = 0.001
 
 ### Pooling
 
-| Operation | Syntaxe `.lif` |
+| Operation | `.lif` Syntax |
 |-----------|---------------|
 | `MaxPool2D` | `tensor.maxpool2d` |
 | `AvgPool2D` | `tensor.avgpool2d` |
@@ -1360,15 +1360,15 @@ error_rate = 0.001
 
 ### Recurrent
 
-| Operation | Syntaxe `.lif` |
+| Operation | `.lif` Syntax |
 |-----------|---------------|
 | `LSTMCell` | `tensor.lstm_cell` |
 | `GRUCell` | `tensor.gru_cell` |
 | `RNNCell` | `tensor.rnn_cell` |
 
-### Mathematiques avancees
+### Advanced Mathematics
 
-| Operation | Syntaxe `.lif` | Complexite |
+| Operation | `.lif` Syntax | Complexity |
 |-----------|---------------|-----------|
 | `Einsum` | `tensor.einsum` | Variable |
 | `FFT` | `tensor.fft` | O(n log n) |
@@ -1382,9 +1382,9 @@ error_rate = 0.001
 | `Where` | `tensor.where` | O(n) |
 | `Clamp` | `tensor.clamp` | O(n) |
 
-### Sparse, Quantification, Diffusion, GNN, MoE
+### Sparse, Quantisation, Diffusion, GNN, MoE
 
-| Operation | Syntaxe `.lif` |
+| Operation | `.lif` Syntax |
 |-----------|---------------|
 | `SparseMatMul` | `tensor.sparse_matmul` |
 | `SparseEmbedding` | `tensor.sparse_embedding` |
@@ -1402,9 +1402,9 @@ error_rate = 0.001
 | `MoEDispatch` | `tensor.moe_dispatch` |
 | `MoECombine` | `tensor.moe_combine` |
 
-### Memoire, Gradient, Parallelisme, Fused
+### Memory, Gradient, Parallelism, Fused
 
-| Operation | Syntaxe `.lif` |
+| Operation | `.lif` Syntax |
 |-----------|---------------|
 | `Checkpoint` | `tensor.checkpoint` |
 | `Offload` | `tensor.offload` |
@@ -1428,9 +1428,9 @@ error_rate = 0.001
 | `FusedLinearSiLU` | `tensor.fused_linear_silu` |
 | `FusedConvBatchNormReLU` | `tensor.fused_conv_batchnorm_relu` |
 
-### Constantes
+### Constants
 
-| Operation | Syntaxe `.lif` |
+| Operation | `.lif` Syntax |
 |-----------|---------------|
 | `Constant` | `tensor.constant` |
 | `Zeros` | `tensor.zeros` |
@@ -1440,26 +1440,26 @@ error_rate = 0.001
 
 ---
 
-## 6.2 Catalogue des 50+ portes quantiques
+## 6.2 Catalogue of 50+ Quantum Gates
 
-### 1-qubit standard
+### 1-Qubit Standard
 
-| Porte | Syntaxe `.lif` | Clifford | Auto-inverse | Parametrique |
-|-------|---------------|----------|-------------|-------------|
-| H | `quantum.h` | Oui | Oui | Non |
-| X | `quantum.x` | Oui | Oui | Non |
-| Y | `quantum.y` | Oui | Oui | Non |
-| Z | `quantum.z` | Oui | Oui | Non |
-| S | `quantum.s` | Oui | Non | Non |
-| S† | `quantum.sdg` | Oui | Non | Non |
-| T | `quantum.t` | Non | Non | Non |
-| T† | `quantum.tdg` | Non | Non | Non |
-| SX | `quantum.sx` | Oui | Non | Non |
+| Gate | `.lif` Syntax | Clifford | Self-Inverse | Parametric |
+|------|--------------|----------|-------------|------------|
+| H | `quantum.h` | Yes | Yes | No |
+| X | `quantum.x` | Yes | Yes | No |
+| Y | `quantum.y` | Yes | Yes | No |
+| Z | `quantum.z` | Yes | Yes | No |
+| S | `quantum.s` | Yes | No | No |
+| S† | `quantum.sdg` | Yes | No | No |
+| T | `quantum.t` | No | No | No |
+| T† | `quantum.tdg` | No | No | No |
+| SX | `quantum.sx` | Yes | No | No |
 
-### 1-qubit parametriques
+### 1-Qubit Parametric
 
-| Porte | Syntaxe `.lif` | Parametres |
-|-------|---------------|-----------|
+| Gate | `.lif` Syntax | Parameters |
+|------|--------------|------------|
 | RX | `quantum.rx` | theta |
 | RY | `quantum.ry` | theta |
 | RZ | `quantum.rz` | theta |
@@ -1468,49 +1468,49 @@ error_rate = 0.001
 | U2 | `quantum.u2` | phi, lambda |
 | U3 | `quantum.u3` | theta, phi, lambda |
 
-### 2-qubit
+### 2-Qubit
 
-| Porte | Syntaxe `.lif` | Entangling | Natif sur |
-|-------|---------------|-----------|-----------|
-| CX (CNOT) | `quantum.cx` | Oui | IBM |
-| CZ | `quantum.cz` | Oui | Google |
-| CY | `quantum.cy` | Oui | — |
-| SWAP | `quantum.swap` | Oui | — |
-| iSWAP | `quantum.iswap` | Oui | Google |
-| ECR | `quantum.ecr` | Oui | IBM Eagle |
-| RZX | `quantum.rzx` | Oui | — |
-| XX | `quantum.xx` | Oui | IonQ |
-| YY | `quantum.yy` | Oui | — |
-| ZZ | `quantum.zz` | Oui | — |
-| CP | `quantum.cp` | Oui | — |
-| CPhase | `quantum.cphase` | Oui | Rigetti |
-| XY | `quantum.xy` | Oui | Rigetti |
+| Gate | `.lif` Syntax | Entangling | Native On |
+|------|--------------|-----------|----------|
+| CX (CNOT) | `quantum.cx` | Yes | IBM |
+| CZ | `quantum.cz` | Yes | Google |
+| CY | `quantum.cy` | Yes | — |
+| SWAP | `quantum.swap` | Yes | — |
+| iSWAP | `quantum.iswap` | Yes | Google |
+| ECR | `quantum.ecr` | Yes | IBM Eagle |
+| RZX | `quantum.rzx` | Yes | — |
+| XX | `quantum.xx` | Yes | IonQ |
+| YY | `quantum.yy` | Yes | — |
+| ZZ | `quantum.zz` | Yes | — |
+| CP | `quantum.cp` | Yes | — |
+| CPhase | `quantum.cphase` | Yes | Rigetti |
+| XY | `quantum.xy` | Yes | Rigetti |
 
-### 3-qubit et multi-controle
+### 3-Qubit and Multi-Controlled
 
-| Porte | Syntaxe `.lif` | Qubits |
-|-------|---------------|--------|
+| Gate | `.lif` Syntax | Qubits |
+|------|--------------|--------|
 | CCX (Toffoli) | `quantum.ccx` | 3 |
 | CSWAP (Fredkin) | `quantum.cswap` | 3 |
 | MCX | `quantum.mcx` | N |
 | MCZ | `quantum.mcz` | N |
 
-### Controle et mesure
+### Control and Measurement
 
-| Porte | Syntaxe `.lif` | Description |
-|-------|---------------|-------------|
-| Measure | `quantum.measure` | Mesure un qubit |
-| MeasureAll | `quantum.measure_all` | Mesure tous les qubits |
-| Reset | `quantum.reset` | Reinitialise un qubit a \|0> |
-| Barrier | `quantum.barrier` | Empeche la reordonnance |
-| Init | `quantum.init` | Initialise un registre |
-| Delay | `quantum.delay` | Delai temporel |
-| VirtualRZ | `quantum.virtual_rz` | Rotation virtuelle (cout zero) |
-| IfElse | `quantum.if_else` | Branchement conditionnel classique |
+| Gate | `.lif` Syntax | Description |
+|------|--------------|-------------|
+| Measure | `quantum.measure` | Measures a qubit |
+| MeasureAll | `quantum.measure_all` | Measures all qubits |
+| Reset | `quantum.reset` | Resets a qubit to \|0> |
+| Barrier | `quantum.barrier` | Prevents reordering |
+| Init | `quantum.init` | Initialises a register |
+| Delay | `quantum.delay` | Time delay |
+| VirtualRZ | `quantum.virtual_rz` | Virtual rotation (zero cost) |
+| IfElse | `quantum.if_else` | Classical conditional branching |
 
-### Jeux de portes natifs par constructeur
+### Native Gate Sets by Manufacturer
 
-| Constructeur | Portes natives |
+| Manufacturer | Native Gates |
 |-------------|---------------|
 | **IBM Eagle** | RZ, SX, X, CX, ECR |
 | **IBM Kyoto** | RZ, SX, X, CX, ECR |
@@ -1520,68 +1520,68 @@ error_rate = 0.001
 
 ---
 
-## 6.3 Catalogue des operations hybrides
+## 6.3 Catalogue of Hybrid Operations
 
-### Encodage / Decodage
+### Encoding / Decoding
 
-| Operation | Syntaxe `.lif` | Description |
-|-----------|---------------|-------------|
-| `Encode` | `hybrid.encode` | Encode des donnees classiques dans un etat quantique |
-| `Decode` | `hybrid.decode` | Extrait des donnees classiques d'un etat quantique |
+| Operation | `.lif` Syntax | Description |
+|-----------|--------------|-------------|
+| `Encode` | `hybrid.encode` | Encodes classical data into a quantum state |
+| `Decode` | `hybrid.decode` | Extracts classical data from a quantum state |
 
-### Methodes de gradient
+### Gradient Methods
 
-| Operation | Syntaxe `.lif` | Evaluations | Exact |
-|-----------|---------------|-------------|-------|
-| `ParameterShift` | `hybrid.parameter_shift` | 2N | Oui |
-| `FiniteDifference` | `hybrid.finite_difference` | N+1 | Non |
-| `SPSA` | `hybrid.spsa` | 2 | Non |
-| `AdjointDiff` | `hybrid.adjoint_diff` | 1 | Oui |
-| `StochasticParamShift` | `hybrid.stochastic_param_shift` | 2 | Non |
-| `JointGradient` | `hybrid.joint_gradient` | Variable | Mixte |
+| Operation | `.lif` Syntax | Evaluations | Exact |
+|-----------|--------------|-------------|-------|
+| `ParameterShift` | `hybrid.parameter_shift` | 2N | Yes |
+| `FiniteDifference` | `hybrid.finite_difference` | N+1 | No |
+| `SPSA` | `hybrid.spsa` | 2 | No |
+| `AdjointDiff` | `hybrid.adjoint_diff` | 1 | Yes |
+| `StochasticParamShift` | `hybrid.stochastic_param_shift` | 2 | No |
+| `JointGradient` | `hybrid.joint_gradient` | Variable | Mixed |
 
-### Algorithmes variationnels
+### Variational Algorithms
 
-| Operation | Syntaxe `.lif` | Usage |
-|-----------|---------------|-------|
-| `VqcLayer` | `hybrid.vqc_layer` | Circuit variationnel generique |
-| `VqeAnsatz` | `hybrid.vqe_ansatz` | Eigensolver variationnel (chimie) |
-| `QaoaLayer` | `hybrid.qaoa_layer` | Optimisation combinatoire |
-| `QuantumKernel` | `hybrid.quantum_kernel` | Noyau quantique (SVM) |
+| Operation | `.lif` Syntax | Usage |
+|-----------|--------------|-------|
+| `VqcLayer` | `hybrid.vqc_layer` | Generic variational circuit |
+| `VqeAnsatz` | `hybrid.vqe_ansatz` | Variational eigensolver (chemistry) |
+| `QaoaLayer` | `hybrid.qaoa_layer` | Combinatorial optimisation |
+| `QuantumKernel` | `hybrid.quantum_kernel` | Quantum kernel (SVM) |
 
-### Transfert de donnees
+### Data Transfer
 
-| Operation | Syntaxe `.lif` | Direction |
-|-----------|---------------|-----------|
+| Operation | `.lif` Syntax | Direction |
+|-----------|--------------|-----------|
 | `GpuToQpu` | `hybrid.gpu_to_qpu` | GPU → QPU |
 | `QpuToGpu` | `hybrid.qpu_to_gpu` | QPU → GPU |
 
-### Traitement et mesure
+### Processing and Measurement
 
-| Operation | Syntaxe `.lif` | Description |
-|-----------|---------------|-------------|
-| `ClassicalPreprocess` | `hybrid.classical_preprocess` | Pre-traitement classique |
-| `QuantumPostprocess` | `hybrid.quantum_postprocess` | Post-traitement quantique |
-| `HybridForward` | `hybrid.forward` | Passe forward hybride |
-| `HybridBackward` | `hybrid.backward` | Passe backward hybride |
-| `CoExecute` | `hybrid.co_execute` | Co-execution GPU + QPU |
-| `MeasureExpectation` | `hybrid.measure_expectation` | Valeur moyenne d'observable |
-| `MeasureSamples` | `hybrid.measure_samples` | Echantillons de mesure |
+| Operation | `.lif` Syntax | Description |
+|-----------|--------------|-------------|
+| `ClassicalPreprocess` | `hybrid.classical_preprocess` | Classical preprocessing |
+| `QuantumPostprocess` | `hybrid.quantum_postprocess` | Quantum postprocessing |
+| `HybridForward` | `hybrid.forward` | Hybrid forward pass |
+| `HybridBackward` | `hybrid.backward` | Hybrid backward pass |
+| `CoExecute` | `hybrid.co_execute` | GPU + QPU co-execution |
+| `MeasureExpectation` | `hybrid.measure_expectation` | Observable expectation value |
+| `MeasureSamples` | `hybrid.measure_samples` | Measurement samples |
 
 ---
 
-# Resume — La valeur de LIFT
+# Summary — The Value of LIFT
 
-| Dimension | Sans LIFT | Avec LIFT |
-|-----------|-----------|-----------|
-| **Langages** | Python (IA) + Qiskit (quantum) + CUDA (GPU) | Un seul fichier `.lif` |
-| **Optimisation** | Manuelle, specifique a chaque framework | 11 passes automatiques |
-| **Verification** | Tests manuels, erreurs au runtime | SSA + types + linearite a la compilation |
-| **Performance** | Benchmarks empiriques | Prediction roofline + modele quantique |
-| **Bruit** | Ignore ou modele separement | Integre dans le pipeline de compilation |
-| **Energie** | Inconnue | Estimation automatique (GPU + QPU + CO2) |
-| **Budget** | Pas de contrainte | Statique + reactif, arret automatique |
-| **Export** | Conversion manuelle entre formats | LLVM IR + OpenQASM 3.0 en une commande |
-| **Topologie** | Adaptation manuelle au QPU | Layout mapping automatique (SABRE) |
+| Dimension | Without LIFT | With LIFT |
+|-----------|-------------|----------|
+| **Languages** | Python (AI) + Qiskit (quantum) + CUDA (GPU) | A single `.lif` file |
+| **Optimisation** | Manual, framework-specific | 11 automatic passes |
+| **Verification** | Manual tests, runtime errors | SSA + types + linearity at compile time |
+| **Performance** | Empirical benchmarks | Roofline prediction + quantum model |
+| **Noise** | Ignored or modelled separately | Integrated into the compilation pipeline |
+| **Energy** | Unknown | Automatic estimation (GPU + QPU + CO2) |
+| **Budget** | No constraints | Static + reactive, automatic stopping |
+| **Export** | Manual conversion between formats | LLVM IR + OpenQASM 3.0 in one command |
+| **Topology** | Manual adaptation to QPU | Automatic layout mapping (SABRE) |
 
-**LIFT transforme une description hybride en un systeme de production fiable, optimise et previsible, en un seul outil.**
+**LIFT transforms a hybrid description into a reliable, optimised, and predictable production system, in a single tool.**
