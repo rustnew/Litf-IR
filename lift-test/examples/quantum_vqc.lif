@@ -1,0 +1,17 @@
+#dialect quantum
+
+module @vqc {
+    func @circuit(%q0: qubit, %q1: qubit, %q2: qubit, %q3: qubit) -> (qubit, qubit, qubit, qubit) {
+        %a0 = "quantum.ry"(%q0) : (qubit) -> qubit
+        %a1 = "quantum.ry"(%q1) : (qubit) -> qubit
+        %a2 = "quantum.ry"(%q2) : (qubit) -> qubit
+        %a3 = "quantum.ry"(%q3) : (qubit) -> qubit
+        %b0, %b1 = "quantum.cx"(%a0, %a1) : (qubit, qubit) -> (qubit, qubit)
+        %b2, %b3 = "quantum.cx"(%a2, %a3) : (qubit, qubit) -> (qubit, qubit)
+        %c0 = "quantum.rz"(%b0) : (qubit) -> qubit
+        %c1 = "quantum.rz"(%b1) : (qubit) -> qubit
+        %c2 = "quantum.rz"(%b2) : (qubit) -> qubit
+        %c3 = "quantum.rz"(%b3) : (qubit) -> qubit
+        return %c0, %c1, %c2, %c3
+    }
+}

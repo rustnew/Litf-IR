@@ -1,0 +1,19 @@
+#dialect tensor
+
+module @cnn_encoder {
+    func @forward(%img: tensor<1x1x128x128xf32>,
+                  %w1: tensor<32x1x3x3xf32>,
+                  %w2: tensor<64x32x3x3xf32>,
+                  %w_fc: tensor<64x4xf32>,
+                  %b_fc: tensor<4xf32>) -> tensor<1x4xf32> {
+        %c1 = "tensor.conv2d"(%img, %w1) : (tensor<1x1x128x128xf32>, tensor<32x1x3x3xf32>) -> tensor<1x32x64x64xf32>
+        %r1 = "tensor.relu"(%c1) : (tensor<1x32x64x64xf32>) -> tensor<1x32x64x64xf32>
+        %p1 = "tensor.maxpool2d"(%r1) : (tensor<1x32x64x64xf32>) -> tensor<1x32x32x32xf32>
+        %c2 = "tensor.conv2d"(%p1, %w2) : (tensor<1x32x32x32xf32>, tensor<64x32x3x3xf32>) -> tensor<1x64x16x16xf32>
+        %r2 = "tensor.relu"(%c2) : (tensor<1x64x16x16xf32>) -> tensor<1x64x16x16xf32>
+        %gap = "tensor.global_avgpool"(%r2) : (tensor<1x64x16x16xf32>) -> tensor<1x64xf32>
+        %fc = "tensor.matmul"(%gap, %w_fc) : (tensor<1x64xf32>, tensor<64x4xf32>) -> tensor<1x4xf32>
+        %out = "tensor.add"(%fc, %b_fc) : (tensor<1x4xf32>, tensor<4xf32>) -> tensor<1x4xf32>
+        return %out
+    }
+}

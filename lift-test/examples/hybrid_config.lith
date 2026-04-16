@@ -1,0 +1,27 @@
+# Hybrid AI+Quantum medical imaging — LIFT compilation config
+
+[target]
+backend = "llvm"
+device = "A100"
+precision = "fp32"
+
+[budget]
+max_flops = 10000000000
+max_memory_bytes = 4000000000
+max_time_ms = 100.0
+min_fidelity = 0.90
+
+[optimisation]
+level = O3
+max_iterations = 20
+
+[simulation]
+shape_propagation = true
+flop_counting = true
+memory_analysis = true
+noise_simulation = true
+
+[quantum]
+topology = "grid"
+num_qubits = 4
+shots = 4096
