@@ -30,6 +30,11 @@ echo "║     LIFT — Full Pipeline Validation                         ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
 
+# ── Step 0: Generate models from Rust code ──
+echo "── Code Generation (cargo run --bin lift-codegen) ──"
+check "codegen" "cargo run --bin lift-codegen"
+echo ""
+
 # ── Models to test ──
 MODELS=(
     "examples/phi3_mini.lif"
@@ -40,6 +45,10 @@ MODELS=(
     "examples/tensor_mlp.lif"
     "examples/attention.lif"
     "examples/quantum_bell.lif"
+    "examples/phi3_generated.lif"
+    "examples/mlp_generated.lif"
+    "examples/resnet_generated.lif"
+    "examples/vqe_generated.lif"
 )
 
 for model in "${MODELS[@]}"; do

@@ -1,0 +1,22 @@
+[package]
+name = "lift-codegen"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "LIFT code generator: define models from Rust and emit .lif + .lith files"
+
+[[bin]]
+name = "lift-codegen"
+path = "src/main.rs"
+
+[dependencies]
+lift-core = { workspace = true }
+lift-ast = { workspace = true }
+lift-sim = { workspace = true }
+lift-opt = { workspace = true }
+lift-export = { workspace = true }
+lift-config = { workspace = true }
+lift-predict = { workspace = true }

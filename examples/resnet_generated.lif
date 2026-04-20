@@ -1,0 +1,16 @@
+#dialect tensor
+
+module @resnet_block {
+
+    func @block(%x: tensor<1x64x56x56xf32>, %w1: tensor<64x64x3x3xf32>, %w2: tensor<64x64x3x3xf32>, %bn1_w: tensor<64xf32>, %bn2_w: tensor<64xf32>) -> tensor<1x64x56x56xf32> {
+        %c1 = "tensor.conv2d"(%x, %w1) : (tensor<1x64x56x56xf32>, tensor<64x64x3x3xf32>) -> tensor<1x64x56x56xf32>
+        %bn1 = "tensor.batchnorm"(%c1, %bn1_w) : (tensor<1x64x56x56xf32>, tensor<64xf32>) -> tensor<1x64x56x56xf32>
+        %a1 = "tensor.relu"(%bn1) : (tensor<1x64x56x56xf32>) -> tensor<1x64x56x56xf32>
+        %c2 = "tensor.conv2d"(%a1, %w2) : (tensor<1x64x56x56xf32>, tensor<64x64x3x3xf32>) -> tensor<1x64x56x56xf32>
+        %bn2 = "tensor.batchnorm"(%c2, %bn2_w) : (tensor<1x64x56x56xf32>, tensor<64xf32>) -> tensor<1x64x56x56xf32>
+        %res = "tensor.add"(%x, %bn2) : (tensor<1x64x56x56xf32>, tensor<1x64x56x56xf32>) -> tensor<1x64x56x56xf32>
+        %out = "tensor.relu"(%res) : (tensor<1x64x56x56xf32>) -> tensor<1x64x56x56xf32>
+        return %out
+    }
+
+}

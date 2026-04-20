@@ -1,0 +1,13 @@
+#dialect quantum
+
+module @vqe_circuit {
+
+    func @ansatz(%q0: qubit, %q1: qubit) -> qubit {
+        %q0a = "quantum.ry"(%q0) : (qubit) -> qubit
+        %q1a = "quantum.ry"(%q1) : (qubit) -> qubit
+        %q0b = "quantum.cx"(%q0a, %q1a) : (qubit, qubit) -> qubit
+        %q0c = "quantum.rz"(%q0b) : (qubit) -> qubit
+        return %q0c
+    }
+
+}

@@ -23,7 +23,6 @@ use crate::types::{DataType, Dimension, MemoryLayout};
 use crate::attributes::{Attributes, Attribute};
 use crate::functions::FunctionData;
 use crate::location::Location;
-use crate::printer::print_ir;
 
 /// Shape descriptor for tensor types.
 #[derive(Debug, Clone)]
@@ -183,7 +182,7 @@ impl ModelBuilder {
     }
 
     /// Build the model into a LIFT Context and return it.
-    pub fn build_context(self) -> Context {
+    pub fn build_context(&self) -> Context {
         let mut ctx = Context::new();
         let mod_idx = ctx.create_module(&self.module_name);
 
@@ -195,18 +194,84 @@ impl ModelBuilder {
         ctx
     }
 
-    /// Build the model and return the `.lif` source text.
-    pub fn build_lif(self) -> String {
-        let dialect = self.dialect_directive.clone();
-        let ctx = self.build_context();
-        let ir = print_ir(&ctx);
-        format!("#dialect {}\n\n{}", dialect, ir)
+    /// Build the model and return the `.lif` source text (parseable format).
+    pub fn build_lif(&self) -> String {
+        let mut out = format!("#dialect {}\n\n", self.dialect_directive);
+        out.push_str(&format!("module @{} {{\n\n", self.module_name));
+
+        for fb in &self.functions {
+            out.push_str(&self.emit_function_source(fb));
+            out.push('\n');
+        }
+
+        out.push_str("}\n");
+        out
     }
 
     /// Build and write `.lif` file to disk.
-    pub fn write_lif(self, path: &str) -> std::io::Result<()> {
+    pub fn write_lif(&self, path: &str) -> std::io::Result<()> {
         let lif = self.build_lif();
         std::fs::write(path, lif)
+    }
+
+    fn emit_function_source(&self, fb: &FunctionBuilder) -> String {
+        let mut out = String::new();
+
+        // func @name(%p0: type, %p1: type) -> ret_type {
+        out.push_str(&format!("    func @{}(", fb.name));
+        for (i, (pname, pty)) in fb.params.iter().enumerate() {
+            if i > 0 { out.push_str(", "); }
+            out.push_str(&format!("%{}: {}", pname, format_model_type(pty)));
+        }
+        out.push_str(")");
+
+        // Return type
+        if let Some(ref ret_name) = fb.return_name {
+            if let Some(op) = fb.ops.iter().find(|o| o.result_name == *ret_name) {
+                out.push_str(&format!(" -> {}", format_model_type(&op.result_type)));
+            } else if let Some((_, ty)) = fb.params.iter().find(|(n, _)| n == ret_name) {
+                out.push_str(&format!(" -> {}", format_model_type(ty)));
+            }
+        }
+
+        out.push_str(" {\n");
+
+        // Operations
+        for op_def in &fb.ops {
+            let inputs: String = op_def.inputs.iter()
+                .map(|n| format!("%{}", n))
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            let input_types: String = op_def.inputs.iter()
+                .filter_map(|n| {
+                    // Look up type: first in params, then in previous op results
+                    if let Some((_, ty)) = fb.params.iter().find(|(pn, _)| pn == n) {
+                        Some(format_model_type(ty))
+                    } else if let Some(prev_op) = fb.ops.iter().find(|o| o.result_name == *n) {
+                        Some(format_model_type(&prev_op.result_type))
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            let result_type = format_model_type(&op_def.result_type);
+
+            out.push_str(&format!(
+                "        %{} = \"{}\"({}) : ({}) -> {}\n",
+                op_def.result_name, op_def.op_name, inputs, input_types, result_type
+            ));
+        }
+
+        // Return
+        if let Some(ref ret_name) = fb.return_name {
+            out.push_str(&format!("        return %{}\n", ret_name));
+        }
+
+        out.push_str("    }\n");
+        out
     }
 
     fn build_function_data(&self, ctx: &mut Context, fb: &FunctionBuilder) -> FunctionData {
@@ -367,6 +432,39 @@ impl FunctionBuilderHandle {
     }
 }
 
+/// Format a ModelType as a `.lif` type string.
+fn format_model_type(mt: &ModelType) -> String {
+    match mt {
+        ModelType::Tensor { shape, dtype } => {
+            let dims: String = shape.iter()
+                .map(|d| d.to_string())
+                .collect::<Vec<_>>()
+                .join("x");
+            let dt = match dtype {
+                DataType::FP64 => "f64",
+                DataType::FP32 => "f32",
+                DataType::FP16 => "f16",
+                DataType::BF16 => "bf16",
+                DataType::FP8E4M3 => "f8e4m3",
+                DataType::FP8E5M2 => "f8e5m2",
+                DataType::INT64 => "i64",
+                DataType::INT32 => "i32",
+                DataType::INT16 => "i16",
+                DataType::INT8 => "i8",
+                DataType::INT4 => "i4",
+                DataType::INT2 => "i2",
+                DataType::UINT8 => "ui8",
+                DataType::Bool => "i1",
+                DataType::Index => "index",
+            };
+            format!("tensor<{}x{}>", dims, dt)
+        }
+        ModelType::Qubit => "qubit".to_string(),
+        ModelType::Bit => "bit".to_string(),
+        ModelType::Integer { bits } => format!("i{}", bits),
+    }
+}
+
 /// Generate a `.lith` configuration string.
 pub fn build_lith_config(
     backend: &str,
@@ -415,7 +513,7 @@ mod tests {
         assert!(lif.contains("module @test_mlp"));
         assert!(lif.contains("tensor.matmul"));
         assert!(lif.contains("tensor.relu"));
-        assert!(lif.contains("core.return"));
+        assert!(lif.contains("return %out"));
     }
 
     #[test]

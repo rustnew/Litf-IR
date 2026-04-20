@@ -1,0 +1,19 @@
+[target]
+backend = "llvm"
+device = "h100"
+precision = "fp16"
+
+[budget]
+max_flops = 500000000000
+max_memory_bytes = 80000000000
+
+[optimisation]
+level = O3
+passes = canonicalize, constant-folding, dce, tensor-fusion, flash-attention, cse, quantisation-pass
+max_iterations = 10
+
+[simulation]
+shape_propagation = true
+flop_counting = true
+memory_analysis = true
+noise_simulation = false

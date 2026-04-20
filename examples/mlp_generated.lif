@@ -1,0 +1,18 @@
+#dialect tensor
+
+module @mlp_classifier {
+
+    func @forward(%x: tensor<1x784xf32>, %w1: tensor<784x512xf32>, %b1: tensor<512xf32>, %w2: tensor<512x256xf32>, %b2: tensor<256xf32>, %w3: tensor<256x10xf32>, %b3: tensor<10xf32>) -> tensor<1x10xf32> {
+        %h1 = "tensor.matmul"(%x, %w1) : (tensor<1x784xf32>, tensor<784x512xf32>) -> tensor<1x512xf32>
+        %h1b = "tensor.add"(%h1, %b1) : (tensor<1x512xf32>, tensor<512xf32>) -> tensor<1x512xf32>
+        %a1 = "tensor.relu"(%h1b) : (tensor<1x512xf32>) -> tensor<1x512xf32>
+        %h2 = "tensor.matmul"(%a1, %w2) : (tensor<1x512xf32>, tensor<512x256xf32>) -> tensor<1x256xf32>
+        %h2b = "tensor.add"(%h2, %b2) : (tensor<1x256xf32>, tensor<256xf32>) -> tensor<1x256xf32>
+        %a2 = "tensor.relu"(%h2b) : (tensor<1x256xf32>) -> tensor<1x256xf32>
+        %h3 = "tensor.matmul"(%a2, %w3) : (tensor<1x256xf32>, tensor<256x10xf32>) -> tensor<1x10xf32>
+        %h3b = "tensor.add"(%h3, %b3) : (tensor<1x10xf32>, tensor<10xf32>) -> tensor<1x10xf32>
+        %out = "tensor.softmax"(%h3b) : (tensor<1x10xf32>) -> tensor<1x10xf32>
+        return %out
+    }
+
+}

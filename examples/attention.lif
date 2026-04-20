@@ -1,9 +1,0 @@
-#dialect tensor
-
-module @transformer {
-    func @self_attention(%q: tensor<1x128x64xf32>, %k: tensor<1x128x64xf32>, %v: tensor<1x128x64xf32>, %norm_w: tensor<64xf32>) -> tensor<1x128x64xf32> {
-        %attn = "tensor.attention"(%q, %k, %v) : (tensor<1x128x64xf32>, tensor<1x128x64xf32>, tensor<1x128x64xf32>) -> tensor<1x128x64xf32>
-        %normed = "tensor.layernorm"(%attn, %norm_w) : (tensor<1x128x64xf32>, tensor<64xf32>) -> tensor<1x128x64xf32>
-        return %normed
-    }
-}
