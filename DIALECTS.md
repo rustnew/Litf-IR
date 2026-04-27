@@ -184,7 +184,7 @@ Compile-time constants attached to operations:
 
 # Part II — The `tensor` Dialect (Classical AI)
 
-Declare with `#dialect tensor`. Provides **96 operations** for ML/AI.
+Declare with `#dialect tensor`. Provides **107 operations** for ML/AI.
 
 ## 2.1 Arithmetic (9)
 
@@ -1257,7 +1257,7 @@ key2 = "quoted value"
 
 | Key | Type | Values | Default |
 |-----|------|--------|---------|
-| `backend` | string | `llvm`, `qasm` | `llvm` |
+| `backend` | string | `llvm`, `onnx`, `qasm` | `llvm` |
 | `device` | string | `A100`, `H100`, `ibm_eagle`, `ibm_kyoto`, `rigetti`, `ionq`, `quantinuum` | none |
 | `precision` | string | `fp64`, `fp32`, `fp16`, `bf16` | `fp32` |
 
@@ -1269,6 +1269,7 @@ precision = fp32
 ```
 
 - `llvm` backend → exports to LLVM IR (CUDA PTX, x86-64, ARM)
+- `onnx` backend → exports to ONNX protobuf text (opset 21, PyTorch/TensorFlow/TensorRT interop)
 - `qasm` backend → exports to OpenQASM 3.0 (IBM Quantum, Amazon Braket, Azure Quantum)
 
 ## 5.3 `[budget]` Section

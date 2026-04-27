@@ -12,24 +12,25 @@ This document describes **every feature** of the LIFT framework, numbered and or
 1. [General Architecture](#1-general-architecture)
 2. [lift-core — IR Core](#2-lift-core--ir-core)
 3. [lift-ast — Parsing the .lif Language](#3-lift-ast--parsing-the-lif-language)
-4. [lift-tensor — Tensor Operations (90+ ops)](#4-lift-tensor--tensor-operations-90-ops)
-5. [lift-quantum — Quantum Gates and Noise (50+ gates)](#5-lift-quantum--quantum-gates-and-noise-50-gates)
+4. [lift-tensor — Tensor Operations (107 ops)](#4-lift-tensor--tensor-operations-107-ops)
+5. [lift-quantum — Quantum Gates and Noise (46+ gates)](#5-lift-quantum--quantum-gates-and-noise-46-gates)
 6. [lift-hybrid — Classical-Quantum Hybrid Computation](#6-lift-hybrid--classical-quantum-hybrid-computation)
 7. [lift-opt — Optimisation Passes (11 passes)](#7-lift-opt--optimisation-passes-11-passes)
 8. [lift-sim — Simulation and Cost Analysis](#8-lift-sim--simulation-and-cost-analysis)
 9. [lift-predict — Performance Prediction](#9-lift-predict--performance-prediction)
 10. [lift-import — Model Import](#10-lift-import--model-import)
-11. [lift-export — Backend Export](#11-lift-export--backend-export)
+11. [lift-export — Backend Export (LLVM, ONNX, QASM)](#11-lift-export--backend-export-llvm-onnx-qasm)
 12. [lift-config — Configuration (.lith)](#12-lift-config--configuration-lith)
 13. [lift-cli — Command-Line Interface](#13-lift-cli--command-line-interface)
-14. [Combinations and Complete Pipelines](#14-combinations-and-complete-pipelines)
-15. [Concrete Examples](#15-concrete-examples)
+14. [lift-codegen — Programmatic Model Generation](#14-lift-codegen--programmatic-model-generation)
+15. [Combinations and Complete Pipelines](#15-combinations-and-complete-pipelines)
+16. [Concrete Examples](#16-concrete-examples)
 
 ---
 
 ## 1. General Architecture
 
-LIFT is a modular compiler composed of **13 crates** organised in layers:
+LIFT is a modular compiler composed of **14 crates** organised in layers:
 
 ```
                     ┌──────────┐
@@ -66,21 +67,25 @@ Source (.lif) → Lexer → Parser → IR (SSA) → Verification → Optimisatio
 |-----------|-------------|
 | `.lif`    | LIFT IR source code |
 | `.lith`   | Compilation configuration |
+| `.ll`     | LLVM IR export |
+| `.onnx`   | ONNX export (protobuf text) |
+| `.qasm`   | OpenQASM 3.0 export |
 
 ### 1.3 Adding LIFT as a Dependency
 
 ```toml
 [dependencies]
-lift-core     = "0.2.0"
-lift-tensor   = "0.2.0"
-lift-quantum  = "0.2.0"
-lift-hybrid   = "0.2.0"
-lift-opt      = "0.2.0"
-lift-sim      = "0.2.0"
-lift-predict  = "0.2.0"
-lift-import   = "0.2.0"
-lift-export   = "0.2.0"
-lift-config   = "0.2.0"
+lift-core     = "0.3.0"
+lift-ast      = "0.3.0"
+lift-tensor   = "0.3.0"
+lift-quantum  = "0.3.0"
+lift-hybrid   = "0.3.0"
+lift-opt      = "0.3.0"
+lift-sim      = "0.3.0"
+lift-predict  = "0.3.0"
+lift-import   = "0.3.0"
+lift-export   = "0.3.0"
+lift-config   = "0.3.0"
 ```
 
 ---
@@ -1344,7 +1349,7 @@ let ctx = importer.import("circuit.qasm").expect("QASM import failed");
 
 ---
 
-## 11. lift-export — Backend Export
+## 11. lift-export — Backend Export (LLVM, ONNX, QASM)
 
 ### 11.1 Export LLVM IR
 
@@ -1356,9 +1361,84 @@ let llvm_ir = exporter.export(&ctx).expect("LLVM export failed");
 std::fs::write("output.ll", &llvm_ir).unwrap();
 ```
 
-Produces LLVM IR compilable with `clang` or `llc`.
+Produces LLVM IR with runtime function calls for tensor operations (cuBLAS/cuDNN backend).
 
-### 11.2 Export OpenQASM 3.0
+### 11.2 Export ONNX
+
+```rust
+use lift_export::OnnxExporter;
+
+let exporter = OnnxExporter::new();
+let onnx_text = exporter.export(&ctx).expect("ONNX export failed");
+std::fs::write("output.onnx", &onnx_text).unwrap();
+
+// Also available: JSON format
+let onnx_json = exporter.export_json(&ctx).expect("ONNX JSON export failed");
+std::fs::write("output_onnx.json", &onnx_json).unwrap();
+```
+
+Produces ONNX protobuf text format at **opset version 21**, IR version 9. Compatible with:
+- PyTorch, TensorFlow, TensorRT, ONNX Runtime
+- Microsoft extension ops for attention and MoE
+
+**ONNX op mapping (70+ operations):**
+
+| LIFT Operation | ONNX Op | Domain |
+|----------------|---------|--------|
+| `tensor.matmul` | `MatMul` | standard |
+| `tensor.linear` | `Gemm` | standard |
+| `tensor.add` / `sub` / `mul` / `div` | `Add` / `Sub` / `Mul` / `Div` | standard |
+| `tensor.relu` | `Relu` | standard |
+| `tensor.gelu` | `Gelu` | standard |
+| `tensor.silu` | `Sigmoid` + `Mul` | standard |
+| `tensor.softmax` | `Softmax` | standard |
+| `tensor.layernorm` | `LayerNormalization` | standard |
+| `tensor.rmsnorm` | `SimplifiedLayerNormalization` | com.microsoft |
+| `tensor.batchnorm` | `BatchNormalization` | standard |
+| `tensor.conv2d` | `Conv` | standard |
+| `tensor.maxpool2d` | `MaxPool` | standard |
+| `tensor.avgpool2d` | `AveragePool` | standard |
+| `tensor.attention` | `Attention` | com.microsoft |
+| `tensor.grouped_query_attention` | `GroupQueryAttention` | com.microsoft |
+| `tensor.flash_attention` | `MultiHeadAttention` | com.microsoft |
+| `tensor.quantize` | `QuantizeLinear` | standard |
+| `tensor.dequantize` | `DequantizeLinear` | standard |
+| `tensor.moe_dispatch` | `MoE` | com.microsoft |
+| `tensor.reshape` | `Reshape` | standard |
+| `tensor.transpose` | `Transpose` | standard |
+| `tensor.concat` | `Concat` | standard |
+| `tensor.gather` | `Gather` | standard |
+| `tensor.squeeze` / `unsqueeze` | `Squeeze` / `Unsqueeze` | standard |
+| `tensor.clip` / `clamp` | `Clip` | standard |
+| `tensor.topk` | `TopK` | standard |
+| `tensor.where` | `Where` | standard |
+| `tensor.cumsum` | `CumSum` | standard |
+| `tensor.constant` | `Constant` | standard |
+| `tensor.zeros` / `ones` | `ConstantOfShape` | standard |
+| `tensor.einsum` | `Einsum` | standard |
+| `tensor.fft` / `ifft` | `DFT` / `IDFT` | standard |
+| `tensor.sparse_matmul` | `MatMul` (sparse) | standard |
+| `tensor.fused_matmul_bias_relu` | `FusedMatMulBiasRelu` | com.microsoft |
+| `tensor.fused_matmul_bias` | `FusedMatMulBias` | com.microsoft |
+| `tensor.fused_linear_gelu` | `FusedGemm` | com.microsoft |
+| `tensor.fused_linear_silu` | `FusedGemm` | com.microsoft |
+| `tensor.fused_conv_batchnorm_relu` | `FusedConvBatchNormRelu` | com.microsoft |
+| `tensor.fused_attention_layernorm` | `FusedAttention` | com.microsoft |
+
+**Data type mapping:**
+
+| LIFT DataType | ONNX ElemType |
+|---------------|---------------|
+| `FP32` | 1 (FLOAT) |
+| `FP64` | 11 (DOUBLE) |
+| `FP16` | 10 (FLOAT16) |
+| `BF16` | 16 (BFLOAT16) |
+| `INT8` | 3 (INT8) |
+| `INT32` | 6 (INT32) |
+| `INT64` | 7 (INT64) |
+| `BOOL` | 9 (BOOL) |
+
+### 11.3 Export OpenQASM 3.0
 
 ```rust
 use lift_export::QasmExporter;
@@ -1368,7 +1448,7 @@ let qasm = exporter.export(&ctx).expect("QASM export failed");
 std::fs::write("output.qasm", &qasm).unwrap();
 ```
 
-Produces OpenQASM 3.0 executable on IBM Quantum, Rigetti, etc.
+Produces OpenQASM 3.0 executable on IBM Quantum, Rigetti, IonQ, Quantinuum.
 
 **Combine with**: `lift-opt` (optimise before export), `lift-quantum::Provider` (transpile to native gate set).
 
@@ -1486,16 +1566,88 @@ Predicts execution time using the roofline model.
 
 ```bash
 lift export model.lif --backend llvm --output model.ll
+lift export model.lif --backend onnx --output model.onnx
 lift export quantum.lif --backend qasm --output circuit.qasm
 ```
 
-Exports to LLVM IR or OpenQASM 3.0.
+Exports to **LLVM IR**, **ONNX** (opset 21), or **OpenQASM 3.0**.
 
 ---
 
-## 14. Combinations and Complete Pipelines
+## 14. lift-codegen — Programmatic Model Generation
 
-### 14.1 Complete AI Pipeline (Transformer)
+The `lift-codegen` binary lets you define models directly from Rust code and automatically generate all export formats.
+
+### 14.1 Running the Code Generator
+
+```bash
+cargo run --bin lift-codegen
+```
+
+This generates into `examples/`:
+- **4 `.lif` models** — Phi-3-mini, MLP, ResNet block, VQE circuit
+- **4 `.ll` files** — LLVM IR exports
+- **4 `.onnx` files** — ONNX exports
+- **1 `.qasm` file** — OpenQASM export (for quantum models only)
+- **1 `.lith` config** — H100 optimization configuration
+
+Each model is automatically verified, analysed, optimised, and exported.
+
+### 14.2 ModelBuilder API
+
+```rust
+use lift_core::model_builder::{ModelBuilder, tensor, tensor_2d, DataType};
+
+let model = ModelBuilder::new("my_model")
+    .function("forward")
+        .param("x", tensor(&[1, 784], DataType::FP32))
+        .param("w", tensor_2d(784, 256, DataType::FP32))
+        .op("tensor.matmul", &["x", "w"], "h", tensor(&[1, 256], DataType::FP32))
+        .op("tensor.relu", &["h"], "out", tensor(&[1, 256], DataType::FP32))
+        .returns("out")
+        .done();
+
+// Write .lif source file
+model.write_lif("my_model.lif").unwrap();
+
+// Build IR context for verification/analysis/export
+let ctx = model.build_context();
+lift_core::verifier::verify(&ctx).unwrap();
+```
+
+### 14.3 Multi-Target Export from Code
+
+```rust
+let ctx = model.build_context();
+
+// Optimise first
+let mut pm = PassManager::new();
+pm.add_pass(Box::new(lift_opt::Canonicalize));
+pm.add_pass(Box::new(lift_opt::ConstantFolding));
+pm.add_pass(Box::new(lift_opt::DeadCodeElimination));
+pm.add_pass(Box::new(lift_opt::TensorFusion));
+pm.run_all(&mut ctx);
+
+// Export to all 3 backends
+let llvm_ir = lift_export::LlvmExporter::new().export(&ctx).unwrap();
+let onnx_ir = lift_export::OnnxExporter::new().export(&ctx).unwrap();
+std::fs::write("my_model.ll", &llvm_ir).unwrap();
+std::fs::write("my_model.onnx", &onnx_ir).unwrap();
+
+// Export QASM only if quantum ops present
+if ctx.ops.iter().any(|(_, op)| ctx.strings.resolve(op.name).starts_with("quantum.")) {
+    let qasm_ir = lift_export::QasmExporter::new().export(&ctx).unwrap();
+    std::fs::write("my_model.qasm", &qasm_ir).unwrap();
+}
+```
+
+**Combine with**: All other crates. `ModelBuilder` is the programmatic entry point for defining models without `.lif` files.
+
+---
+
+## 15. Combinations and Complete Pipelines
+
+### 15.1 Complete AI Pipeline (Transformer)
 
 ```rust
 // 1. Import an ONNX model
@@ -1526,12 +1678,14 @@ pm.run_all(&mut ctx);
 let h100 = CostModel::h100();
 let pred = predict_performance(&analyze_module(&ctx), &h100);
 
-// 6. Export to LLVM
+// 6. Export to LLVM and ONNX
 let llvm = LlvmExporter::new().export(&ctx)?;
+let onnx = OnnxExporter::new().export(&ctx)?;
 std::fs::write("bert_optimised.ll", llvm)?;
+std::fs::write("bert_optimised.onnx", onnx)?;
 ```
 
-### 14.2 Complete Quantum Pipeline (Bell State)
+### 15.2 Complete Quantum Pipeline (Bell State)
 
 ```rust
 // 1. Parse the circuit
@@ -1564,7 +1718,7 @@ let qasm = QasmExporter::new().export(&ctx)?;
 std::fs::write("bell_optimised.qasm", qasm)?;
 ```
 
-### 14.3 Complete Hybrid Pipeline (VQE)
+### 15.3 Complete Hybrid Pipeline (VQE)
 
 ```rust
 // 1. Configure encoding
@@ -1612,7 +1766,7 @@ let carbon = energy.carbon_grams(rb.elapsed_ms, 1);
 println!("Carbon footprint: {:.4} g CO₂", carbon);
 ```
 
-### 14.4 Complete CLI Pipeline
+### 15.4 Complete CLI Pipeline
 
 ```bash
 # Verify, analyse, optimise, predict and export in one sequence
@@ -1621,13 +1775,14 @@ lift analyse model.lif --format json > analysis.json
 lift optimise model.lif --config production.lith --output optimised.lif
 lift predict optimised.lif --device h100
 lift export optimised.lif --backend llvm --output model.ll
+lift export optimised.lif --backend onnx --output model.onnx
 ```
 
 ---
 
-## 15. Concrete Examples
+## 16. Concrete Examples
 
-### 15.1 MLP (Multi-Layer Perceptron)
+### 16.1 MLP (Multi-Layer Perceptron)
 
 File `tensor_mlp.lif`:
 
@@ -1649,7 +1804,7 @@ module @mlp {
 }
 ```
 
-### 15.2 Self-Attention (Transformer)
+### 16.2 Self-Attention (Transformer)
 
 File `attention.lif`:
 
@@ -1667,7 +1822,7 @@ module @transformer {
 }
 ```
 
-### 15.3 Bell State (Quantum)
+### 16.3 Bell State (Quantum)
 
 File `quantum_bell.lif`:
 
@@ -1683,7 +1838,7 @@ module @bell_state {
 }
 ```
 
-### 15.4 Production Configuration
+### 16.4 Production Configuration
 
 File `production.lith`:
 
@@ -1720,13 +1875,14 @@ shots = 4096
 
 | Task | Crates to combine |
 |------|-------------------|
-| **Train an LLM** | lift-tensor + lift-opt (TensorFusion, FlashAttention) + lift-sim (CostModel) + lift-export (LLVM) |
-| **Quantised inference** | lift-tensor + lift-opt (QuantisationPass) + lift-predict + lift-export (LLVM) |
+| **Train an LLM** | lift-tensor + lift-opt (TensorFusion, FlashAttention) + lift-sim (CostModel) + lift-export (LLVM, ONNX) |
+| **Quantised inference** | lift-tensor + lift-opt (QuantisationPass) + lift-predict + lift-export (LLVM, ONNX) |
 | **Quantum circuit** | lift-quantum + lift-opt (GateCancellation, RotationMerge, LayoutMapping) + lift-export (QASM) |
 | **VQE / QAOA** | lift-hybrid + lift-quantum + lift-opt (NoiseAwareSchedule) + lift-sim (QuantumCostModel) |
 | **Quantum ML** | lift-hybrid (QuantumKernel, encoding) + lift-tensor + lift-quantum |
 | **Cost analysis** | lift-sim (CostModel, EnergyModel) + lift-predict |
 | **QEC planning** | lift-quantum (qec, topology) + lift-sim (QuantumCostModel) |
-| **Import/Optimise/Export** | lift-import + lift-opt + lift-export |
+| **Import/Optimise/Export** | lift-import + lift-opt + lift-export (LLVM, ONNX, QASM) |
+| **Programmatic generation** | lift-codegen + lift-core (ModelBuilder) + lift-export |
 | **Stable Diffusion** | lift-tensor (UNet ops) + lift-opt (TensorFusion) + lift-export |
 | **GNN** | lift-tensor (GNNMessagePassing, GNNGlobalPooling) + lift-opt + lift-export |

@@ -34,8 +34,9 @@ LIFT est un compilateur IR unifié pour IA classique + calcul quantique, écrit 
 | `lift-predict` | Prédiction roofline, prédiction quantique |
 | `lift-config` | Parseur fichiers `.lith` |
 | `lift-import` | Import ONNX, PyTorch FX, OpenQASM (squelettes) |
-| `lift-export` | Export LLVM IR, OpenQASM 3.0 (basiques) |
+| `lift-export` | Export LLVM IR, ONNX (opset 21), OpenQASM 3.0 |
 | `lift-cli` | CLI : verify, analyse, print, optimise, predict, export |
+| `lift-codegen` | Génération programmatique de modèles, export multi-format |
 | `lift-tests` | 505 tests, 0 échecs |
 
 ---
@@ -91,8 +92,9 @@ Produit : total_flops, total_memory_bytes, peak_memory, num_ops par dialecte, op
 - **Quantique** : fidélité, circuit_time_us, shots nécessaires. 3 modèles : superconducteur, ions piégés, atomes neutres.
 - **Budget** : vérifie FLOPs max, mémoire max, temps max, fidélité min. ReactiveBudget pour suivi en temps réel.
 
-### Étape 9 — Export (BASIQUE)
-- **LLVM IR** : squelette seulement — les ops sont émises en commentaires, pas en vrai LLVM IR
+### Étape 9 — Export (3 backends)
+- **LLVM IR** : ops émises en commentaires avec appels runtime cuBLAS/cuDNN
+- **ONNX** : protobuf text, opset 21, 70+ opérations mappées (standard + com.microsoft)
 - **OpenQASM 3.0** : 10 portes sur 50+ (H, X, Y, Z, CX, CZ, Measure, RZ, RX, RY)
 
 ---
@@ -113,13 +115,17 @@ Encode/Decode, 5 gradients, 4 algorithmes variationnels, 2 transferts, 4 traitem
 
 ## 3.4 CLI — 6 commandes
 
-`verify`, `analyse` (texte/JSON), `print`, `optimise` (avec .lith), `predict` (A100/H100), `export` (llvm/qasm).
+`verify`, `analyse` (texte/JSON), `print`, `optimise` (avec .lith), `predict` (A100/H100), `export` (llvm/onnx/qasm).
 
-## 3.5 Modèles d'énergie
+## 3.5 Génération programmatique — lift-codegen
+
+Binaire `lift-codegen` : définit des modèles depuis Rust via `ModelBuilder`, génère automatiquement `.lif`, `.ll`, `.onnx`, `.qasm`, `.lith`. 4 modèles pré-définis (Phi-3-mini, MLP, ResNet, VQE).
+
+## 3.6 Modèles d'énergie
 
 EnergyModel A100/H100 : énergie joules/kWh, CO2 grammes, énergie quantique (cryogénie). **Non connecté au CLI.**
 
-## 3.6 Tests — 505 tests, 0 échecs
+## 3.7 Tests — 505 tests, 0 échecs
 
 Types, opérations, formes, FLOPs, mémoire, portes, bruit, topologie, QEC, Kraus, benchmarks (GPT-2, LLaMA-7B, ResNet-50, BERT-base).
 
@@ -131,23 +137,27 @@ Types, opérations, formes, FLOPs, mémoire, portes, bruit, topologie, QEC, Krau
 
 L'exporteur produit `define void @func(ptr %arg0) { entry: ; tensor.matmul  ret void }`. Les opérations sont en **commentaires**, pas en vrai LLVM IR. Aucun appel cuBLAS/cuDNN, aucune gestion mémoire.
 
-## 4.2 Export OpenQASM — 10 portes sur 50+
+## 4.2 Export ONNX — OPÉRATIONNEL
+
+L'exporteur ONNX produit du protobuf text (opset 21) avec 70+ opérations mappées vers les ops standard ONNX et com.microsoft. Les types de données, shapes et nœuds d'initialisation sont générés. **Manque** : la sérialisation binaire protobuf (actuellement texte uniquement), les graphes de nœuds connectés (les nœuds sont émis séquentiellement sans edges explicites).
+
+## 4.3 Export OpenQASM — 10 portes sur 50+
 
 Fonctionnel pour H, X, Y, Z, CX, CZ, Measure, RZ, RX, RY. Les 40+ autres → `// unsupported gate`. Le mapping qubit utilise un compteur, pas le vrai SSA.
 
-## 4.3 Import ONNX/PyTorch/QASM — SQUELETTES
+## 4.4 Import ONNX/PyTorch/QASM — SQUELETTES
 
 Les 3 importeurs lisent le format source mais créent un module+fonction **vides**. Aucun nœud/opération n'est réellement converti en opérations LIFT.
 
-## 4.4 Layout Mapping — ANNOTATION
+## 4.5 Layout Mapping — ANNOTATION
 
 Ajoute `needs_swap = true` sur les portes 2Q non adjacentes. **Ne fait pas l'insertion réelle de SWAPs ni le routage.**
 
-## 4.5 Passes non connectées au CLI
+## 4.6 Passes non connectées au CLI
 
 6 passes existent mais ne sont pas dans le `match` de `cmd_optimise` : rotation-merge, flash-attention, cse, quantisation-pass, noise-aware-schedule, layout-mapping.
 
-## 4.6 Inférence de forme — PARTIELLE
+## 4.7 Inférence de forme — PARTIELLE
 
 Fonctionne pour environ 20 opérations sur 110. Manque : Conv3D, ConvTranspose2D, Reshape, Permute, Concat, Split, Slice, LSTM, GRU, RNN, FFT, SVD, Einsum, GNN, MoE, diffusion, quantisation, parallélisme.
 
@@ -355,17 +365,19 @@ L'objectif de LIFT est : **"Simulate → Predict → Optimise → Compile"**. Vo
 
 | Métrique | Valeur |
 |----------|--------|
-| **Crates** | 13 |
+| **Crates** | 14 |
 | **Fichiers Rust** | 67 |
 | **Tests** | 505 (0 échecs) |
 | **Opérations définies** | 179 (110 tensor + 48 quantum + 21 hybrid) |
 | **Passes d'optimisation** | 11 (5 connectées au CLI) |
+| **Backends d'export** | 3 (LLVM IR, ONNX opset 21, OpenQASM 3.0) |
 | **Modèles de coût** | 5 (A100, H100, superconducteur, ions piégés, atomes neutres) |
 | **Portes exportées QASM** | 10 / 50+ |
+| **Ops exportées ONNX** | 70+ / 110 |
 | **Import fonctionnel** | 0 / 3 |
 | **Exécution possible** | Non |
 | **Compilation réelle** | Non |
 
-**LIFT est un framework d'analyse et d'optimisation IR solide et bien testé**, avec une excellente couverture des dialectes (tensor, quantum, hybrid) et une architecture propre. Son point fort est l'analyse statique (FLOPs, mémoire, fidélité, bruit, coût). **Ce qui lui manque principalement**, c'est la capacité d'exécuter réellement du code : les exports sont des squelettes, les imports sont vides, et il n'y a pas de runtime. Pour devenir un compilateur complet "Simulate → Predict → Optimise → Compile", il faut implémenter le lowering réel, les imports fonctionnels, et un simulateur.
+**LIFT est un framework d'analyse et d'optimisation IR solide et bien testé**, avec une excellente couverture des dialectes (tensor, quantum, hybrid) et une architecture propre. Son point fort est l'analyse statique (FLOPs, mémoire, fidélité, bruit, coût). L'ajout de l'export ONNX (opset 21) et du binaire `lift-codegen` permet désormais de générer des modèles programmatiquement et de les exporter vers 3 backends (LLVM, ONNX, QASM). **Ce qui lui manque principalement**, c'est la capacité d'exécuter réellement du code : l'export LLVM est un squelette, les imports sont vides, et il n'y a pas de runtime. Pour devenir un compilateur complet "Simulate → Predict → Optimise → Compile", il faut implémenter le lowering réel, les imports fonctionnels, et un simulateur.
 
 **Ce document est l'analyse complète et honnête de l'état de LIFT.**

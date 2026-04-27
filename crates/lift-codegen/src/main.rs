@@ -105,7 +105,10 @@ fn emit_and_validate(name: &str, builder: ModelBuilder) {
         report.num_ops,
     );
 
-    // 5. Optimise (default passes)
+    // 5. Check if quantum ops present
+    let has_quantum = ctx.ops.iter().any(|(_, op)| ctx.strings.resolve(op.name).starts_with("quantum."));
+
+    // 6. Optimise (default passes)
     let mut opt_ctx = ctx;
     let mut pm = PassManager::new();
     pm.add_pass(Box::new(lift_opt::Canonicalize));
@@ -123,12 +126,28 @@ fn emit_and_validate(name: &str, builder: ModelBuilder) {
         println!("  [OPTIMISE] Changed: {}", changed.join(", "));
     }
 
-    // 6. Export LLVM
-    let exporter = lift_export::LlvmExporter::new();
-    let llvm_ir = exporter.export(&opt_ctx).unwrap();
+    // 7. Export LLVM
+    let llvm_exporter = lift_export::LlvmExporter::new();
+    let llvm_ir = llvm_exporter.export(&opt_ctx).unwrap();
     let llvm_path = format!("examples/{}.ll", name);
     std::fs::write(&llvm_path, &llvm_ir).unwrap();
     println!("  [EXPORT] {} ({} bytes)", llvm_path, llvm_ir.len());
+
+    // 8. Export ONNX
+    let onnx_exporter = lift_export::OnnxExporter::new();
+    let onnx_ir = onnx_exporter.export(&opt_ctx).unwrap();
+    let onnx_path = format!("examples/{}.onnx", name);
+    std::fs::write(&onnx_path, &onnx_ir).unwrap();
+    println!("  [EXPORT] {} ({} bytes)", onnx_path, onnx_ir.len());
+
+    // 9. Export OpenQASM (if quantum)
+    if has_quantum {
+        let qasm_exporter = lift_export::QasmExporter::new();
+        let qasm_ir = qasm_exporter.export(&opt_ctx).unwrap();
+        let qasm_path = format!("examples/{}.qasm", name);
+        std::fs::write(&qasm_path, &qasm_ir).unwrap();
+        println!("  [EXPORT] {} ({} bytes)", qasm_path, qasm_ir.len());
+    }
 
     println!();
 }

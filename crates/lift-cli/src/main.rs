@@ -64,7 +64,7 @@ enum Commands {
         /// Path to .lif source file
         #[arg(value_name = "FILE")]
         file: PathBuf,
-        /// Target backend (llvm, qasm)
+        /// Target backend (llvm, qasm, onnx)
         #[arg(short, long)]
         backend: String,
         /// Output file
@@ -297,7 +297,11 @@ fn cmd_export(path: &std::path::Path, backend: &str, output_path: Option<&std::p
             let exporter = lift_export::QasmExporter::new();
             exporter.export(&ctx).map_err(|e| format!("{}", e))?
         }
-        _ => return Err(format!("Unknown backend: {}. Use 'llvm' or 'qasm'", backend)),
+        "onnx" => {
+            let exporter = lift_export::OnnxExporter::new();
+            exporter.export(&ctx).map_err(|e| format!("{}", e))?
+        }
+        _ => return Err(format!("Unknown backend: {}. Use 'llvm', 'qasm', or 'onnx'", backend)),
     };
 
     if let Some(out) = output_path {

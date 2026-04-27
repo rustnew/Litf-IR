@@ -79,7 +79,10 @@ for model in "${MODELS[@]}"; do
     # Step 8: Export LLVM
     check "export-llvm" "$LIFT export $model --backend llvm"
 
-    # Step 9: Export QASM (quantum models only)
+    # Step 9: Export ONNX
+    check "export-onnx" "$LIFT export $model --backend onnx"
+
+    # Step 10: Export QASM (quantum models only)
     check "export-qasm" "$LIFT export $model --backend qasm"
 
     echo ""

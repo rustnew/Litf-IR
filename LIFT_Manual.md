@@ -1,7 +1,7 @@
 # LIFT User Manual — Complete Usage Guide
 
 > **LIFT** — *Language for Intelligent Frameworks and Technologies*
-> Version 0.2.1
+> Version 0.3.0
 
 This manual is the definitive reference for every use case of the LIFT compiler framework. It presents **real-world problems**, explains how LIFT solves them, and provides **working code examples** for each scenario.
 
@@ -20,7 +20,7 @@ This manual is the definitive reference for every use case of the LIFT compiler 
 9. [Use Case 5 — Model Import](#9-use-case-5--model-import)
 10. [Use Case 6 — Performance Prediction](#10-use-case-6--performance-prediction)
 11. [Use Case 7 — Quantised Inference](#11-use-case-7--quantised-inference)
-12. [Use Case 8 — Backend Export](#12-use-case-8--backend-export)
+12. [Use Case 8 — Backend Export (LLVM, ONNX, QASM)](#12-use-case-8--backend-export-llvm-onnx-qasm)
 13. [Use Case 9 — Energy and Carbon Estimation](#13-use-case-9--energy-and-carbon-estimation)
 14. [Use Case 10 — Device Topology and Routing](#14-use-case-10--device-topology-and-routing)
 15. [Use Case 11 — Diffusion and GNN Models](#15-use-case-11--diffusion-and-gnn-models)
@@ -28,8 +28,9 @@ This manual is the definitive reference for every use case of the LIFT compiler 
 17. [Use Case 13 — End-to-End Pipelines](#17-use-case-13--end-to-end-pipelines)
 18. [Configuration with `.lith` Files](#18-configuration-with-lith-files)
 19. [CLI Reference](#19-cli-reference)
-20. [Complete API Reference](#20-complete-api-reference)
-21. [Troubleshooting](#21-troubleshooting)
+20. [Programmatic Model Generation](#20-programmatic-model-generation)
+21. [Complete API Reference](#21-complete-api-reference)
+22. [Troubleshooting](#22-troubleshooting)
 
 ---
 
@@ -1118,7 +1119,7 @@ let e5m2 = Fp8Format::E5M2;
 
 ---
 
-## 12. Use Case 8 — Backend Export
+## 12. Use Case 8 — Backend Export (LLVM, ONNX, QASM)
 
 ### 12.1 Problem
 
@@ -1146,7 +1147,50 @@ clang -O3 output.ll -o model
 llc -O3 output.ll -filetype=obj -o model.o
 ```
 
-### 12.3 Export to OpenQASM 3.0
+### 12.3 Export to ONNX
+
+```rust
+use lift_export::OnnxExporter;
+
+let exporter = OnnxExporter::new();
+let onnx = exporter.export(&ctx).expect("ONNX export failed");
+
+std::fs::write("model.onnx", &onnx).unwrap();
+
+// JSON format also available
+let onnx_json = exporter.export_json(&ctx).expect("ONNX JSON export failed");
+std::fs::write("model_onnx.json", &onnx_json).unwrap();
+```
+
+The output is ONNX protobuf text format at **opset version 21**, compatible with:
+- **PyTorch** (via `torch.onnx.export` round-trip)
+- **TensorFlow** (via `tf2onnx`)
+- **TensorRT** (NVIDIA inference)
+- **ONNX Runtime** (cross-platform inference)
+- **Microsoft extensions** for attention, MoE, and fused operations
+
+**Key ONNX op mappings:**
+
+| LIFT Operation | ONNX Operator | Domain |
+|----------------|---------------|--------|
+| `tensor.matmul` | `MatMul` | standard |
+| `tensor.linear` | `Gemm` | standard |
+| `tensor.relu` | `Relu` | standard |
+| `tensor.gelu` | `Gelu` | standard |
+| `tensor.softmax` | `Softmax` | standard |
+| `tensor.layernorm` | `LayerNormalization` | standard |
+| `tensor.rmsnorm` | `SimplifiedLayerNormalization` | com.microsoft |
+| `tensor.conv2d` | `Conv` | standard |
+| `tensor.attention` | `Attention` | com.microsoft |
+| `tensor.flash_attention` | `MultiHeadAttention` | com.microsoft |
+| `tensor.grouped_query_attention` | `GroupQueryAttention` | com.microsoft |
+| `tensor.quantize` | `QuantizeLinear` | standard |
+| `tensor.dequantize` | `DequantizeLinear` | standard |
+| `tensor.moe_dispatch` | `MoE` | com.microsoft |
+| `tensor.fused_matmul_bias_relu` | `FusedMatMulBiasRelu` | com.microsoft |
+| + 55 more operations | | |
+
+### 12.4 Export to OpenQASM 3.0
 
 ```rust
 use lift_export::QasmExporter;
@@ -1164,7 +1208,7 @@ The output is standard OpenQASM 3.0 executable on:
 - **Quantinuum** (via TKET)
 - Any OpenQASM 3.0 compatible platform
 
-### 12.4 Full Export Pipeline
+### 12.5 Full Export Pipeline
 
 ```rust
 use lift_core::printer::print_ir;
@@ -1176,6 +1220,10 @@ std::fs::write("debug.lif", &ir_text).unwrap();
 // Export to LLVM (for tensor/classical ops)
 let llvm = LlvmExporter::new().export(&ctx).expect("LLVM failed");
 std::fs::write("model.ll", &llvm).unwrap();
+
+// Export to ONNX (for PyTorch/TensorFlow/TensorRT interop)
+let onnx = OnnxExporter::new().export(&ctx).expect("ONNX failed");
+std::fs::write("model.onnx", &onnx).unwrap();
 
 // Export to QASM (for quantum ops)
 let qasm = QasmExporter::new().export(&ctx).expect("QASM failed");
@@ -1910,6 +1958,9 @@ Bottleneck: memory
 # Export to LLVM IR
 lift export examples/tensor_mlp.lif --backend llvm -o model.ll
 
+# Export to ONNX (opset 21)
+lift export examples/tensor_mlp.lif --backend onnx -o model.onnx
+
 # Export to OpenQASM 3.0
 lift export examples/quantum_bell.lif --backend qasm -o circuit.qasm
 
@@ -1927,9 +1978,77 @@ lift export examples/quantum_bell.lif --backend qasm
 
 ---
 
-## 20. Complete API Reference
+## 20. Programmatic Model Generation
 
-### 20.1 Crate Overview
+### 20.1 Using lift-codegen
+
+The `lift-codegen` binary generates models from Rust code and exports all formats automatically:
+
+```bash
+cargo run --bin lift-codegen
+```
+
+Output:
+```
+╔═════════════════════════════════════════════════════════════╗
+║  LIFT Code Generator — Models from Rust                      ║
+╚═════════════════════════════════════════════════════════════╝
+
+── Generating Phi-3-mini ──
+  [WRITE] examples/phi3_generated.lif (2703 bytes)
+  [VERIFY] OK — 20 ops, 32 values
+  [ANALYSE] FLOPs=54.43 GFLOP, Memory=1.23 GiB, Ops=20
+  [OPTIMISE] No changes
+  [EXPORT] examples/phi3_generated.ll (5217 bytes)
+  [EXPORT] examples/phi3_generated.onnx (10563 bytes)
+
+── Generating VQE Circuit ──
+  [WRITE] examples/vqe_generated.lif (345 bytes)
+  [VERIFY] OK — 5 ops, 6 values
+  [ANALYSE] FLOPs=0 FLOP, Memory=0 B, Ops=5
+  [OPTIMISE] No changes
+  [EXPORT] examples/vqe_generated.ll (3138 bytes)
+  [EXPORT] examples/vqe_generated.onnx (2023 bytes)
+  [EXPORT] examples/vqe_generated.qasm (120 bytes)
+```
+
+### 20.2 ModelBuilder API
+
+Define models programmatically without writing `.lif` files:
+
+```rust
+use lift_core::model_builder::{ModelBuilder, tensor, tensor_2d, DataType};
+
+let model = ModelBuilder::new("my_mlp")
+    .function("forward")
+        .param("x", tensor(&[1, 784], DataType::FP32))
+        .param("w1", tensor_2d(784, 256, DataType::FP32))
+        .param("b1", tensor(&[256], DataType::FP32))
+        .op("tensor.matmul", &["x", "w1"], "h1", tensor(&[1, 256], DataType::FP32))
+        .op("tensor.add", &["h1", "b1"], "h2", tensor(&[1, 256], DataType::FP32))
+        .op("tensor.relu", &["h2"], "out", tensor(&[1, 256], DataType::FP32))
+        .returns("out")
+        .done();
+
+// Write .lif source (parseable by lift-cli)
+model.write_lif("my_mlp.lif").unwrap();
+
+// Build IR context for full pipeline
+let ctx = model.build_context();
+lift_core::verifier::verify(&ctx).unwrap();
+
+// Export to all backends
+let llvm = lift_export::LlvmExporter::new().export(&ctx).unwrap();
+let onnx = lift_export::OnnxExporter::new().export(&ctx).unwrap();
+std::fs::write("my_mlp.ll", &llvm).unwrap();
+std::fs::write("my_mlp.onnx", &onnx).unwrap();
+```
+
+---
+
+## 21. Complete API Reference
+
+### 21.1 Crate Overview
 
 | Crate | Purpose |
 |-------|---------|
@@ -1942,9 +2061,10 @@ lift export examples/quantum_bell.lif --backend qasm
 | **lift-sim** | Cost models (GPU + QPU), analysis reports, energy models, budgets |
 | **lift-predict** | Roofline prediction (classical), quantum prediction (fidelity + shots) |
 | **lift-import** | Importers: ONNX, PyTorch FX, OpenQASM 3.0 |
-| **lift-export** | Exporters: LLVM IR, OpenQASM 3.0 |
+| **lift-export** | Exporters: LLVM IR, ONNX (opset 21), OpenQASM 3.0 |
 | **lift-config** | `.lith` configuration parser |
 | **lift-cli** | Command-line interface |
+| **lift-codegen** | Programmatic model generation binary |
 
 ### 20.2 lift-core API
 

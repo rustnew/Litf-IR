@@ -13,7 +13,7 @@ The first Intermediate Representation built natively for both AI and Quantum Com
 [![License: MIT](https://img.shields.io/badge/License-MIT-orange.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.80+-orange.svg)](https://rustlang.org)
 [![Tests](https://img.shields.io/badge/Tests-505%20passed-brightgreen.svg)]()
-[![Version](https://img.shields.io/badge/Version-0.2.0-blue.svg)]()
+[![Version](https://img.shields.io/badge/Version-0.3.0-blue.svg)]()
 [![Status](https://img.shields.io/badge/Status-Research%20Alpha-gold.svg)]()
 
 </div>
@@ -28,9 +28,9 @@ LIFT is a **unified compiler infrastructure** that treats AI computation (tensor
  .lif source ──► LIFT-CORE (SSA IR) ──► SIMULATE ──► PREDICT ──► OPTIMISE ──► COMPILE
                       │                                                          │
           ┌───────────┼───────────┐                                 ┌────────────┼────────────┐
-     LIFT-TENSOR  LIFT-QUANTUM  LIFT-HYBRID                    CUDA (GPU)   OpenQASM 3   LLVM (CPU)
-     90+ tensor   50+ gates     21 hybrid                      H100/A100    IBM/Rigetti   AVX-512
-     operations   Kraus/QEC     VQC/VQE ops                    MI300        IonQ          OpenMP
+     LIFT-TENSOR  LIFT-QUANTUM  LIFT-HYBRID                    CUDA (GPU)   OpenQASM 3   LLVM (CPU)   ONNX
+     107 tensor   50+ gates     21 hybrid                      H100/A100    IBM/Rigetti   AVX-512      TensorRT
+     operations   Kraus/QEC     VQC/VQE ops                    MI300        IonQ          OpenMP       PyTorch
 ```
 
 ---
@@ -70,7 +70,7 @@ No existing IR handles both AI and quantum in a single representation.
   DIALECTS    LIFT-CORE  |  LIFT-TENSOR  |  LIFT-QUANTUM  |  LIFT-HYBRID
   ANALYSIS    Shape inference  |  FLOP count  |  Noise sim  |  Energy model  |  Roofline
   PASSES      TensorFusion  FlashAttention  GateCancellation  RotationMerge  LayoutMapping  CSE ...
-  BACKENDS    CUDA (PTX)  |  OpenQASM 3  |  LLVM IR  |  XLA (planned)
+  BACKENDS    CUDA (PTX)  |  OpenQASM 3  |  LLVM IR  |  ONNX (opset 21)  |  XLA (planned)
   HARDWARE    H100 / A100 / MI300  |  IBM Kyoto / Rigetti / IonQ  |  TPU
 ```
 
@@ -80,16 +80,17 @@ No existing IR handles both AI and quantum in a single representation.
 |-------|---------|-------------|
 | `lift-core` | SSA IR foundation | Types, values, operations, blocks, regions, verifier, printer, pass manager |
 | `lift-ast` | Frontend | Lexer, parser, AST, IR builder for `.lif` files |
-| `lift-tensor` | AI dialect | 90+ ops (attention, conv, pooling, MoE, quantisation, GNN, fused), shape inference |
+| `lift-tensor` | AI dialect | 107 ops (attention, conv, pooling, MoE, quantisation, GNN, fused), shape inference |
 | `lift-quantum` | Quantum dialect | 50+ gates (IBM/Rigetti/IonQ native), noise models, Kraus channels, QEC, topology |
 | `lift-hybrid` | Fusion dialect | 21 ops (VQC, VQE, QAOA), gradient methods, encoding strategies, GPU-QPU transfer |
 | `lift-sim` | Analysis engine | Cost models (A100/H100), quantum cost (superconducting/trapped-ion/neutral-atom), energy, carbon |
 | `lift-predict` | Prediction | Roofline model, budget enforcement |
 | `lift-opt` | Optimisation | 11 passes: DCE, constant fold, tensor fusion, flash attention, gate cancel, rotation merge, CSE, quantisation, noise-aware schedule, layout mapping, canonicalise |
 | `lift-import` | Importers | ONNX, PyTorch FX, OpenQASM 3 |
-| `lift-export` | Backends | LLVM IR, OpenQASM 3 |
+| `lift-export` | Backends | LLVM IR, ONNX (opset 21), OpenQASM 3 |
 | `lift-config` | Configuration | `.lith` parser and validator |
-| `lift-cli` | CLI | `lift verify`, `lift analyse`, `lift print`, `lift optimise`, `lift export` |
+| `lift-cli` | CLI | `lift verify`, `lift analyse`, `lift print`, `lift optimise`, `lift predict`, `lift export` |
+| `lift-codegen` | Codegen | Programmatic model generation, multi-format export |
 
 ---
 
@@ -190,16 +191,17 @@ prediction {
 |-----------|--------|----------|
 | `lift-core` | Stable | SSA IR, types, verifier, printer, pass manager |
 | `lift-ast` | Stable | Full lexer, parser, AST, IR builder |
-| `lift-tensor` | Stable | 90+ operations, shape inference, FLOP counting |
+| `lift-tensor` | Stable | 107 operations, shape inference, FLOP counting |
 | `lift-quantum` | Stable | 50+ gates, noise models, Kraus channels, QEC codes, topology |
 | `lift-hybrid` | Stable | 21 operations, gradient methods, encoding strategies |
 | `lift-sim` | Stable | Cost models, energy model, quantum simulation, budget tracking |
 | `lift-predict` | Stable | Roofline model, budget enforcement |
 | `lift-opt` | Stable | 11 optimisation passes |
 | `lift-import` | Active | ONNX, PyTorch FX, OpenQASM 3 importers |
-| `lift-export` | Active | LLVM IR, OpenQASM 3 exporters |
+| `lift-export` | Active | LLVM IR, ONNX (opset 21), OpenQASM 3 exporters |
 | `lift-config` | Stable | `.lith` parser and types |
-| `lift-cli` | Stable | verify, analyse, print, optimise, export |
+| `lift-cli` | Stable | verify, analyse, print, optimise, predict, export |
+| `lift-codegen` | Stable | programmatic model generation, multi-format export |
 
 **Test suite:** 505 tests, 100% pass rate across 12 crates.
 
@@ -212,7 +214,7 @@ prediction {
 | Core IR + Dialects | Done | SSA IR, tensor/quantum/hybrid dialects complete |
 | Optimisation Passes | Done | 11 passes implemented and tested |
 | Analysis Engine | Done | Cost models, energy, noise simulation |
-| Import/Export | Active | ONNX, PyTorch FX, LLVM, OpenQASM |
+| Import/Export | Active | ONNX, PyTorch FX, LLVM, ONNX (opset 21), OpenQASM |
 | Hardware Backends | Planned | CUDA PTX, native OpenQASM execution |
 | Python Bindings | Planned | PyO3-based Python API |
 | v1.0 Release | Q4 2026 | Full pipeline, benchmarks, arXiv paper |
