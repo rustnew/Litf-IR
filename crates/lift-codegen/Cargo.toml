@@ -6,7 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
-description = "LIFT code generator: define models from Rust and emit .lif + .lith files"
+description = "LIFT code generator: define models from Rust and emit .lif, .lith, .ll, .onnx, .qasm files"
 
 [[bin]]
 name = "lift-codegen"

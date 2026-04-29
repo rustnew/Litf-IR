@@ -7,7 +7,7 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 readme = "../../README.md"
-description = "LIFT-EXPORT: Backends — LLVM IR, OpenQASM 3, CUDA PTX (planned), XLA (planned)"
+description = "LIFT-EXPORT: Backends — LLVM IR, ONNX (opset 21), OpenQASM 3, CUDA PTX (planned), XLA (planned)"
 keywords = ["export", "llvm", "qasm", "backend", "compiler"]
 categories = ["compilers", "science"]
 
