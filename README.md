@@ -106,8 +106,8 @@ This installs the `lift` binary with the `verify`, `analyse`, `optimise`,
 ### Build from source
 
 ```bash
-git clone https://github.com/rustnew/Litf-IR.git
-cd Litf-IR
+git clone https://github.com/rustnew/Lift.git
+cd Lift
 cargo build --release
 ```
 

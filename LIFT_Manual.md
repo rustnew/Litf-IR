@@ -88,7 +88,7 @@ The unified pipeline: **import → verify → analyse → optimise → predict �
 ### 2.2 Build
 
 ```bash
-git clone https://github.com/rustnew/Litf-IR.git
+git clone https://github.com/rustnew/Lift.git
 cd Lift
 cargo build --release
 cargo test --workspace   # 535 tests, all pass
@@ -2378,4 +2378,4 @@ lift export input.lif --backend qasm -o circuit.qasm
 
 ---
 
-*LIFT v0.4.0 — MIT License — https://github.com/rustnew/Litf-IR*
+*LIFT v0.4.0 — MIT License — https://github.com/rustnew/Lift*

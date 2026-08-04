@@ -101,7 +101,7 @@ No existing IR handles both AI and quantum in a single representation.
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 # Clone and build
-git clone https://github.com/rustnew/Litf-IR.git
+git clone https://github.com/rustnew/Lift.git
 cd lift
 cargo build --release
 
