@@ -5,6 +5,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.80%2B-orange.svg)](https://www.rust-lang.org/)
 [![Version](https://img.shields.io/badge/version-0.4.0-green.svg)](Cargo.toml)
+[![crates.io](https://img.shields.io/crates/v/lift-core.svg)](https://crates.io/crates/lift-core)
+[![Documentation](https://img.shields.io/badge/docs.rs-lift--core-blue.svg)](https://docs.rs/lift-core)
 
 LIFT is a modular compiler framework that provides a single SSA-based intermediate representation spanning **tensor operations** (AI/ML), **quantum gates**, and **classical-quantum hybrid computation**. It enables a unified pipeline: **define → verify → analyse → optimise → predict → export**.
 
@@ -66,17 +68,46 @@ LIFT is a modular compiler framework that provides a single SSA-based intermedia
 | **lift-cli** | Command-line interface (`verify`, `analyse`, `optimise`, `predict`, `export`, `print`) |
 | **lift-codegen** | Programmatic model generation binary — define models from Rust, emit all formats |
 
+### Published Crates (v0.4.0)
+
+All LIFT crates are published to [crates.io](https://crates.io):
+
+| Crate | Docs |
+|-------|------|
+| [lift-core](https://crates.io/crates/lift-core) | [docs.rs](https://docs.rs/lift-core) |
+| [lift-ast](https://crates.io/crates/lift-ast) | [docs.rs](https://docs.rs/lift-ast) |
+| [lift-tensor](https://crates.io/crates/lift-tensor) | [docs.rs](https://docs.rs/lift-tensor) |
+| [lift-quantum](https://crates.io/crates/lift-quantum) | [docs.rs](https://docs.rs/lift-quantum) |
+| [lift-hybrid](https://crates.io/crates/lift-hybrid) | [docs.rs](https://docs.rs/lift-hybrid) |
+| [lift-sim](https://crates.io/crates/lift-sim) | [docs.rs](https://docs.rs/lift-sim) |
+| [lift-predict](https://crates.io/crates/lift-predict) | [docs.rs](https://docs.rs/lift-predict) |
+| [lift-opt](https://crates.io/crates/lift-opt) | [docs.rs](https://docs.rs/lift-opt) |
+| [lift-import](https://crates.io/crates/lift-import) | [docs.rs](https://docs.rs/lift-import) |
+| [lift-export](https://crates.io/crates/lift-export) | [docs.rs](https://docs.rs/lift-export) |
+| [lift-config](https://crates.io/crates/lift-config) | [docs.rs](https://docs.rs/lift-config) |
+| [lift-cli](https://crates.io/crates/lift-cli) | [docs.rs](https://docs.rs/lift-cli) |
+| [lift-codegen](https://crates.io/crates/lift-codegen) | [docs.rs](https://docs.rs/lift-codegen) |
+
 ## Quick Start
 
 ### Prerequisites
 
 - **Rust 1.80+** — install via [rustup](https://rustup.rs/)
 
-### Build
+### Install the CLI from crates.io
+
+```bash
+cargo install lift-cli
+```
+
+This installs the `lift` binary with the `verify`, `analyse`, `optimise`,
+`predict`, and `export` commands.
+
+### Build from source
 
 ```bash
 git clone https://github.com/rustnew/Litf-IR.git
-cd Lift
+cd Litf-IR
 cargo build --release
 ```
 
@@ -267,12 +298,10 @@ See the [`examples/`](examples/) directory:
 
 ### Hand-written models
 - **`phi3_mini.lif`** — Phi-3-mini transformer
-- **`deepseek_v2_lite.lif`** — DeepSeek V2 Lite (MoE)
 - **`llama2_7b.lif`** — LLaMA-2 7B
 - **`mistral_7b.lif`** — Mistral 7B (sliding window attention)
 - **`bert_base.lif`** — BERT-base
 - **`tensor_mlp.lif`** — Multi-layer perceptron
-- **`attention.lif`** — Transformer self-attention
 - **`quantum_bell.lif`** — Bell state preparation
 
 ### Generated models (via `cargo run --bin lift-codegen`)
@@ -284,7 +313,7 @@ See the [`examples/`](examples/) directory:
 ### Validation
 
 ```bash
-bash examples/validate_all.sh   # Full pipeline validation (113+ tests)
+bash examples/validate_all.sh   # Full pipeline validation (105 checks)
 ```
 
 ## Documentation
