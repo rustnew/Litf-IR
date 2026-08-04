@@ -1,7 +1,7 @@
 use lift_core::context::Context;
-use lift_quantum::noise::{CircuitNoise, GateNoise};
 use lift_quantum::gates::QuantumGate;
-use serde::{Serialize, Deserialize};
+use lift_quantum::noise::{CircuitNoise, GateNoise};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct QuantumAnalysis {

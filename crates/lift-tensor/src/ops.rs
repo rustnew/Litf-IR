@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 /// FP8 quantisation format variants.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -421,47 +421,98 @@ impl TensorOp {
     pub fn num_inputs(&self) -> (usize, usize) {
         match self {
             // Unary (1 input)
-            Self::Neg | Self::ReLU | Self::GeLU | Self::SiLU |
-            Self::Sigmoid | Self::Tanh | Self::LeakyReLU | Self::ELU |
-            Self::Mish | Self::HardSwish | Self::HardSigmoid |
-            Self::Reshape | Self::Transpose | Self::Squeeze | Self::Unsqueeze |
-            Self::Permute | Self::Expand | Self::Slice | Self::Pad | Self::Tile |
-            Self::Quantize | Self::Dequantize |
-            Self::QuantizeInt4 | Self::DequantizeInt4 |
-            Self::QuantizeFp8 | Self::DequantizeFp8 |
-            Self::Offload | Self::Checkpoint |
-            Self::GradReLU | Self::GradGeLU |
-            Self::Softmax | Self::Cumsum | Self::Sort | Self::TopK |
-            Self::FFT | Self::IFFT | Self::SVD | Self::Eig |
-            Self::GlobalAvgPool | Self::AdaptiveAvgPool2D |
-            Self::GNNGlobalPooling => (1, 1),
+            Self::Neg
+            | Self::ReLU
+            | Self::GeLU
+            | Self::SiLU
+            | Self::Sigmoid
+            | Self::Tanh
+            | Self::LeakyReLU
+            | Self::ELU
+            | Self::Mish
+            | Self::HardSwish
+            | Self::HardSigmoid
+            | Self::Reshape
+            | Self::Transpose
+            | Self::Squeeze
+            | Self::Unsqueeze
+            | Self::Permute
+            | Self::Expand
+            | Self::Slice
+            | Self::Pad
+            | Self::Tile
+            | Self::Quantize
+            | Self::Dequantize
+            | Self::QuantizeInt4
+            | Self::DequantizeInt4
+            | Self::QuantizeFp8
+            | Self::DequantizeFp8
+            | Self::Offload
+            | Self::Checkpoint
+            | Self::GradReLU
+            | Self::GradGeLU
+            | Self::Softmax
+            | Self::Cumsum
+            | Self::Sort
+            | Self::TopK
+            | Self::FFT
+            | Self::IFFT
+            | Self::SVD
+            | Self::Eig
+            | Self::GlobalAvgPool
+            | Self::AdaptiveAvgPool2D
+            | Self::GNNGlobalPooling => (1, 1),
 
             // Binary (2 inputs)
-            Self::Add | Self::Sub | Self::Mul | Self::Div |
-            Self::MatMul | Self::SparseMatMul |
-            Self::GradMatMul | Self::Embedding | Self::SparseEmbedding |
-            Self::Conv2D | Self::Conv1D | Self::Conv3D |
-            Self::ConvTranspose2D | Self::DepthwiseConv2D | Self::DilatedConv2D |
-            Self::MaxPool2D | Self::AvgPool2D |
-            Self::Solve | Self::GradConv2D | Self::Concat => (2, 2),
+            Self::Add
+            | Self::Sub
+            | Self::Mul
+            | Self::Div
+            | Self::MatMul
+            | Self::SparseMatMul
+            | Self::GradMatMul
+            | Self::Embedding
+            | Self::SparseEmbedding
+            | Self::Conv2D
+            | Self::Conv1D
+            | Self::Conv3D
+            | Self::ConvTranspose2D
+            | Self::DepthwiseConv2D
+            | Self::DilatedConv2D
+            | Self::MaxPool2D
+            | Self::AvgPool2D
+            | Self::Solve
+            | Self::GradConv2D
+            | Self::Concat => (2, 2),
 
             // Ternary (3 inputs)
-            Self::Linear | Self::FusedMatMulBias | Self::FusedLinearGeLU |
-            Self::FusedMatMulBiasReLU | Self::FusedLinearSiLU |
-            Self::Where | Self::Clamp |
-            Self::GradLinear => (3, 3),
+            Self::Linear
+            | Self::FusedMatMulBias
+            | Self::FusedLinearGeLU
+            | Self::FusedMatMulBiasReLU
+            | Self::FusedLinearSiLU
+            | Self::Where
+            | Self::Clamp
+            | Self::GradLinear => (3, 3),
 
             // Attention (3-4 inputs: Q, K, V, optional mask)
-            Self::Attention | Self::MultiHeadAttention |
-            Self::MultiQueryAttention | Self::GroupedQueryAttention |
-            Self::FlashAttention | Self::SlidingWindowAttention |
-            Self::CrossAttention | Self::GradAttention => (3, 4),
+            Self::Attention
+            | Self::MultiHeadAttention
+            | Self::MultiQueryAttention
+            | Self::GroupedQueryAttention
+            | Self::FlashAttention
+            | Self::SlidingWindowAttention
+            | Self::CrossAttention
+            | Self::GradAttention => (3, 4),
             Self::PagedAttention => (3, 5),
             Self::FusedAttentionLayerNorm => (3, 5),
 
             // Normalisation (variable: input + scale + bias)
-            Self::LayerNorm | Self::RMSNorm | Self::GroupNorm |
-            Self::InstanceNorm | Self::GradLayerNorm => (2, 3),
+            Self::LayerNorm
+            | Self::RMSNorm
+            | Self::GroupNorm
+            | Self::InstanceNorm
+            | Self::GradLayerNorm => (2, 3),
             Self::BatchNorm | Self::FusedConvBatchNormReLU => (3, 5),
 
             // Recurrent (2 inputs: input, hidden state)
@@ -479,17 +530,21 @@ impl TensorOp {
             Self::MoECombine => (2, 3),
 
             // Constants (0 inputs)
-            Self::Constant | Self::Zeros | Self::Ones |
-            Self::Arange | Self::Full => (0, 0),
+            Self::Constant | Self::Zeros | Self::Ones | Self::Arange | Self::Full => (0, 0),
 
             // Einsum (variable)
             Self::Einsum => (1, usize::MAX),
 
             // Parallelism / memory
-            Self::GradAccumulate | Self::GradSoftmax |
-            Self::ParallelSplit | Self::ParallelAllReduce |
-            Self::PipelineSend | Self::PipelineReceive |
-            Self::Gather | Self::Scatter | Self::Split => (1, usize::MAX),
+            Self::GradAccumulate
+            | Self::GradSoftmax
+            | Self::ParallelSplit
+            | Self::ParallelAllReduce
+            | Self::PipelineSend
+            | Self::PipelineReceive
+            | Self::Gather
+            | Self::Scatter
+            | Self::Split => (1, usize::MAX),
         }
     }
 
@@ -499,30 +554,47 @@ impl TensorOp {
             Self::MatMul | Self::SparseMatMul => "2*M*N*K",
             Self::Linear => "2*M*N*K + N (bias)",
             Self::Add | Self::Sub | Self::Mul | Self::Div => "N (element count)",
-            Self::ReLU | Self::Sigmoid | Self::Tanh |
-            Self::LeakyReLU | Self::ELU | Self::HardSigmoid => "N",
+            Self::ReLU
+            | Self::Sigmoid
+            | Self::Tanh
+            | Self::LeakyReLU
+            | Self::ELU
+            | Self::HardSigmoid => "N",
             Self::GeLU | Self::SiLU | Self::Mish | Self::HardSwish => "~8*N",
             Self::Softmax => "5*N (exp + sum + div)",
-            Self::LayerNorm | Self::RMSNorm |
-            Self::GroupNorm | Self::InstanceNorm => "7*N",
+            Self::LayerNorm | Self::RMSNorm | Self::GroupNorm | Self::InstanceNorm => "7*N",
             Self::BatchNorm => "5*N",
             Self::Conv2D | Self::DepthwiseConv2D | Self::DilatedConv2D => "2*Cout*Cin*Kh*Kw*Oh*Ow",
             Self::Conv1D => "2*Cout*Cin*K*Oout",
             Self::Conv3D => "2*Cout*Cin*Kd*Kh*Kw*Od*Oh*Ow",
-            Self::Attention | Self::MultiHeadAttention |
-            Self::GroupedQueryAttention | Self::MultiQueryAttention |
-            Self::FlashAttention | Self::SlidingWindowAttention |
-            Self::CrossAttention => "2*B*H*(S^2*D + S*D^2)",
+            Self::Attention
+            | Self::MultiHeadAttention
+            | Self::GroupedQueryAttention
+            | Self::MultiQueryAttention
+            | Self::FlashAttention
+            | Self::SlidingWindowAttention
+            | Self::CrossAttention => "2*B*H*(S^2*D + S*D^2)",
             Self::LSTMCell => "4*(input_size+hidden)*hidden*2",
             Self::GRUCell => "3*(input_size+hidden)*hidden*2",
             Self::RNNCell => "(input_size+hidden)*hidden*2",
             Self::FFT | Self::IFFT => "5*N*log2(N)",
             Self::Einsum => "depends on equation",
-            Self::MaxPool2D | Self::AvgPool2D | Self::AdaptiveAvgPool2D |
-            Self::GlobalAvgPool => "N (comparisons or additions)",
-            Self::Reshape | Self::Transpose | Self::Squeeze | Self::Unsqueeze |
-            Self::Permute | Self::Expand | Self::Slice | Self::Pad | Self::Tile |
-            Self::Concat | Self::Split | Self::Gather | Self::Scatter => "0 (no compute)",
+            Self::MaxPool2D | Self::AvgPool2D | Self::AdaptiveAvgPool2D | Self::GlobalAvgPool => {
+                "N (comparisons or additions)"
+            }
+            Self::Reshape
+            | Self::Transpose
+            | Self::Squeeze
+            | Self::Unsqueeze
+            | Self::Permute
+            | Self::Expand
+            | Self::Slice
+            | Self::Pad
+            | Self::Tile
+            | Self::Concat
+            | Self::Split
+            | Self::Gather
+            | Self::Scatter => "0 (no compute)",
             _ => "varies",
         }
     }
@@ -530,72 +602,123 @@ impl TensorOp {
     /// Returns `true` if this op performs no arithmetic (zero FLOPs).
     #[inline]
     pub fn is_zero_flop(&self) -> bool {
-        matches!(self,
-            Self::Reshape | Self::Transpose | Self::Squeeze | Self::Unsqueeze |
-            Self::Permute | Self::Expand | Self::Slice | Self::Pad | Self::Tile |
-            Self::Concat | Self::Split | Self::Gather | Self::Scatter |
-            Self::Constant | Self::Zeros | Self::Ones | Self::Arange | Self::Full |
-            Self::Checkpoint | Self::Offload |
-            Self::PipelineSend | Self::PipelineReceive |
-            Self::ParallelSplit | Self::ParallelAllReduce
+        matches!(
+            self,
+            Self::Reshape
+                | Self::Transpose
+                | Self::Squeeze
+                | Self::Unsqueeze
+                | Self::Permute
+                | Self::Expand
+                | Self::Slice
+                | Self::Pad
+                | Self::Tile
+                | Self::Concat
+                | Self::Split
+                | Self::Gather
+                | Self::Scatter
+                | Self::Constant
+                | Self::Zeros
+                | Self::Ones
+                | Self::Arange
+                | Self::Full
+                | Self::Checkpoint
+                | Self::Offload
+                | Self::PipelineSend
+                | Self::PipelineReceive
+                | Self::ParallelSplit
+                | Self::ParallelAllReduce
         )
     }
 
     /// Returns `true` if this is an element-wise (unary or binary) activation.
     #[inline]
     pub fn is_activation(&self) -> bool {
-        matches!(self,
-            Self::ReLU | Self::GeLU | Self::SiLU | Self::Sigmoid | Self::Tanh |
-            Self::LeakyReLU | Self::ELU | Self::Mish |
-            Self::HardSwish | Self::HardSigmoid
+        matches!(
+            self,
+            Self::ReLU
+                | Self::GeLU
+                | Self::SiLU
+                | Self::Sigmoid
+                | Self::Tanh
+                | Self::LeakyReLU
+                | Self::ELU
+                | Self::Mish
+                | Self::HardSwish
+                | Self::HardSigmoid
         )
     }
 
     /// Returns `true` if this is an attention variant.
     #[inline]
     pub fn is_attention(&self) -> bool {
-        matches!(self,
-            Self::Attention | Self::MultiHeadAttention | Self::MultiQueryAttention |
-            Self::GroupedQueryAttention | Self::FlashAttention |
-            Self::SlidingWindowAttention | Self::CrossAttention | Self::PagedAttention
+        matches!(
+            self,
+            Self::Attention
+                | Self::MultiHeadAttention
+                | Self::MultiQueryAttention
+                | Self::GroupedQueryAttention
+                | Self::FlashAttention
+                | Self::SlidingWindowAttention
+                | Self::CrossAttention
+                | Self::PagedAttention
         )
     }
 
     /// Returns `true` if this is a convolution variant.
     #[inline]
     pub fn is_convolution(&self) -> bool {
-        matches!(self,
-            Self::Conv1D | Self::Conv2D | Self::Conv3D |
-            Self::ConvTranspose2D | Self::DepthwiseConv2D | Self::DilatedConv2D
+        matches!(
+            self,
+            Self::Conv1D
+                | Self::Conv2D
+                | Self::Conv3D
+                | Self::ConvTranspose2D
+                | Self::DepthwiseConv2D
+                | Self::DilatedConv2D
         )
     }
 
     /// Returns `true` if this is a normalisation op.
     #[inline]
     pub fn is_normalisation(&self) -> bool {
-        matches!(self,
-            Self::LayerNorm | Self::RMSNorm | Self::BatchNorm |
-            Self::GroupNorm | Self::InstanceNorm
+        matches!(
+            self,
+            Self::LayerNorm
+                | Self::RMSNorm
+                | Self::BatchNorm
+                | Self::GroupNorm
+                | Self::InstanceNorm
         )
     }
 
     /// Returns `true` if this is a fused operation.
     #[inline]
     pub fn is_fused(&self) -> bool {
-        matches!(self,
-            Self::FusedMatMulBiasReLU | Self::FusedMatMulBias |
-            Self::FusedLinearGeLU | Self::FusedAttentionLayerNorm |
-            Self::FusedLinearSiLU | Self::FusedConvBatchNormReLU
+        matches!(
+            self,
+            Self::FusedMatMulBiasReLU
+                | Self::FusedMatMulBias
+                | Self::FusedLinearGeLU
+                | Self::FusedAttentionLayerNorm
+                | Self::FusedLinearSiLU
+                | Self::FusedConvBatchNormReLU
         )
     }
 
     /// Returns `true` if this is a gradient (backward) operation.
     #[inline]
     pub fn is_gradient(&self) -> bool {
-        matches!(self,
-            Self::GradMatMul | Self::GradReLU | Self::GradSoftmax |
-            Self::GradLayerNorm | Self::GradAttention |
-            Self::GradConv2D | Self::GradLinear | Self::GradGeLU
+        matches!(
+            self,
+            Self::GradMatMul
+                | Self::GradReLU
+                | Self::GradSoftmax
+                | Self::GradLayerNorm
+                | Self::GradAttention
+                | Self::GradConv2D
+                | Self::GradLinear
+                | Self::GradGeLU
         )
     }
 }
@@ -606,7 +729,12 @@ mod tests {
 
     #[test]
     fn test_op_name_roundtrip() {
-        for op in &[TensorOp::MatMul, TensorOp::ReLU, TensorOp::Attention, TensorOp::Softmax] {
+        for op in &[
+            TensorOp::MatMul,
+            TensorOp::ReLU,
+            TensorOp::Attention,
+            TensorOp::Softmax,
+        ] {
             let name = op.name();
             let recovered = TensorOp::from_name(name).unwrap();
             assert_eq!(op, &recovered);
@@ -616,9 +744,17 @@ mod tests {
     #[test]
     fn test_all_ops_have_names() {
         let ops = vec![
-            TensorOp::Add, TensorOp::Sub, TensorOp::Mul, TensorOp::Div,
-            TensorOp::MatMul, TensorOp::Linear, TensorOp::ReLU, TensorOp::GeLU,
-            TensorOp::Softmax, TensorOp::LayerNorm, TensorOp::Attention,
+            TensorOp::Add,
+            TensorOp::Sub,
+            TensorOp::Mul,
+            TensorOp::Div,
+            TensorOp::MatMul,
+            TensorOp::Linear,
+            TensorOp::ReLU,
+            TensorOp::GeLU,
+            TensorOp::Softmax,
+            TensorOp::LayerNorm,
+            TensorOp::Attention,
         ];
         for op in ops {
             assert!(!op.name().is_empty());

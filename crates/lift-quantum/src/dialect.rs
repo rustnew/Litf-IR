@@ -1,13 +1,20 @@
-use lift_core::dialect::Dialect;
 use crate::gates::QuantumGate;
+use lift_core::dialect::Dialect;
 
 #[derive(Debug)]
 pub struct QuantumDialect;
 
 impl Dialect for QuantumDialect {
-    fn name(&self) -> &str { "quantum" }
+    fn name(&self) -> &str {
+        "quantum"
+    }
 
-    fn verify_op(&self, op_name: &str, num_inputs: usize, _num_results: usize) -> Result<(), String> {
+    fn verify_op(
+        &self,
+        op_name: &str,
+        num_inputs: usize,
+        _num_results: usize,
+    ) -> Result<(), String> {
         let full_name = if op_name.starts_with("quantum.") {
             op_name.to_string()
         } else {
@@ -19,7 +26,8 @@ impl Dialect for QuantumDialect {
                 let expected = gate.num_qubits();
                 if expected > 0 && num_inputs != expected {
                     return Err(format!(
-                        "{} expects {} qubit(s), got {}", full_name, expected, num_inputs
+                        "{} expects {} qubit(s), got {}",
+                        full_name, expected, num_inputs
                     ));
                 }
                 Ok(())

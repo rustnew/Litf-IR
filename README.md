@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.80%2B-orange.svg)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/version-0.3.0-green.svg)](Cargo.toml)
+[![Version](https://img.shields.io/badge/version-0.4.0-green.svg)](Cargo.toml)
 
 LIFT is a modular compiler framework that provides a single SSA-based intermediate representation spanning **tensor operations** (AI/ML), **quantum gates**, and **classical-quantum hybrid computation**. It enables a unified pipeline: **define → verify → analyse → optimise → predict → export**.
 
@@ -13,8 +13,14 @@ LIFT is a modular compiler framework that provides a single SSA-based intermedia
 - **107 tensor operations** — arithmetic, attention (Flash, Paged, GQA), convolutions, normalisation, quantisation, MoE, GNN, diffusion, and more
 - **46+ quantum gates** — Pauli, Clifford, parametric, multi-qubit; noise models, Kraus channels, QEC codes
 - **21 hybrid operations** — encoding strategies, gradient methods (parameter shift, adjoint), variational algorithms (VQC, VQE, QAOA)
-- **11 optimisation passes** — canonicalise, constant folding, DCE, CSE, tensor fusion, FlashAttention replacement, quantisation annotation, gate cancellation, rotation merging, noise-aware scheduling, qubit layout mapping
+- **13 optimisation passes** — canonicalise, constant folding, DCE, CSE, tensor fusion, FlashAttention replacement, quantisation annotation, gate cancellation, rotation merging, noise-aware scheduling, qubit layout mapping, gate decomposition, real qubit routing
 - **3 export backends** — **LLVM IR** (GPU/CPU runtime), **ONNX** (opset 21, PyTorch/TensorFlow/TensorRT interop), **OpenQASM 3.0** (IBM, Rigetti, IonQ, Quantinuum)
+- **Optimisation levels `O0`–`O3`** — preset pipelines, explicit-pass override, per-pass enable/disable
+- **Semantic verification** — `verify` checks operation arity against dialect signatures (core + tensor + quantum + hybrid)
+- **Hardware-native gate decomposition** — H/T/S/Y/RX lowering to provider gate sets (IBM, Rigetti, IonQ, Quantinuum)
+- **Real qubit routing** — SWAP insertion with BFS shortest paths over device topologies
+- **Generic tensor fusion** — matmul+bias+relu, linear+gelu/silu, conv+bn+relu
+- **Non-adjacent gate cancellation & rotation merging** — cancels/merges pairs across commuting gates
 - **Programmatic model generation** — `ModelBuilder` API for defining models from Rust code, `lift-codegen` binary for automatic `.lif`/`.lith`/`.ll`/`.onnx`/`.qasm` generation
 - **Cost modelling** — roofline analysis, GPU/QPU profiles (A100, H100, IBM, IonQ, etc.), energy/carbon estimation
 - **Performance prediction** — compute vs memory bottleneck identification
@@ -51,7 +57,7 @@ LIFT is a modular compiler framework that provides a single SSA-based intermedia
 | **lift-tensor** | 107 tensor operations with shape inference and FLOP counting |
 | **lift-quantum** | 46+ quantum gates, hardware providers, device topology, noise models, Kraus channels, QEC |
 | **lift-hybrid** | 21 hybrid ops — encoding, gradient methods, variational algorithms, co-execution |
-| **lift-opt** | 11 optimisation passes (classical, quantum, and AI-specific) |
+| **lift-opt** | 13 optimisation passes (classical, quantum, and AI-specific) |
 | **lift-sim** | Classical/quantum cost models, energy estimation, reactive budgets, module analysis |
 | **lift-predict** | Roofline-based performance prediction |
 | **lift-import** | ONNX, PyTorch FX, OpenQASM 3.0 importers |
@@ -69,7 +75,7 @@ LIFT is a modular compiler framework that provides a single SSA-based intermedia
 ### Build
 
 ```bash
-git clone https://github.com/rustnew/Lift.git
+git clone https://github.com/lift-lang/lift.git
 cd Lift
 cargo build --release
 ```
@@ -148,17 +154,17 @@ std::fs::write("my_model.onnx", &onnx_ir).unwrap();
 
 ```toml
 [dependencies]
-lift-core    = "0.3.0"
-lift-ast     = "0.3.0"
-lift-tensor  = "0.3.0"
-lift-quantum = "0.3.0"
-lift-hybrid  = "0.3.0"
-lift-opt     = "0.3.0"
-lift-sim     = "0.3.0"
-lift-predict = "0.3.0"
-lift-import  = "0.3.0"
-lift-export  = "0.3.0"
-lift-config  = "0.3.0"
+lift-core    = "0.4.0"
+lift-ast     = "0.4.0"
+lift-tensor  = "0.4.0"
+lift-quantum = "0.4.0"
+lift-hybrid  = "0.4.0"
+lift-opt     = "0.4.0"
+lift-sim     = "0.4.0"
+lift-predict = "0.4.0"
+lift-import  = "0.4.0"
+lift-export  = "0.4.0"
+lift-config  = "0.4.0"
 ```
 
 ```rust
@@ -173,10 +179,10 @@ let program = Parser::new(tokens).parse().unwrap();
 let mut ctx = Context::new();
 IrBuilder::new().build_program(&mut ctx, &program).unwrap();
 
-// Verify
+// Verify (structural + semantic against dialect signatures)
 verifier::verify(&ctx).unwrap();
 
-// Optimise (all 11 passes)
+// Optimise (all 13 passes)
 let mut pm = PassManager::new();
 pm.add_pass(Box::new(lift_opt::Canonicalize));
 pm.add_pass(Box::new(lift_opt::ConstantFolding));
@@ -189,6 +195,8 @@ pm.add_pass(Box::new(lift_opt::GateCancellation));
 pm.add_pass(Box::new(lift_opt::RotationMerge));
 pm.add_pass(Box::new(lift_opt::NoiseAwareSchedule));
 pm.add_pass(Box::new(lift_opt::LayoutMapping));
+pm.add_pass(Box::new(lift_opt::GateDecomposition::new(Some(Provider::Ibm))));
+pm.add_pass(Box::new(lift_opt::RealRouting::new(DeviceTopology::linear(8))));
 pm.run_all(&mut ctx);
 
 // Export to all 3 backends

@@ -5,12 +5,12 @@
 //! diffusion, GNN, parallelism, fused ops, and gradient operations.
 //! Includes shape inference, FLOP counting, and memory estimation.
 
-pub mod types;
-pub mod ops;
 pub mod dialect;
+pub mod ops;
 pub mod shape;
+pub mod types;
 
-pub use types::*;
-pub use ops::*;
 pub use dialect::TensorDialect;
+pub use ops::*;
 pub use shape::ShapeInference;
+pub use types::*;

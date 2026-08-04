@@ -19,8 +19,8 @@
 //
 // ============================================================================
 
-use lift_core::Context;
 use lift_core::types::{DataType, Dimension, MemoryLayout, TensorTypeInfo};
+use lift_core::Context;
 use lift_sim::AnalysisReport;
 use lift_sim::QuantumAnalysis;
 
@@ -37,9 +37,18 @@ pub fn analyse_cnn(ctx: &Context, report: &mut TestReport) -> AnalysisReport {
     println!("    CNN Analysis:");
     println!("      Total ops:    {}", r.num_ops);
     println!("      Tensor ops:   {}", r.num_tensor_ops);
-    println!("      Total FLOPs:  {}", report::format_flops(r.total_flops));
-    println!("      Total memory: {}", report::format_bytes(r.total_memory_bytes));
-    println!("      Peak memory:  {}", report::format_bytes(r.peak_memory_bytes));
+    println!(
+        "      Total FLOPs:  {}",
+        report::format_flops(r.total_flops)
+    );
+    println!(
+        "      Total memory: {}",
+        report::format_bytes(r.total_memory_bytes)
+    );
+    println!(
+        "      Peak memory:  {}",
+        report::format_bytes(r.peak_memory_bytes)
+    );
 
     let mut ops: Vec<_> = r.op_breakdown.iter().collect();
     ops.sort_by(|a, b| b.1.cmp(a.1));
@@ -151,7 +160,10 @@ pub fn test_shape_inference(report: &mut TestReport) {
     report.check("Reshape is zero-FLOP", TensorOp::Reshape.is_zero_flop());
     report.check("MatMul is NOT zero-FLOP", !TensorOp::MatMul.is_zero_flop());
     report.check("ReLU is activation", TensorOp::ReLU.is_activation());
-    report.check("Attention is attention op", TensorOp::Attention.is_attention());
+    report.check(
+        "Attention is attention op",
+        TensorOp::Attention.is_attention(),
+    );
     report.check("Conv2D is convolution", TensorOp::Conv2D.is_convolution());
     report.check(
         "FusedMatMulBiasReLU is fused",
@@ -222,7 +234,10 @@ pub fn test_quantum_gates(report: &mut TestReport) {
     report.check("IonQ has native gates", !ionq.is_empty());
 
     report.check("CCX is 3-qubit", QuantumGate::CCX.num_qubits() == 3);
-    report.check("Measure is measurement", QuantumGate::Measure.is_measurement());
+    report.check(
+        "Measure is measurement",
+        QuantumGate::Measure.is_measurement(),
+    );
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -243,7 +258,10 @@ pub fn test_hybrid_encoding(report: &mut TestReport) {
         angle.strategy.circuit_depth(4)
     );
     report.check("AngleEncoding: 4 qubits", angle.num_qubits == 4);
-    report.check("AngleEncoding: depth 1", angle.strategy.circuit_depth(4) == 1);
+    report.check(
+        "AngleEncoding: depth 1",
+        angle.strategy.circuit_depth(4) == 1,
+    );
 
     let amp = EncodingConfig::new(EncodingStrategy::AmplitudeEncoding, 16);
     println!(
@@ -251,7 +269,10 @@ pub fn test_hybrid_encoding(report: &mut TestReport) {
         amp.num_qubits,
         amp.strategy.circuit_depth(16)
     );
-    report.check("AmplitudeEncoding: 4 qubits for 16 features", amp.num_qubits == 4);
+    report.check(
+        "AmplitudeEncoding: 4 qubits for 16 features",
+        amp.num_qubits == 4,
+    );
 
     let iqp = EncodingConfig::new(EncodingStrategy::IQPEncoding, 8);
     println!(
@@ -271,13 +292,22 @@ pub fn test_hybrid_encoding(report: &mut TestReport) {
         ps.circuit_evaluations(num_params),
         ps.is_exact()
     );
-    report.check("ParamShift: 2N evaluations", ps.circuit_evaluations(num_params) == 2 * num_params);
+    report.check(
+        "ParamShift: 2N evaluations",
+        ps.circuit_evaluations(num_params) == 2 * num_params,
+    );
     report.check("ParamShift: is exact", ps.is_exact());
 
-    report.check("SPSA: 2 evaluations", GradientMethod::SPSA.circuit_evaluations(num_params) == 2);
+    report.check(
+        "SPSA: 2 evaluations",
+        GradientMethod::SPSA.circuit_evaluations(num_params) == 2,
+    );
     report.check("SPSA: not exact", !GradientMethod::SPSA.is_exact());
 
-    report.check("Adjoint: 1 evaluation", GradientMethod::Adjoint.circuit_evaluations(num_params) == 1);
+    report.check(
+        "Adjoint: 1 evaluation",
+        GradientMethod::Adjoint.circuit_evaluations(num_params) == 1,
+    );
     report.check("Adjoint: is exact", GradientMethod::Adjoint.is_exact());
 
     // ── Joint gradient (classical backprop + quantum parameter shift) ──
@@ -288,7 +318,10 @@ pub fn test_hybrid_encoding(report: &mut TestReport) {
         num_quantum_params: 8,
     };
     let total = joint.total_evaluations();
-    println!("    Joint gradient: {} total evals (1 backprop + 16 param shift)", total);
+    println!(
+        "    Joint gradient: {} total evals (1 backprop + 16 param shift)",
+        total
+    );
     report.check("Joint gradient total = 17", total == 17);
 
     // ── Hybrid op round-trip ──

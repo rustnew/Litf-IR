@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CostModel {
@@ -12,7 +12,7 @@ pub struct CostModel {
 impl CostModel {
     pub fn a100() -> Self {
         Self {
-            flops_per_second: 312e12,  // 312 TFLOPS FP16
+            flops_per_second: 312e12, // 312 TFLOPS FP16
             memory_bandwidth_gb_s: 2039.0,
             gpu_memory_gb: 80.0,
             num_gpus: 1,
@@ -46,7 +46,9 @@ impl CostModel {
     }
 
     pub fn arithmetic_intensity(&self, flops: u64, bytes: u64) -> f64 {
-        if bytes == 0 { return f64::INFINITY; }
+        if bytes == 0 {
+            return f64::INFINITY;
+        }
         flops as f64 / bytes as f64
     }
 
@@ -62,7 +64,7 @@ impl CostModel {
 
     pub fn num_gpus_needed(&self, bytes: u64) -> usize {
         let mem_per_gpu = (self.gpu_memory_gb * 1e9) as u64;
-        ((bytes + mem_per_gpu - 1) / mem_per_gpu) as usize
+        bytes.div_ceil(mem_per_gpu) as usize
     }
 }
 
@@ -96,7 +98,13 @@ impl QuantumCostModel {
         self.fidelity_1q.powi(num_1q as i32) * self.fidelity_2q.powi(num_2q as i32)
     }
 
-    pub fn circuit_time_us(&self, num_1q: usize, num_2q: usize, num_meas: usize, depth: usize) -> f64 {
+    pub fn circuit_time_us(
+        &self,
+        num_1q: usize,
+        num_2q: usize,
+        num_meas: usize,
+        depth: usize,
+    ) -> f64 {
         let _ = depth;
         num_1q as f64 * self.gate_time_1q_us
             + num_2q as f64 * self.gate_time_2q_us
@@ -141,7 +149,10 @@ impl Budget {
     pub fn check_fidelity(&self, fidelity: f64) -> Result<(), String> {
         if let Some(min) = self.min_fidelity {
             if fidelity < min {
-                return Err(format!("Fidelity below threshold: {:.4} < {:.4}", fidelity, min));
+                return Err(format!(
+                    "Fidelity below threshold: {:.4} < {:.4}",
+                    fidelity, min
+                ));
             }
         }
         Ok(())
@@ -183,9 +194,8 @@ impl EnergyModel {
 
     /// Estimate energy in joules for a given execution time.
     pub fn energy_joules(&self, time_ms: f64, num_gpus: usize) -> f64 {
-        let total_watts = (self.gpu_tdp_watts * num_gpus as f64)
-            + self.cpu_tdp_watts
-            + self.memory_watts;
+        let total_watts =
+            (self.gpu_tdp_watts * num_gpus as f64) + self.cpu_tdp_watts + self.memory_watts;
         let with_cooling = total_watts * self.cooling_pue;
         with_cooling * (time_ms / 1000.0)
     }
@@ -243,25 +253,34 @@ impl ReactiveBudget {
     pub fn check_remaining(&self) -> Result<(), String> {
         if let Some(max) = self.budget.max_flops {
             if self.consumed_flops > max {
-                return Err(format!("FLOP budget exhausted: {} / {}", self.consumed_flops, max));
+                return Err(format!(
+                    "FLOP budget exhausted: {} / {}",
+                    self.consumed_flops, max
+                ));
             }
         }
         if let Some(max) = self.budget.max_memory_bytes {
             if self.consumed_memory > max {
-                return Err(format!("Memory budget exhausted: {} / {} bytes",
-                    self.consumed_memory, max));
+                return Err(format!(
+                    "Memory budget exhausted: {} / {} bytes",
+                    self.consumed_memory, max
+                ));
             }
         }
         if let Some(max) = self.budget.max_time_ms {
             if self.elapsed_ms > max {
-                return Err(format!("Time budget exhausted: {:.2} / {:.2} ms",
-                    self.elapsed_ms, max));
+                return Err(format!(
+                    "Time budget exhausted: {:.2} / {:.2} ms",
+                    self.elapsed_ms, max
+                ));
             }
         }
         if let Some(min) = self.budget.min_fidelity {
             if self.current_fidelity < min {
-                return Err(format!("Fidelity below threshold: {:.6} < {:.6}",
-                    self.current_fidelity, min));
+                return Err(format!(
+                    "Fidelity below threshold: {:.6} < {:.6}",
+                    self.current_fidelity, min
+                ));
             }
         }
         Ok(())
@@ -269,23 +288,30 @@ impl ReactiveBudget {
 
     /// Remaining FLOP budget (None = unlimited).
     pub fn remaining_flops(&self) -> Option<u64> {
-        self.budget.max_flops.map(|max| max.saturating_sub(self.consumed_flops))
+        self.budget
+            .max_flops
+            .map(|max| max.saturating_sub(self.consumed_flops))
     }
 
     /// Remaining time budget in ms (None = unlimited).
     pub fn remaining_time_ms(&self) -> Option<f64> {
-        self.budget.max_time_ms.map(|max| (max - self.elapsed_ms).max(0.0))
+        self.budget
+            .max_time_ms
+            .map(|max| (max - self.elapsed_ms).max(0.0))
     }
 
     /// Utilisation ratio (0.0 to 1.0+) for each resource.
     pub fn utilisation(&self) -> BudgetUtilisation {
         BudgetUtilisation {
-            flop_ratio: self.budget.max_flops
+            flop_ratio: self
+                .budget
+                .max_flops
                 .map(|max| self.consumed_flops as f64 / max as f64),
-            memory_ratio: self.budget.max_memory_bytes
+            memory_ratio: self
+                .budget
+                .max_memory_bytes
                 .map(|max| self.consumed_memory as f64 / max as f64),
-            time_ratio: self.budget.max_time_ms
-                .map(|max| self.elapsed_ms / max),
+            time_ratio: self.budget.max_time_ms.map(|max| self.elapsed_ms / max),
         }
     }
 }

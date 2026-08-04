@@ -23,9 +23,9 @@
 //  15. Print human-readable IR (lift-core::printer)
 // ============================================================================
 
-use lift_core::{Context, Attributes, Location};
-use lift_core::types::{Dimension, DataType, MemoryLayout, TensorTypeInfo};
 use lift_core::pass::PassManager;
+use lift_core::types::{DataType, Dimension, MemoryLayout, TensorTypeInfo};
+use lift_core::{Attributes, Context, Location};
 
 fn main() {
     println!("╔══════════════════════════════════════════════════════════════╗");
@@ -40,21 +40,41 @@ fn main() {
     print_step(1, "Parse .lif files (lift-ast)");
 
     let cnn_ok = test_parse_lif("examples/cnn_encoder.lif");
-    check(&mut passed, &mut failed, "Parse CNN encoder .lif", cnn_ok.is_some());
+    check(
+        &mut passed,
+        &mut failed,
+        "Parse CNN encoder .lif",
+        cnn_ok.is_some(),
+    );
 
     let vqc_ok = test_parse_lif("examples/quantum_vqc.lif");
-    check(&mut passed, &mut failed, "Parse quantum VQC .lif", vqc_ok.is_some());
+    check(
+        &mut passed,
+        &mut failed,
+        "Parse quantum VQC .lif",
+        vqc_ok.is_some(),
+    );
 
     // ── Step 2: Build IR programmatically (lift-core) ───────────────────
     print_step(2, "Build hybrid IR programmatically (lift-core)");
 
     let mut ctx = Context::new();
     let cnn_block = build_cnn_encoder_ir(&mut ctx);
-    check(&mut passed, &mut failed, "Build CNN encoder IR", cnn_block.is_some());
+    check(
+        &mut passed,
+        &mut failed,
+        "Build CNN encoder IR",
+        cnn_block.is_some(),
+    );
 
     let mut qctx = Context::new();
     let vqc_block = build_vqc_circuit_ir(&mut qctx);
-    check(&mut passed, &mut failed, "Build VQC circuit IR", vqc_block.is_some());
+    check(
+        &mut passed,
+        &mut failed,
+        "Build VQC circuit IR",
+        vqc_block.is_some(),
+    );
 
     // ── Step 3: Verify IR (lift-core::verifier) ─────────────────────────
     print_step(3, "Verify IR correctness (SSA, types, linearity)");
@@ -64,20 +84,34 @@ fn main() {
         Ok(()) => println!("    CNN IR: PASSED (SSA + types OK)"),
         Err(errs) => {
             println!("    CNN IR: {} error(s)", errs.len());
-            for e in errs { println!("      - {}", e); }
+            for e in errs {
+                println!("      - {}", e);
+            }
         }
     }
-    check(&mut passed, &mut failed, "Verify CNN IR", cnn_verify.is_ok());
+    check(
+        &mut passed,
+        &mut failed,
+        "Verify CNN IR",
+        cnn_verify.is_ok(),
+    );
 
     let vqc_verify = lift_core::verifier::verify(&qctx);
     match &vqc_verify {
         Ok(()) => println!("    VQC IR: PASSED (SSA + linearity OK)"),
         Err(errs) => {
             println!("    VQC IR: {} error(s)", errs.len());
-            for e in errs { println!("      - {}", e); }
+            for e in errs {
+                println!("      - {}", e);
+            }
         }
     }
-    check(&mut passed, &mut failed, "Verify VQC IR", vqc_verify.is_ok());
+    check(
+        &mut passed,
+        &mut failed,
+        "Verify VQC IR",
+        vqc_verify.is_ok(),
+    );
 
     // ── Step 4: Print IR (lift-core::printer) ───────────────────────────
     print_step(4, "Print human-readable IR (lift-core::printer)");
@@ -97,14 +131,33 @@ fn main() {
     println!("    CNN Analysis:");
     println!("      Total ops:    {}", cnn_report.num_ops);
     println!("      Tensor ops:   {}", cnn_report.num_tensor_ops);
-    println!("      Total FLOPs:  {}", format_flops(cnn_report.total_flops));
-    println!("      Total memory: {}", format_bytes(cnn_report.total_memory_bytes));
-    println!("      Peak memory:  {}", format_bytes(cnn_report.peak_memory_bytes));
+    println!(
+        "      Total FLOPs:  {}",
+        format_flops(cnn_report.total_flops)
+    );
+    println!(
+        "      Total memory: {}",
+        format_bytes(cnn_report.total_memory_bytes)
+    );
+    println!(
+        "      Peak memory:  {}",
+        format_bytes(cnn_report.peak_memory_bytes)
+    );
     for (op, count) in &cnn_report.op_breakdown {
         println!("        {}: {}", op, count);
     }
-    check(&mut passed, &mut failed, "CNN FLOPs > 0", cnn_report.total_flops > 0);
-    check(&mut passed, &mut failed, "CNN memory > 0", cnn_report.total_memory_bytes > 0);
+    check(
+        &mut passed,
+        &mut failed,
+        "CNN FLOPs > 0",
+        cnn_report.total_flops > 0,
+    );
+    check(
+        &mut passed,
+        &mut failed,
+        "CNN memory > 0",
+        cnn_report.total_memory_bytes > 0,
+    );
 
     let vqc_quantum = lift_sim::analyze_quantum_ops(&qctx);
     println!("    VQC Quantum Analysis:");
@@ -112,12 +165,34 @@ fn main() {
     println!("      Gate count:     {}", vqc_quantum.gate_count);
     println!("      1Q gates:       {}", vqc_quantum.one_qubit_gates);
     println!("      2Q gates:       {}", vqc_quantum.two_qubit_gates);
-    println!("      Est. fidelity:  {:.6}", vqc_quantum.estimated_fidelity);
-    check(&mut passed, &mut failed, "VQC gate count > 0", vqc_quantum.gate_count > 0);
-    check(&mut passed, &mut failed, "VQC has 1Q gates", vqc_quantum.one_qubit_gates > 0);
-    check(&mut passed, &mut failed, "VQC has 2Q gates", vqc_quantum.two_qubit_gates > 0);
-    check(&mut passed, &mut failed, "VQC fidelity in (0,1]",
-        vqc_quantum.estimated_fidelity > 0.0 && vqc_quantum.estimated_fidelity <= 1.0);
+    println!(
+        "      Est. fidelity:  {:.6}",
+        vqc_quantum.estimated_fidelity
+    );
+    check(
+        &mut passed,
+        &mut failed,
+        "VQC gate count > 0",
+        vqc_quantum.gate_count > 0,
+    );
+    check(
+        &mut passed,
+        &mut failed,
+        "VQC has 1Q gates",
+        vqc_quantum.one_qubit_gates > 0,
+    );
+    check(
+        &mut passed,
+        &mut failed,
+        "VQC has 2Q gates",
+        vqc_quantum.two_qubit_gates > 0,
+    );
+    check(
+        &mut passed,
+        &mut failed,
+        "VQC fidelity in (0,1]",
+        vqc_quantum.estimated_fidelity > 0.0 && vqc_quantum.estimated_fidelity <= 1.0,
+    );
 
     // ── Step 6: Tensor shape inference and FLOPs (lift-tensor) ──────────
     print_step(6, "Shape inference and FLOPs counting (lift-tensor)");
@@ -130,7 +205,10 @@ fn main() {
     test_quantum_gates(&mut passed, &mut failed);
 
     // ── Step 8: Hybrid encoding and gradients (lift-hybrid) ─────────────
-    print_step(8, "Hybrid encoding strategies and gradient methods (lift-hybrid)");
+    print_step(
+        8,
+        "Hybrid encoding strategies and gradient methods (lift-hybrid)",
+    );
 
     test_hybrid_encoding_gradients(&mut passed, &mut failed);
 
@@ -150,12 +228,18 @@ fn main() {
     test_quantum_prediction(&vqc_quantum, &mut passed, &mut failed);
 
     // ── Step 12: Noise modelling (lift-quantum::noise) ──────────────────
-    print_step(12, "Noise modelling and fidelity tracking (lift-quantum::noise)");
+    print_step(
+        12,
+        "Noise modelling and fidelity tracking (lift-quantum::noise)",
+    );
 
     test_noise_modelling(&mut passed, &mut failed);
 
     // ── Step 13: Device topology (lift-quantum::topology) ───────────────
-    print_step(13, "Device topology and routing cost (lift-quantum::topology)");
+    print_step(
+        13,
+        "Device topology and routing cost (lift-quantum::topology)",
+    );
 
     test_device_topology(&mut passed, &mut failed);
 
@@ -165,7 +249,10 @@ fn main() {
     test_energy_estimation(&cnn_report, &mut passed, &mut failed);
 
     // ── Step 15: Budget enforcement (lift-sim::cost) ────────────────────
-    print_step(15, "Budget enforcement — static and reactive (lift-sim::cost)");
+    print_step(
+        15,
+        "Budget enforcement — static and reactive (lift-sim::cost)",
+    );
 
     test_budget_enforcement(&cnn_report, &vqc_quantum, &mut passed, &mut failed);
 
@@ -184,9 +271,18 @@ fn main() {
     println!("╔══════════════════════════════════════════════════════════════╗");
     println!("║  FINAL REPORT                                              ║");
     println!("╠══════════════════════════════════════════════════════════════╣");
-    println!("║  Passed: {:>3}                                               ║", passed);
-    println!("║  Failed: {:>3}                                               ║", failed);
-    println!("║  Total:  {:>3}                                               ║", passed + failed);
+    println!(
+        "║  Passed: {:>3}                                               ║",
+        passed
+    );
+    println!(
+        "║  Failed: {:>3}                                               ║",
+        failed
+    );
+    println!(
+        "║  Total:  {:>3}                                               ║",
+        passed + failed
+    );
     println!("╚══════════════════════════════════════════════════════════════╝");
 
     if failed > 0 {
@@ -247,8 +343,12 @@ fn test_parse_lif(path: &str) -> Option<Context> {
     let mut builder = lift_ast::IrBuilder::new();
     match builder.build_program(&mut ctx, &program) {
         Ok(()) => {
-            println!("    Built IR: {} ops, {} values, {} blocks",
-                ctx.ops.len(), ctx.values.len(), ctx.blocks.len());
+            println!(
+                "    Built IR: {} ops, {} values, {} blocks",
+                ctx.ops.len(),
+                ctx.values.len(),
+                ctx.blocks.len()
+            );
             Some(ctx)
         }
         Err(e) => {
@@ -265,50 +365,84 @@ fn test_parse_lif(path: &str) -> Option<Context> {
 fn build_cnn_encoder_ir(ctx: &mut Context) -> Option<()> {
     // Types
     let img_ty = ctx.make_tensor_type(
-        vec![Dimension::Constant(1), Dimension::Constant(1),
-             Dimension::Constant(128), Dimension::Constant(128)],
-        DataType::FP32, MemoryLayout::Contiguous,
+        vec![
+            Dimension::Constant(1),
+            Dimension::Constant(1),
+            Dimension::Constant(128),
+            Dimension::Constant(128),
+        ],
+        DataType::FP32,
+        MemoryLayout::Contiguous,
     );
     let w1_ty = ctx.make_tensor_type(
-        vec![Dimension::Constant(32), Dimension::Constant(1),
-             Dimension::Constant(3), Dimension::Constant(3)],
-        DataType::FP32, MemoryLayout::Contiguous,
+        vec![
+            Dimension::Constant(32),
+            Dimension::Constant(1),
+            Dimension::Constant(3),
+            Dimension::Constant(3),
+        ],
+        DataType::FP32,
+        MemoryLayout::Contiguous,
     );
     let conv1_ty = ctx.make_tensor_type(
-        vec![Dimension::Constant(1), Dimension::Constant(32),
-             Dimension::Constant(64), Dimension::Constant(64)],
-        DataType::FP32, MemoryLayout::Contiguous,
+        vec![
+            Dimension::Constant(1),
+            Dimension::Constant(32),
+            Dimension::Constant(64),
+            Dimension::Constant(64),
+        ],
+        DataType::FP32,
+        MemoryLayout::Contiguous,
     );
     let pool1_ty = ctx.make_tensor_type(
-        vec![Dimension::Constant(1), Dimension::Constant(32),
-             Dimension::Constant(32), Dimension::Constant(32)],
-        DataType::FP32, MemoryLayout::Contiguous,
+        vec![
+            Dimension::Constant(1),
+            Dimension::Constant(32),
+            Dimension::Constant(32),
+            Dimension::Constant(32),
+        ],
+        DataType::FP32,
+        MemoryLayout::Contiguous,
     );
     let w2_ty = ctx.make_tensor_type(
-        vec![Dimension::Constant(64), Dimension::Constant(32),
-             Dimension::Constant(3), Dimension::Constant(3)],
-        DataType::FP32, MemoryLayout::Contiguous,
+        vec![
+            Dimension::Constant(64),
+            Dimension::Constant(32),
+            Dimension::Constant(3),
+            Dimension::Constant(3),
+        ],
+        DataType::FP32,
+        MemoryLayout::Contiguous,
     );
     let conv2_ty = ctx.make_tensor_type(
-        vec![Dimension::Constant(1), Dimension::Constant(64),
-             Dimension::Constant(16), Dimension::Constant(16)],
-        DataType::FP32, MemoryLayout::Contiguous,
+        vec![
+            Dimension::Constant(1),
+            Dimension::Constant(64),
+            Dimension::Constant(16),
+            Dimension::Constant(16),
+        ],
+        DataType::FP32,
+        MemoryLayout::Contiguous,
     );
     let gap_ty = ctx.make_tensor_type(
         vec![Dimension::Constant(1), Dimension::Constant(64)],
-        DataType::FP32, MemoryLayout::Contiguous,
+        DataType::FP32,
+        MemoryLayout::Contiguous,
     );
     let wfc_ty = ctx.make_tensor_type(
         vec![Dimension::Constant(64), Dimension::Constant(4)],
-        DataType::FP32, MemoryLayout::Contiguous,
+        DataType::FP32,
+        MemoryLayout::Contiguous,
     );
     let bfc_ty = ctx.make_tensor_type(
         vec![Dimension::Constant(4)],
-        DataType::FP32, MemoryLayout::Contiguous,
+        DataType::FP32,
+        MemoryLayout::Contiguous,
     );
     let out_ty = ctx.make_tensor_type(
         vec![Dimension::Constant(1), Dimension::Constant(4)],
-        DataType::FP32, MemoryLayout::Contiguous,
+        DataType::FP32,
+        MemoryLayout::Contiguous,
     );
 
     // Block and arguments
@@ -321,53 +455,85 @@ fn build_cnn_encoder_ir(ctx: &mut Context) -> Option<()> {
 
     // conv2d -> relu -> maxpool2d
     let (op1, res1) = ctx.create_op(
-        "tensor.conv2d", "tensor", vec![img, w1], vec![conv1_ty],
-        Attributes::new(), Location::unknown(),
+        "tensor.conv2d",
+        "tensor",
+        vec![img, w1],
+        vec![conv1_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op1);
 
     let (op2, res2) = ctx.create_op(
-        "tensor.relu", "tensor", vec![res1[0]], vec![conv1_ty],
-        Attributes::new(), Location::unknown(),
+        "tensor.relu",
+        "tensor",
+        vec![res1[0]],
+        vec![conv1_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op2);
 
     let (op3, res3) = ctx.create_op(
-        "tensor.maxpool2d", "tensor", vec![res2[0]], vec![pool1_ty],
-        Attributes::new(), Location::unknown(),
+        "tensor.maxpool2d",
+        "tensor",
+        vec![res2[0]],
+        vec![pool1_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op3);
 
     // conv2d -> relu
     let (op4, res4) = ctx.create_op(
-        "tensor.conv2d", "tensor", vec![res3[0], w2], vec![conv2_ty],
-        Attributes::new(), Location::unknown(),
+        "tensor.conv2d",
+        "tensor",
+        vec![res3[0], w2],
+        vec![conv2_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op4);
 
     let (op5, res5) = ctx.create_op(
-        "tensor.relu", "tensor", vec![res4[0]], vec![conv2_ty],
-        Attributes::new(), Location::unknown(),
+        "tensor.relu",
+        "tensor",
+        vec![res4[0]],
+        vec![conv2_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op5);
 
     // global_avgpool
     let (op6, res6) = ctx.create_op(
-        "tensor.global_avgpool", "tensor", vec![res5[0]], vec![gap_ty],
-        Attributes::new(), Location::unknown(),
+        "tensor.global_avgpool",
+        "tensor",
+        vec![res5[0]],
+        vec![gap_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op6);
 
     // matmul + add (linear layer)
     let (op7, res7) = ctx.create_op(
-        "tensor.matmul", "tensor", vec![res6[0], wfc], vec![out_ty],
-        Attributes::new(), Location::unknown(),
+        "tensor.matmul",
+        "tensor",
+        vec![res6[0], wfc],
+        vec![out_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op7);
 
     let (op8, _res8) = ctx.create_op(
-        "tensor.add", "tensor", vec![res7[0], bfc], vec![out_ty],
-        Attributes::new(), Location::unknown(),
+        "tensor.add",
+        "tensor",
+        vec![res7[0], bfc],
+        vec![out_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op8);
 
@@ -389,64 +555,104 @@ fn build_vqc_circuit_ir(ctx: &mut Context) -> Option<()> {
 
     // Layer 1: RY encoding on all 4 qubits
     let (op_ry0, ry0) = ctx.create_op(
-        "quantum.ry", "quantum", vec![q0], vec![qubit_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.ry",
+        "quantum",
+        vec![q0],
+        vec![qubit_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op_ry0);
 
     let (op_ry1, ry1) = ctx.create_op(
-        "quantum.ry", "quantum", vec![q1], vec![qubit_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.ry",
+        "quantum",
+        vec![q1],
+        vec![qubit_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op_ry1);
 
     let (op_ry2, ry2) = ctx.create_op(
-        "quantum.ry", "quantum", vec![q2], vec![qubit_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.ry",
+        "quantum",
+        vec![q2],
+        vec![qubit_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op_ry2);
 
     let (op_ry3, ry3) = ctx.create_op(
-        "quantum.ry", "quantum", vec![q3], vec![qubit_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.ry",
+        "quantum",
+        vec![q3],
+        vec![qubit_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op_ry3);
 
     // Layer 2: Entanglement CX(0,1), CX(2,3)
     let (op_cx01, cx01) = ctx.create_op(
-        "quantum.cx", "quantum", vec![ry0[0], ry1[0]], vec![qubit_ty, qubit_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.cx",
+        "quantum",
+        vec![ry0[0], ry1[0]],
+        vec![qubit_ty, qubit_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op_cx01);
 
     let (op_cx23, cx23) = ctx.create_op(
-        "quantum.cx", "quantum", vec![ry2[0], ry3[0]], vec![qubit_ty, qubit_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.cx",
+        "quantum",
+        vec![ry2[0], ry3[0]],
+        vec![qubit_ty, qubit_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op_cx23);
 
     // Layer 3: RZ parametrised rotations
     let (op_rz0, _rz0) = ctx.create_op(
-        "quantum.rz", "quantum", vec![cx01[0]], vec![qubit_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.rz",
+        "quantum",
+        vec![cx01[0]],
+        vec![qubit_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op_rz0);
 
     let (op_rz1, _rz1) = ctx.create_op(
-        "quantum.rz", "quantum", vec![cx01[1]], vec![qubit_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.rz",
+        "quantum",
+        vec![cx01[1]],
+        vec![qubit_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op_rz1);
 
     let (op_rz2, _rz2) = ctx.create_op(
-        "quantum.rz", "quantum", vec![cx23[0]], vec![qubit_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.rz",
+        "quantum",
+        vec![cx23[0]],
+        vec![qubit_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op_rz2);
 
     let (op_rz3, _rz3) = ctx.create_op(
-        "quantum.rz", "quantum", vec![cx23[1]], vec![qubit_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.rz",
+        "quantum",
+        vec![cx23[1]],
+        vec![qubit_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op_rz3);
 
@@ -458,24 +664,31 @@ fn build_vqc_circuit_ir(ctx: &mut Context) -> Option<()> {
 // ============================================================================
 
 fn test_shape_inference(passed: &mut u32, failed: &mut u32) {
-    use lift_tensor::{TensorOp, ShapeInference};
+    use lift_tensor::{ShapeInference, TensorOp};
 
     // MatMul shape inference
     let a = TensorTypeInfo {
         shape: vec![Dimension::Constant(1), Dimension::Constant(64)],
-        dtype: DataType::FP32, layout: MemoryLayout::Contiguous,
+        dtype: DataType::FP32,
+        layout: MemoryLayout::Contiguous,
     };
     let b = TensorTypeInfo {
         shape: vec![Dimension::Constant(64), Dimension::Constant(4)],
-        dtype: DataType::FP32, layout: MemoryLayout::Contiguous,
+        dtype: DataType::FP32,
+        layout: MemoryLayout::Contiguous,
     };
 
     let result = ShapeInference::infer_output_shape(&TensorOp::MatMul, &[&a, &b]);
     match &result {
         Ok(shapes) => {
-            println!("    MatMul [1x64] @ [64x4] -> {:?}",
-                shapes[0].shape.iter()
-                    .map(|d| format!("{:?}", d)).collect::<Vec<_>>());
+            println!(
+                "    MatMul [1x64] @ [64x4] -> {:?}",
+                shapes[0]
+                    .shape
+                    .iter()
+                    .map(|d| format!("{:?}", d))
+                    .collect::<Vec<_>>()
+            );
         }
         Err(e) => println!("    MatMul shape error: {}", e),
     }
@@ -493,29 +706,73 @@ fn test_shape_inference(passed: &mut u32, failed: &mut u32) {
 
     // Conv2d FLOPs
     let img = TensorTypeInfo {
-        shape: vec![Dimension::Constant(1), Dimension::Constant(1),
-                    Dimension::Constant(128), Dimension::Constant(128)],
-        dtype: DataType::FP32, layout: MemoryLayout::Contiguous,
+        shape: vec![
+            Dimension::Constant(1),
+            Dimension::Constant(1),
+            Dimension::Constant(128),
+            Dimension::Constant(128),
+        ],
+        dtype: DataType::FP32,
+        layout: MemoryLayout::Contiguous,
     };
     let kernel = TensorTypeInfo {
-        shape: vec![Dimension::Constant(32), Dimension::Constant(1),
-                    Dimension::Constant(3), Dimension::Constant(3)],
-        dtype: DataType::FP32, layout: MemoryLayout::Contiguous,
+        shape: vec![
+            Dimension::Constant(32),
+            Dimension::Constant(1),
+            Dimension::Constant(3),
+            Dimension::Constant(3),
+        ],
+        dtype: DataType::FP32,
+        layout: MemoryLayout::Contiguous,
     };
     let conv_flops = ShapeInference::compute_flops(&TensorOp::Conv2D, &[&img, &kernel]);
     println!("    Conv2d FLOPs: {:?}", conv_flops);
-    check(passed, failed, "Conv2d FLOPs computation", conv_flops.is_some());
+    check(
+        passed,
+        failed,
+        "Conv2d FLOPs computation",
+        conv_flops.is_some(),
+    );
 
     // Zero-FLOP ops (reshape, transpose)
-    check(passed, failed, "Reshape is zero-FLOP", TensorOp::Reshape.is_zero_flop());
-    check(passed, failed, "MatMul is NOT zero-FLOP", !TensorOp::MatMul.is_zero_flop());
+    check(
+        passed,
+        failed,
+        "Reshape is zero-FLOP",
+        TensorOp::Reshape.is_zero_flop(),
+    );
+    check(
+        passed,
+        failed,
+        "MatMul is NOT zero-FLOP",
+        !TensorOp::MatMul.is_zero_flop(),
+    );
 
     // Operation categorisation
-    check(passed, failed, "ReLU is activation", TensorOp::ReLU.is_activation());
-    check(passed, failed, "Attention is attention op", TensorOp::Attention.is_attention());
-    check(passed, failed, "Conv2D is convolution", TensorOp::Conv2D.is_convolution());
-    check(passed, failed, "FusedMatMulBiasRelu is fused",
-        TensorOp::FusedMatMulBiasReLU.is_fused());
+    check(
+        passed,
+        failed,
+        "ReLU is activation",
+        TensorOp::ReLU.is_activation(),
+    );
+    check(
+        passed,
+        failed,
+        "Attention is attention op",
+        TensorOp::Attention.is_attention(),
+    );
+    check(
+        passed,
+        failed,
+        "Conv2D is convolution",
+        TensorOp::Conv2D.is_convolution(),
+    );
+    check(
+        passed,
+        failed,
+        "FusedMatMulBiasRelu is fused",
+        TensorOp::FusedMatMulBiasReLU.is_fused(),
+    );
 }
 
 // ============================================================================
@@ -523,20 +780,29 @@ fn test_shape_inference(passed: &mut u32, failed: &mut u32) {
 // ============================================================================
 
 fn test_quantum_gates(passed: &mut u32, failed: &mut u32) {
-    use lift_quantum::QuantumGate;
     use lift_quantum::gates::Provider;
+    use lift_quantum::QuantumGate;
 
     // Gate properties
     let h = QuantumGate::H;
-    println!("    H gate: name={}, qubits={}, clifford={}, self_inv={}",
-        h.op_name(), h.num_qubits(), h.is_clifford(), h.is_self_inverse());
+    println!(
+        "    H gate: name={}, qubits={}, clifford={}, self_inv={}",
+        h.op_name(),
+        h.num_qubits(),
+        h.is_clifford(),
+        h.is_self_inverse()
+    );
     check(passed, failed, "H is 1-qubit", h.num_qubits() == 1);
     check(passed, failed, "H is Clifford", h.is_clifford());
     check(passed, failed, "H is self-inverse", h.is_self_inverse());
 
     let cx = QuantumGate::CX;
-    println!("    CX gate: name={}, qubits={}, entangling={}",
-        cx.op_name(), cx.num_qubits(), cx.is_entangling());
+    println!(
+        "    CX gate: name={}, qubits={}, entangling={}",
+        cx.op_name(),
+        cx.num_qubits(),
+        cx.is_entangling()
+    );
     check(passed, failed, "CX is 2-qubit", cx.num_qubits() == 2);
     check(passed, failed, "CX is entangling", cx.is_entangling());
 
@@ -549,27 +815,56 @@ fn test_quantum_gates(passed: &mut u32, failed: &mut u32) {
 
     // Gate name round-trip
     let parsed = QuantumGate::from_name("quantum.h");
-    check(passed, failed, "Parse 'quantum.h' -> H", parsed == Some(QuantumGate::H));
+    check(
+        passed,
+        failed,
+        "Parse 'quantum.h' -> H",
+        parsed == Some(QuantumGate::H),
+    );
 
     let parsed_cx = QuantumGate::from_name("quantum.cx");
-    check(passed, failed, "Parse 'quantum.cx' -> CX", parsed_cx == Some(QuantumGate::CX));
+    check(
+        passed,
+        failed,
+        "Parse 'quantum.cx' -> CX",
+        parsed_cx == Some(QuantumGate::CX),
+    );
 
     // Hardware native gate sets
     let ibm = QuantumGate::native_basis(Provider::IbmEagle);
-    println!("    IBM Eagle native gates: {:?}",
-        ibm.iter().map(|g| g.op_name()).collect::<Vec<_>>());
-    check(passed, failed, "IBM Eagle has native gates", !ibm.is_empty());
+    println!(
+        "    IBM Eagle native gates: {:?}",
+        ibm.iter().map(|g| g.op_name()).collect::<Vec<_>>()
+    );
+    check(
+        passed,
+        failed,
+        "IBM Eagle has native gates",
+        !ibm.is_empty(),
+    );
 
     let ionq = QuantumGate::native_basis(Provider::IonQ);
-    println!("    IonQ native gates: {:?}",
-        ionq.iter().map(|g| g.op_name()).collect::<Vec<_>>());
+    println!(
+        "    IonQ native gates: {:?}",
+        ionq.iter().map(|g| g.op_name()).collect::<Vec<_>>()
+    );
     check(passed, failed, "IonQ has native gates", !ionq.is_empty());
 
     // CCX (Toffoli) is 3-qubit
-    check(passed, failed, "CCX is 3-qubit", QuantumGate::CCX.num_qubits() == 3);
+    check(
+        passed,
+        failed,
+        "CCX is 3-qubit",
+        QuantumGate::CCX.num_qubits() == 3,
+    );
 
     // Measurement gate
-    check(passed, failed, "Measure is measurement", QuantumGate::Measure.is_measurement());
+    check(
+        passed,
+        failed,
+        "Measure is measurement",
+        QuantumGate::Measure.is_measurement(),
+    );
 }
 
 // ============================================================================
@@ -577,49 +872,87 @@ fn test_quantum_gates(passed: &mut u32, failed: &mut u32) {
 // ============================================================================
 
 fn test_hybrid_encoding_gradients(passed: &mut u32, failed: &mut u32) {
-    use lift_hybrid::encoding::{EncodingStrategy, EncodingConfig};
+    use lift_hybrid::encoding::{EncodingConfig, EncodingStrategy};
     use lift_hybrid::gradient::{GradientMethod, JointGradientConfig};
 
     // Angle encoding: 4 features → 4 qubits, depth 1
     let angle = EncodingConfig::new(EncodingStrategy::AngleEncoding, 4);
-    println!("    AngleEncoding(4): qubits={}, depth={}",
-        angle.num_qubits, angle.strategy.circuit_depth(4));
-    check(passed, failed, "AngleEncoding: 4 qubits", angle.num_qubits == 4);
-    check(passed, failed, "AngleEncoding: depth 1",
-        angle.strategy.circuit_depth(4) == 1);
+    println!(
+        "    AngleEncoding(4): qubits={}, depth={}",
+        angle.num_qubits,
+        angle.strategy.circuit_depth(4)
+    );
+    check(
+        passed,
+        failed,
+        "AngleEncoding: 4 qubits",
+        angle.num_qubits == 4,
+    );
+    check(
+        passed,
+        failed,
+        "AngleEncoding: depth 1",
+        angle.strategy.circuit_depth(4) == 1,
+    );
 
     // Amplitude encoding: 16 features → 4 qubits
     let amp = EncodingConfig::new(EncodingStrategy::AmplitudeEncoding, 16);
-    println!("    AmplitudeEncoding(16): qubits={}, depth={}",
-        amp.num_qubits, amp.strategy.circuit_depth(16));
-    check(passed, failed, "AmplitudeEncoding: 4 qubits for 16 features",
-        amp.num_qubits == 4);
+    println!(
+        "    AmplitudeEncoding(16): qubits={}, depth={}",
+        amp.num_qubits,
+        amp.strategy.circuit_depth(16)
+    );
+    check(
+        passed,
+        failed,
+        "AmplitudeEncoding: 4 qubits for 16 features",
+        amp.num_qubits == 4,
+    );
 
     // IQP encoding: 8 features → 8 qubits
     let iqp = EncodingConfig::new(EncodingStrategy::IQPEncoding, 8);
-    println!("    IQPEncoding(8): qubits={}, depth={}",
-        iqp.num_qubits, iqp.strategy.circuit_depth(8));
+    println!(
+        "    IQPEncoding(8): qubits={}, depth={}",
+        iqp.num_qubits,
+        iqp.strategy.circuit_depth(8)
+    );
     check(passed, failed, "IQPEncoding: 8 qubits", iqp.num_qubits == 8);
 
     // Parameter shift: exact, 2N evaluations
     let ps = GradientMethod::ParameterShift;
     let num_params = 8; // our VQC has 8 parametrised gates
-    println!("    ParameterShift({} params): evals={}, exact={}",
-        num_params, ps.circuit_evaluations(num_params), ps.is_exact());
-    check(passed, failed, "ParamShift: 2N evaluations",
-        ps.circuit_evaluations(num_params) == 2 * num_params);
+    println!(
+        "    ParameterShift({} params): evals={}, exact={}",
+        num_params,
+        ps.circuit_evaluations(num_params),
+        ps.is_exact()
+    );
+    check(
+        passed,
+        failed,
+        "ParamShift: 2N evaluations",
+        ps.circuit_evaluations(num_params) == 2 * num_params,
+    );
     check(passed, failed, "ParamShift: is exact", ps.is_exact());
 
     // SPSA: 2 evaluations regardless of params
     let spsa = GradientMethod::SPSA;
-    check(passed, failed, "SPSA: 2 evaluations",
-        spsa.circuit_evaluations(num_params) == 2);
+    check(
+        passed,
+        failed,
+        "SPSA: 2 evaluations",
+        spsa.circuit_evaluations(num_params) == 2,
+    );
     check(passed, failed, "SPSA: not exact", !spsa.is_exact());
 
     // Adjoint: 1 evaluation
     let adj = GradientMethod::Adjoint;
-    check(passed, failed, "Adjoint: 1 evaluation",
-        adj.circuit_evaluations(num_params) == 1);
+    check(
+        passed,
+        failed,
+        "Adjoint: 1 evaluation",
+        adj.circuit_evaluations(num_params) == 1,
+    );
     check(passed, failed, "Adjoint: is exact", adj.is_exact());
 
     // Joint gradient: classical backprop + quantum parameter shift
@@ -630,17 +963,28 @@ fn test_hybrid_encoding_gradients(passed: &mut u32, failed: &mut u32) {
         num_quantum_params: 8,
     };
     let total = joint.total_evaluations();
-    println!("    Joint gradient: {} classical + {} quantum = {} total evals",
-        joint.num_classical_params, joint.num_quantum_params, total);
-    check(passed, failed, "Joint gradient total = 1 + 16 = 17", total == 17);
+    println!(
+        "    Joint gradient: {} classical + {} quantum = {} total evals",
+        joint.num_classical_params, joint.num_quantum_params, total
+    );
+    check(
+        passed,
+        failed,
+        "Joint gradient total = 1 + 16 = 17",
+        total == 17,
+    );
 
     // Hybrid op round-trip
     let encode_op = lift_hybrid::HybridOp::from_name("hybrid.encode");
     check(passed, failed, "Parse 'hybrid.encode'", encode_op.is_some());
 
     let ps_op = lift_hybrid::HybridOp::from_name("hybrid.parameter_shift");
-    check(passed, failed, "'hybrid.parameter_shift' is gradient",
-        ps_op.map(|o| o.is_gradient()).unwrap_or(false));
+    check(
+        passed,
+        failed,
+        "'hybrid.parameter_shift' is gradient",
+        ps_op.map(|o| o.is_gradient()).unwrap_or(false),
+    );
 }
 
 // ============================================================================
@@ -648,8 +992,10 @@ fn test_hybrid_encoding_gradients(passed: &mut u32, failed: &mut u32) {
 // ============================================================================
 
 fn test_optimisation_passes(
-    ctx: &mut Context, qctx: &mut Context,
-    passed: &mut u32, failed: &mut u32,
+    ctx: &mut Context,
+    qctx: &mut Context,
+    passed: &mut u32,
+    failed: &mut u32,
 ) {
     // CNN: canonicalize + tensor fusion + DCE
     let ops_before = ctx.ops.len();
@@ -666,7 +1012,10 @@ fn test_optimisation_passes(
             lift_core::PassResult::Changed => "changed",
             lift_core::PassResult::Unchanged => "unchanged",
             lift_core::PassResult::RolledBack => "rolled back",
-            lift_core::PassResult::Error(e) => { println!("      {} -> error: {}", name, e); "error" }
+            lift_core::PassResult::Error(e) => {
+                println!("      {} -> error: {}", name, e);
+                "error"
+            }
         };
         println!("      {} -> {}", name, status);
     }
@@ -686,7 +1035,10 @@ fn test_optimisation_passes(
             lift_core::PassResult::Changed => "changed",
             lift_core::PassResult::Unchanged => "unchanged",
             lift_core::PassResult::RolledBack => "rolled back",
-            lift_core::PassResult::Error(e) => { println!("      {} -> error: {}", name, e); "error" }
+            lift_core::PassResult::Error(e) => {
+                println!("      {} -> error: {}", name, e);
+                "error"
+            }
         };
         println!("      {} -> {}", name, status);
     }
@@ -698,10 +1050,7 @@ fn test_optimisation_passes(
 // Step 10: GPU roofline prediction
 // ============================================================================
 
-fn test_roofline_prediction(
-    report: &lift_sim::AnalysisReport,
-    passed: &mut u32, failed: &mut u32,
-) {
+fn test_roofline_prediction(report: &lift_sim::AnalysisReport, passed: &mut u32, failed: &mut u32) {
     let a100 = lift_sim::cost::CostModel::a100();
     let h100 = lift_sim::cost::CostModel::h100();
 
@@ -712,20 +1061,39 @@ fn test_roofline_prediction(
     println!("      Compute time:  {:.6} ms", pred_a100.compute_time_ms);
     println!("      Memory time:   {:.6} ms", pred_a100.memory_time_ms);
     println!("      Predicted:     {:.6} ms", pred_a100.predicted_time_ms);
-    println!("      Arith intens:  {:.2} FLOP/byte", pred_a100.arithmetic_intensity);
+    println!(
+        "      Arith intens:  {:.2} FLOP/byte",
+        pred_a100.arithmetic_intensity
+    );
     println!("      Bottleneck:    {}", pred_a100.bottleneck);
 
     println!("    H100 prediction:");
     println!("      Predicted:     {:.6} ms", pred_h100.predicted_time_ms);
     if pred_h100.predicted_time_ms > 0.0 {
-        println!("      Speedup vs A100: {:.2}x",
-            pred_a100.predicted_time_ms / pred_h100.predicted_time_ms);
+        println!(
+            "      Speedup vs A100: {:.2}x",
+            pred_a100.predicted_time_ms / pred_h100.predicted_time_ms
+        );
     }
 
-    check(passed, failed, "A100 predicted time >= 0", pred_a100.predicted_time_ms >= 0.0);
-    check(passed, failed, "H100 predicted time >= 0", pred_h100.predicted_time_ms >= 0.0);
-    check(passed, failed, "Bottleneck is 'compute' or 'memory'",
-        pred_a100.bottleneck == "compute" || pred_a100.bottleneck == "memory");
+    check(
+        passed,
+        failed,
+        "A100 predicted time >= 0",
+        pred_a100.predicted_time_ms >= 0.0,
+    );
+    check(
+        passed,
+        failed,
+        "H100 predicted time >= 0",
+        pred_h100.predicted_time_ms >= 0.0,
+    );
+    check(
+        passed,
+        failed,
+        "Bottleneck is 'compute' or 'memory'",
+        pred_a100.bottleneck == "compute" || pred_a100.bottleneck == "memory",
+    );
 
     // Memory fit check
     let fits = a100.fits_in_memory(report.total_memory_bytes);
@@ -740,7 +1108,8 @@ fn test_roofline_prediction(
 
 fn test_quantum_prediction(
     analysis: &lift_sim::QuantumAnalysis,
-    passed: &mut u32, failed: &mut u32,
+    passed: &mut u32,
+    failed: &mut u32,
 ) {
     let sc = lift_sim::cost::QuantumCostModel::superconducting_default();
     let ti = lift_sim::cost::QuantumCostModel::trapped_ion_default();
@@ -751,7 +1120,10 @@ fn test_quantum_prediction(
     println!("    Superconducting (IBM-like):");
     println!("      Fidelity:  {:.6}", pred_sc.estimated_fidelity);
     println!("      Circuit:   {:.4} us", pred_sc.circuit_time_us);
-    println!("      Shots:     {} (for 1% precision)", pred_sc.num_shots_for_precision);
+    println!(
+        "      Shots:     {} (for 1% precision)",
+        pred_sc.num_shots_for_precision
+    );
     println!("      Total:     {:.4} ms", pred_sc.total_execution_time_ms);
 
     println!("    Trapped-ion (IonQ-like):");
@@ -760,13 +1132,30 @@ fn test_quantum_prediction(
     println!("      Shots:     {}", pred_ti.num_shots_for_precision);
     println!("      Total:     {:.4} ms", pred_ti.total_execution_time_ms);
 
-    check(passed, failed, "SC fidelity in (0,1]",
-        pred_sc.estimated_fidelity > 0.0 && pred_sc.estimated_fidelity <= 1.0);
-    check(passed, failed, "TI fidelity in (0,1]",
-        pred_ti.estimated_fidelity > 0.0 && pred_ti.estimated_fidelity <= 1.0);
-    check(passed, failed, "TI fidelity > SC fidelity",
-        pred_ti.estimated_fidelity > pred_sc.estimated_fidelity);
-    check(passed, failed, "Shot count > 0", pred_sc.num_shots_for_precision > 0);
+    check(
+        passed,
+        failed,
+        "SC fidelity in (0,1]",
+        pred_sc.estimated_fidelity > 0.0 && pred_sc.estimated_fidelity <= 1.0,
+    );
+    check(
+        passed,
+        failed,
+        "TI fidelity in (0,1]",
+        pred_ti.estimated_fidelity > 0.0 && pred_ti.estimated_fidelity <= 1.0,
+    );
+    check(
+        passed,
+        failed,
+        "TI fidelity > SC fidelity",
+        pred_ti.estimated_fidelity > pred_sc.estimated_fidelity,
+    );
+    check(
+        passed,
+        failed,
+        "Shot count > 0",
+        pred_sc.num_shots_for_precision > 0,
+    );
 }
 
 // ============================================================================
@@ -774,29 +1163,46 @@ fn test_quantum_prediction(
 // ============================================================================
 
 fn test_noise_modelling(passed: &mut u32, failed: &mut u32) {
-    use lift_quantum::noise::{NoiseModel, GateNoise, CircuitNoise};
+    use lift_quantum::noise::{CircuitNoise, GateNoise, NoiseModel};
 
     // Individual noise models
     let depol = NoiseModel::Depolarizing { p: 0.001 };
     let fid_depol = depol.fidelity();
     println!("    Depolarizing(p=0.001): fidelity={:.6}", fid_depol);
-    check(passed, failed, "Depolarizing fidelity ~0.999",
-        (fid_depol - 0.999).abs() < 0.001);
+    check(
+        passed,
+        failed,
+        "Depolarizing fidelity ~0.999",
+        (fid_depol - 0.999).abs() < 0.001,
+    );
 
     let thermal = NoiseModel::ThermalRelaxation {
-        t1_us: 100.0, t2_us: 80.0, gate_time_us: 0.3,
+        t1_us: 100.0,
+        t2_us: 80.0,
+        gate_time_us: 0.3,
     };
     let fid_therm = thermal.fidelity();
-    println!("    Thermal(T1=100, T2=80, t=0.3): fidelity={:.6}", fid_therm);
-    check(passed, failed, "Thermal fidelity in (0,1]",
-        fid_therm > 0.0 && fid_therm <= 1.0);
+    println!(
+        "    Thermal(T1=100, T2=80, t=0.3): fidelity={:.6}",
+        fid_therm
+    );
+    check(
+        passed,
+        failed,
+        "Thermal fidelity in (0,1]",
+        fid_therm > 0.0 && fid_therm <= 1.0,
+    );
 
     // Composed noise
     let composed = depol.compose(&thermal);
     let fid_comp = composed.fidelity();
     println!("    Composed fidelity: {:.6}", fid_comp);
-    check(passed, failed, "Composed fidelity <= min(individual)",
-        fid_comp <= fid_depol && fid_comp <= fid_therm);
+    check(
+        passed,
+        failed,
+        "Composed fidelity <= min(individual)",
+        fid_comp <= fid_depol && fid_comp <= fid_therm,
+    );
 
     // Circuit-level noise tracking for our VQC (4x RY + 2x CX + 4x RZ)
     let mut circuit = CircuitNoise::new();
@@ -804,28 +1210,45 @@ fn test_noise_modelling(passed: &mut u32, failed: &mut u32) {
     let g2q = GateNoise::with_depolarizing(0.99, 0.3);
 
     // 4x RY (1Q)
-    for _ in 0..4 { circuit.add_gate(&g1q, false); }
+    for _ in 0..4 {
+        circuit.add_gate(&g1q, false);
+    }
     let after_ry = circuit.total_fidelity;
     println!("    After 4x RY: fidelity={:.6}", after_ry);
 
     // 2x CX (2Q)
-    for _ in 0..2 { circuit.add_gate(&g2q, true); }
+    for _ in 0..2 {
+        circuit.add_gate(&g2q, true);
+    }
     let after_cx = circuit.total_fidelity;
     println!("    After 2x CX: fidelity={:.6}", after_cx);
 
     // 4x RZ (1Q)
-    for _ in 0..4 { circuit.add_gate(&g1q, false); }
+    for _ in 0..4 {
+        circuit.add_gate(&g1q, false);
+    }
     let final_fid = circuit.total_fidelity;
     println!("    After 4x RZ: fidelity={:.6} (final)", final_fid);
 
-    println!("    Circuit: {} gates, {} 2Q gates",
-        circuit.gate_count, circuit.two_qubit_count);
+    println!(
+        "    Circuit: {} gates, {} 2Q gates",
+        circuit.gate_count, circuit.two_qubit_count
+    );
 
-    check(passed, failed, "Fidelity degrades: after_CX < after_RY",
-        after_cx < after_ry);
+    check(
+        passed,
+        failed,
+        "Fidelity degrades: after_CX < after_RY",
+        after_cx < after_ry,
+    );
     check(passed, failed, "Total gates = 10", circuit.gate_count == 10);
     check(passed, failed, "2Q gates = 2", circuit.two_qubit_count == 2);
-    check(passed, failed, "Meets 90% threshold", circuit.meets_threshold(0.90));
+    check(
+        passed,
+        failed,
+        "Meets 90% threshold",
+        circuit.meets_threshold(0.90),
+    );
 }
 
 // ============================================================================
@@ -837,8 +1260,11 @@ fn test_device_topology(passed: &mut u32, failed: &mut u32) {
 
     // Grid topology (like Google Sycamore)
     let grid = DeviceTopology::grid(2, 2); // 4 qubits for our VQC
-    println!("    Grid 2x2: {} qubits, {} edges",
-        grid.num_qubits, grid.edges.len());
+    println!(
+        "    Grid 2x2: {} qubits, {} edges",
+        grid.num_qubits,
+        grid.edges.len()
+    );
     check(passed, failed, "Grid has 4 qubits", grid.num_qubits == 4);
 
     // Connectivity checks
@@ -848,7 +1274,11 @@ fn test_device_topology(passed: &mut u32, failed: &mut u32) {
 
     // Shortest path
     if let Some(path) = grid.shortest_path(0, 3) {
-        println!("    Path 0->3: {:?} ({} SWAPs)", path, path.len().saturating_sub(2));
+        println!(
+            "    Path 0->3: {:?} ({} SWAPs)",
+            path,
+            path.len().saturating_sub(2)
+        );
         check(passed, failed, "Path 0->3 found", true);
     } else {
         check(passed, failed, "Path 0->3 found", false);
@@ -857,41 +1287,69 @@ fn test_device_topology(passed: &mut u32, failed: &mut u32) {
     // Neighbours
     let neighbors = grid.neighbors(0);
     println!("    Neighbours of qubit 0: {:?}", neighbors);
-    check(passed, failed, "Qubit 0 has neighbours", !neighbors.is_empty());
+    check(
+        passed,
+        failed,
+        "Qubit 0 has neighbours",
+        !neighbors.is_empty(),
+    );
 
     // Heavy-hex (IBM)
     let hh = DeviceTopology::heavy_hex(127);
-    println!("    Heavy-hex: {} qubits, {} edges, diameter {}",
-        hh.num_qubits, hh.edges.len(), hh.diameter());
-    check(passed, failed, "Heavy-hex has 127 qubits", hh.num_qubits == 127);
+    println!(
+        "    Heavy-hex: {} qubits, {} edges, diameter {}",
+        hh.num_qubits,
+        hh.edges.len(),
+        hh.diameter()
+    );
+    check(
+        passed,
+        failed,
+        "Heavy-hex has 127 qubits",
+        hh.num_qubits == 127,
+    );
 
     // All-to-all (trapped-ion)
     let ata = DeviceTopology::all_to_all(4);
-    println!("    All-to-all(4): {} edges, avg connectivity {:.2}",
-        ata.edges.len(), ata.avg_connectivity());
-    check(passed, failed, "All-to-all(4) has 6 edges", ata.edges.len() == 6);
+    println!(
+        "    All-to-all(4): {} edges, avg connectivity {:.2}",
+        ata.edges.len(),
+        ata.avg_connectivity()
+    );
+    check(
+        passed,
+        failed,
+        "All-to-all(4) has 6 edges",
+        ata.edges.len() == 6,
+    );
 
     // SWAP distance in all-to-all should be 0 (direct connection)
     let swap_dist = ata.swap_distance(0, 3);
     println!("    All-to-all SWAP distance 0->3: {:?}", swap_dist);
-    check(passed, failed, "All-to-all: 0 SWAPs needed",
-        swap_dist == Some(0));
+    check(
+        passed,
+        failed,
+        "All-to-all: 0 SWAPs needed",
+        swap_dist == Some(0),
+    );
 
     // Linear chain
     let linear = DeviceTopology::linear(4);
     let swap_03 = linear.swap_distance(0, 3);
     println!("    Linear(4) SWAP distance 0->3: {:?}", swap_03);
-    check(passed, failed, "Linear: 0->3 needs 2 SWAPs", swap_03 == Some(2));
+    check(
+        passed,
+        failed,
+        "Linear: 0->3 needs 2 SWAPs",
+        swap_03 == Some(2),
+    );
 }
 
 // ============================================================================
 // Step 14: Energy and CO2 estimation
 // ============================================================================
 
-fn test_energy_estimation(
-    report: &lift_sim::AnalysisReport,
-    passed: &mut u32, failed: &mut u32,
-) {
+fn test_energy_estimation(report: &lift_sim::AnalysisReport, passed: &mut u32, failed: &mut u32) {
     let a100_cost = lift_sim::cost::CostModel::a100();
     let a100_pred = lift_predict::predict_performance(report, &a100_cost);
     let energy = lift_sim::cost::EnergyModel::a100();
@@ -929,7 +1387,8 @@ fn test_energy_estimation(
 fn test_budget_enforcement(
     report: &lift_sim::AnalysisReport,
     quantum: &lift_sim::QuantumAnalysis,
-    passed: &mut u32, failed: &mut u32,
+    passed: &mut u32,
+    failed: &mut u32,
 ) {
     use lift_sim::cost::{Budget, ReactiveBudget};
 
@@ -941,12 +1400,24 @@ fn test_budget_enforcement(
         min_fidelity: Some(0.50),
         max_circuit_depth: None,
     };
-    check(passed, failed, "Generous FLOP budget OK",
-        generous.check_flops(report.total_flops).is_ok());
-    check(passed, failed, "Generous memory budget OK",
-        generous.check_memory(report.total_memory_bytes).is_ok());
-    check(passed, failed, "Generous fidelity OK",
-        generous.check_fidelity(quantum.estimated_fidelity).is_ok());
+    check(
+        passed,
+        failed,
+        "Generous FLOP budget OK",
+        generous.check_flops(report.total_flops).is_ok(),
+    );
+    check(
+        passed,
+        failed,
+        "Generous memory budget OK",
+        generous.check_memory(report.total_memory_bytes).is_ok(),
+    );
+    check(
+        passed,
+        failed,
+        "Generous fidelity OK",
+        generous.check_fidelity(quantum.estimated_fidelity).is_ok(),
+    );
 
     // Tight budget: should fail
     let tight = Budget {
@@ -956,10 +1427,18 @@ fn test_budget_enforcement(
         min_fidelity: Some(0.9999),
         max_circuit_depth: None,
     };
-    check(passed, failed, "Tight FLOP budget FAILS",
-        tight.check_flops(report.total_flops).is_err());
-    check(passed, failed, "Tight memory budget FAILS",
-        tight.check_memory(report.total_memory_bytes).is_err());
+    check(
+        passed,
+        failed,
+        "Tight FLOP budget FAILS",
+        tight.check_flops(report.total_flops).is_err(),
+    );
+    check(
+        passed,
+        failed,
+        "Tight memory budget FAILS",
+        tight.check_memory(report.total_memory_bytes).is_err(),
+    );
 
     // Reactive budget: VQE-style iteration
     let budget = Budget {
@@ -980,16 +1459,33 @@ fn test_budget_enforcement(
         }
         iters_completed = i + 1;
     }
-    println!("    Completed {} iterations, elapsed={:.0}ms, fidelity={:.6}",
-        iters_completed, tracker.elapsed_ms, tracker.current_fidelity);
+    println!(
+        "    Completed {} iterations, elapsed={:.0}ms, fidelity={:.6}",
+        iters_completed, tracker.elapsed_ms, tracker.current_fidelity
+    );
 
-    check(passed, failed, "Reactive: stopped before 200 iters", iters_completed < 200);
-    check(passed, failed, "Reactive: elapsed > 0", tracker.elapsed_ms > 0.0);
+    check(
+        passed,
+        failed,
+        "Reactive: stopped before 200 iters",
+        iters_completed < 200,
+    );
+    check(
+        passed,
+        failed,
+        "Reactive: elapsed > 0",
+        tracker.elapsed_ms > 0.0,
+    );
 
     let util = tracker.utilisation();
     if let Some(time_ratio) = util.time_ratio {
         println!("    Time utilisation: {:.1}%", time_ratio * 100.0);
-        check(passed, failed, "Time utilisation near or past 100%", time_ratio >= 0.9);
+        check(
+            passed,
+            failed,
+            "Time utilisation near or past 100%",
+            time_ratio >= 0.9,
+        );
     }
 }
 
@@ -1030,22 +1526,49 @@ fn test_config_parsing(passed: &mut u32, failed: &mut u32) {
 
     if let Ok(c) = &config {
         check(passed, failed, "Backend = llvm", c.target.backend == "llvm");
-        check(passed, failed, "Opt level = O3",
-            c.optimisation.level == lift_config::OptLevel::O3);
-        check(passed, failed, "Quantum section present", c.quantum.is_some());
+        check(
+            passed,
+            failed,
+            "Opt level = O3",
+            c.optimisation.level == lift_config::OptLevel::O3,
+        );
+        check(
+            passed,
+            failed,
+            "Quantum section present",
+            c.quantum.is_some(),
+        );
         if let Some(q) = &c.quantum {
-            check(passed, failed, "Quantum topology = grid", q.topology == "grid");
+            check(
+                passed,
+                failed,
+                "Quantum topology = grid",
+                q.topology == "grid",
+            );
             check(passed, failed, "Quantum qubits = 4", q.num_qubits == 4);
         }
-        check(passed, failed, "Budget min_fidelity = 0.90",
-            c.budget.min_fidelity == Some(0.90));
+        check(
+            passed,
+            failed,
+            "Budget min_fidelity = 0.90",
+            c.budget.min_fidelity == Some(0.90),
+        );
     }
 
     // Test default config
     let default = lift_config::LithConfig::default();
-    check(passed, failed, "Default backend = llvm", default.target.backend == "llvm");
-    check(passed, failed, "Default opt level = O2",
-        default.optimisation.level == lift_config::OptLevel::O2);
+    check(
+        passed,
+        failed,
+        "Default backend = llvm",
+        default.target.backend == "llvm",
+    );
+    check(
+        passed,
+        failed,
+        "Default opt level = O2",
+        default.optimisation.level == lift_config::OptLevel::O2,
+    );
 }
 
 // ============================================================================
@@ -1083,16 +1606,27 @@ fn test_export(ctx: &Context, qctx: &Context, passed: &mut u32, failed: &mut u32
 // ============================================================================
 
 fn format_flops(flops: u64) -> String {
-    if flops >= 1_000_000_000_000 { format!("{:.2} TFLOP", flops as f64 / 1e12) }
-    else if flops >= 1_000_000_000 { format!("{:.2} GFLOP", flops as f64 / 1e9) }
-    else if flops >= 1_000_000 { format!("{:.2} MFLOP", flops as f64 / 1e6) }
-    else if flops >= 1_000 { format!("{:.2} KFLOP", flops as f64 / 1e3) }
-    else { format!("{} FLOP", flops) }
+    if flops >= 1_000_000_000_000 {
+        format!("{:.2} TFLOP", flops as f64 / 1e12)
+    } else if flops >= 1_000_000_000 {
+        format!("{:.2} GFLOP", flops as f64 / 1e9)
+    } else if flops >= 1_000_000 {
+        format!("{:.2} MFLOP", flops as f64 / 1e6)
+    } else if flops >= 1_000 {
+        format!("{:.2} KFLOP", flops as f64 / 1e3)
+    } else {
+        format!("{} FLOP", flops)
+    }
 }
 
 fn format_bytes(bytes: u64) -> String {
-    if bytes >= 1_073_741_824 { format!("{:.2} GiB", bytes as f64 / 1_073_741_824.0) }
-    else if bytes >= 1_048_576 { format!("{:.2} MiB", bytes as f64 / 1_048_576.0) }
-    else if bytes >= 1_024 { format!("{:.2} KiB", bytes as f64 / 1_024.0) }
-    else { format!("{} B", bytes) }
+    if bytes >= 1_073_741_824 {
+        format!("{:.2} GiB", bytes as f64 / 1_073_741_824.0)
+    } else if bytes >= 1_048_576 {
+        format!("{:.2} MiB", bytes as f64 / 1_048_576.0)
+    } else if bytes >= 1_024 {
+        format!("{:.2} KiB", bytes as f64 / 1_024.0)
+    } else {
+        format!("{} B", bytes)
+    }
 }

@@ -1,16 +1,15 @@
-use lift_core::types::*;
 use lift_core::context::Context;
 use lift_core::printer::print_ir;
+use lift_core::types::*;
+use lift_hybrid::encoding::{EncodingConfig, EncodingStrategy};
+use lift_quantum::gates::{Provider, QuantumGate};
+use lift_quantum::kraus::{ComplexMatrix, KrausChannel};
+use lift_quantum::noise::{CircuitNoise, GateNoise, NoiseModel};
+use lift_quantum::qec::QecCode;
+use lift_quantum::topology::DeviceTopology;
+use lift_sim::cost::{Budget, CostModel, EnergyModel, ReactiveBudget};
 use lift_tensor::ops::TensorOp;
 use lift_tensor::shape::ShapeInference;
-use lift_quantum::gates::{QuantumGate, Provider};
-use lift_quantum::topology::DeviceTopology;
-use lift_quantum::kraus::{ComplexMatrix, KrausChannel};
-use lift_quantum::qec::{QecCode, QecAnalysis};
-use lift_quantum::noise::{NoiseModel, GateNoise, CircuitNoise};
-use lift_sim::cost::{CostModel, QuantumCostModel, Budget, EnergyModel, ReactiveBudget};
-use lift_hybrid::ops::HybridOp;
-use lift_hybrid::encoding::{EncodingStrategy, EncodingConfig};
 
 fn mk(shape: Vec<usize>, dtype: DataType) -> TensorTypeInfo {
     TensorTypeInfo {
@@ -180,7 +179,7 @@ fn test_noise_depolarizing_ranges() {
     for &p in &[0.0, 0.01, 0.05, 0.1, 0.5, 1.0] {
         let model = NoiseModel::Depolarizing { p };
         let f = model.fidelity();
-        assert!(f >= 0.0 && f <= 1.0, "p={}, f={}", p, f);
+        assert!((0.0..=1.0).contains(&f), "p={}, f={}", p, f);
     }
 }
 
@@ -189,7 +188,7 @@ fn test_noise_bit_flip_ranges() {
     for &p in &[0.0, 0.01, 0.1, 0.5] {
         let model = NoiseModel::BitFlip { p };
         let f = model.fidelity();
-        assert!(f >= 0.0 && f <= 1.0);
+        assert!((0.0..=1.0).contains(&f));
     }
 }
 
@@ -276,7 +275,7 @@ fn test_kraus_fidelity_bounds() {
     for &p in &[0.0, 0.01, 0.05, 0.1, 0.3, 0.5] {
         let ch = KrausChannel::depolarizing(p, 1);
         let f = ch.average_gate_fidelity();
-        assert!(f >= 0.0 && f <= 1.0, "p={}, f={}", p, f);
+        assert!((0.0..=1.0).contains(&f), "p={}, f={}", p, f);
     }
 }
 
@@ -285,7 +284,7 @@ fn test_kraus_amplitude_damping_bounds() {
     for &g in &[0.0, 0.01, 0.1, 0.5, 1.0] {
         let ch = KrausChannel::amplitude_damping(g);
         let f = ch.average_gate_fidelity();
-        assert!(f >= 0.0 && f <= 1.0, "gamma={}, f={}", g, f);
+        assert!((0.0..=1.0).contains(&f), "gamma={}, f={}", g, f);
     }
 }
 
@@ -360,7 +359,10 @@ fn test_reactive_budget_flop_accumulation() {
 fn test_encoding_amplitude_power_of_2() {
     assert_eq!(EncodingStrategy::AmplitudeEncoding.qubits_required(16), 4);
     assert_eq!(EncodingStrategy::AmplitudeEncoding.qubits_required(64), 6);
-    assert_eq!(EncodingStrategy::AmplitudeEncoding.qubits_required(1024), 10);
+    assert_eq!(
+        EncodingStrategy::AmplitudeEncoding.qubits_required(1024),
+        10
+    );
 }
 
 #[test]
@@ -377,9 +379,12 @@ fn test_encoding_config_clone() {
 #[test]
 fn test_all_providers_have_basis() {
     let providers = [
-        Provider::IbmEagle, Provider::IbmKyoto,
-        Provider::Rigetti, Provider::IonQ,
-        Provider::Quantinuum, Provider::Simulator,
+        Provider::IbmEagle,
+        Provider::IbmKyoto,
+        Provider::Rigetti,
+        Provider::IonQ,
+        Provider::Quantinuum,
+        Provider::Simulator,
     ];
     for p in &providers {
         let basis = QuantumGate::native_basis(*p);

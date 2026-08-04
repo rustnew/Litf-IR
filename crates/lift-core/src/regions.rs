@@ -1,7 +1,7 @@
-use slotmap::new_key_type;
-use serde::{Serialize, Deserialize};
 use crate::blocks::BlockKey;
 use crate::operations::OpKey;
+use serde::{Deserialize, Serialize};
+use slotmap::new_key_type;
 
 new_key_type! {
     pub struct RegionKey;

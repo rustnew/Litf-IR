@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
 use crate::interning::StringId;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Location {
@@ -10,11 +10,19 @@ pub struct Location {
 
 impl Location {
     pub fn unknown() -> Self {
-        Self { file: None, line: 0, column: 0 }
+        Self {
+            file: None,
+            line: 0,
+            column: 0,
+        }
     }
 
     pub fn new(file: StringId, line: u32, column: u32) -> Self {
-        Self { file: Some(file), line, column }
+        Self {
+            file: Some(file),
+            line,
+            column,
+        }
     }
 }
 

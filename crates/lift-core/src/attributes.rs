@@ -1,7 +1,7 @@
-use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
 use crate::interning::StringId;
 use crate::types::TypeId;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Attribute {

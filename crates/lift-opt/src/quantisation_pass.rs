@@ -1,5 +1,5 @@
 use lift_core::context::Context;
-use lift_core::pass::{Pass, PassResult, AnalysisCache};
+use lift_core::pass::{AnalysisCache, Pass, PassResult};
 
 /// Quantisation pass: inserts quantize/dequantize pairs around compute-heavy ops
 /// to reduce memory footprint and accelerate inference.
@@ -37,26 +37,35 @@ impl Default for QuantisationPass {
 }
 
 impl Pass for QuantisationPass {
-    fn name(&self) -> &str { "quantisation" }
+    fn name(&self) -> &str {
+        "quantisation"
+    }
 
     fn run(&self, ctx: &mut Context, _cache: &mut AnalysisCache) -> PassResult {
         let mut quantised = 0usize;
 
         // Find ops that benefit from quantisation
         let op_keys: Vec<_> = ctx.ops.keys().collect();
-        let target_ops: Vec<_> = op_keys.into_iter().filter(|&ok| {
-            if let Some(op) = ctx.ops.get(ok) {
-                let name = ctx.strings.resolve(op.name);
-                // Target compute-heavy ops
-                matches!(name,
-                    "tensor.matmul" | "tensor.linear" |
-                    "tensor.conv2d" | "tensor.conv1d" |
-                    "tensor.multi_head_attention" | "tensor.attention"
-                )
-            } else {
-                false
-            }
-        }).collect();
+        let target_ops: Vec<_> = op_keys
+            .into_iter()
+            .filter(|&ok| {
+                if let Some(op) = ctx.ops.get(ok) {
+                    let name = ctx.strings.resolve(op.name);
+                    // Target compute-heavy ops
+                    matches!(
+                        name,
+                        "tensor.matmul"
+                            | "tensor.linear"
+                            | "tensor.conv2d"
+                            | "tensor.conv1d"
+                            | "tensor.multi_head_attention"
+                            | "tensor.attention"
+                    )
+                } else {
+                    false
+                }
+            })
+            .collect();
 
         let _quant_name = match self.target_dtype {
             QuantTarget::Int8 => "tensor.quantize",
@@ -77,19 +86,24 @@ impl Pass for QuantisationPass {
                     continue;
                 }
 
-                op.attrs.set("quantised", lift_core::attributes::Attribute::Bool(true));
-                op.attrs.set("quant_method",
+                op.attrs
+                    .set("quantised", lift_core::attributes::Attribute::Bool(true));
+                op.attrs.set(
+                    "quant_method",
                     lift_core::attributes::Attribute::Integer(match self.target_dtype {
                         QuantTarget::Int8 => 8,
                         QuantTarget::Int4 => 4,
                         QuantTarget::Fp8E4M3 => 83,
                         QuantTarget::Fp8E5M2 => 82,
-                    }));
-                op.attrs.set("quant_bits",
+                    }),
+                );
+                op.attrs.set(
+                    "quant_bits",
                     lift_core::attributes::Attribute::Integer(match self.target_dtype {
                         QuantTarget::Int8 | QuantTarget::Fp8E4M3 | QuantTarget::Fp8E5M2 => 8,
                         QuantTarget::Int4 => 4,
-                    }));
+                    }),
+                );
 
                 quantised += 1;
             }

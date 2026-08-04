@@ -1,6 +1,6 @@
 use crate::types::*;
-use thiserror::Error;
 use std::collections::HashMap;
+use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum ConfigError {
@@ -16,7 +16,9 @@ pub enum ConfigError {
 pub struct ConfigParser;
 
 impl ConfigParser {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 
     pub fn parse(&self, source: &str) -> Result<LithConfig, ConfigError> {
         let mut config = LithConfig::default();
@@ -32,7 +34,7 @@ impl ConfigParser {
 
             // Section header: [section]
             if trimmed.starts_with('[') && trimmed.ends_with(']') {
-                current_section = trimmed[1..trimmed.len()-1].to_string();
+                current_section = trimmed[1..trimmed.len() - 1].to_string();
                 kv_map.entry(current_section.clone()).or_default();
                 continue;
             }
@@ -41,7 +43,8 @@ impl ConfigParser {
             if let Some((key, value)) = trimmed.split_once('=') {
                 let key = key.trim().to_string();
                 let value = value.trim().trim_matches('"').to_string();
-                kv_map.entry(current_section.clone())
+                kv_map
+                    .entry(current_section.clone())
                     .or_default()
                     .insert(key, value);
             } else {
@@ -90,10 +93,12 @@ impl ConfigParser {
                     "O1" | "1" => OptLevel::O1,
                     "O2" | "2" => OptLevel::O2,
                     "O3" | "3" => OptLevel::O3,
-                    _ => return Err(ConfigError::InvalidValue {
-                        field: "optimisation.level".into(),
-                        value: level.clone(),
-                    }),
+                    _ => {
+                        return Err(ConfigError::InvalidValue {
+                            field: "optimisation.level".into(),
+                            value: level.clone(),
+                        })
+                    }
                 };
             }
             if let Some(max_iter) = opt.get("max_iterations") {
@@ -132,10 +137,19 @@ impl ConfigParser {
 
         if let Some(quantum) = kv_map.get("quantum") {
             let qc = QuantumConfig {
-                topology: quantum.get("topology").cloned().unwrap_or_else(|| "linear".into()),
-                num_qubits: quantum.get("num_qubits").and_then(|v| v.parse().ok()).unwrap_or(5),
+                topology: quantum
+                    .get("topology")
+                    .cloned()
+                    .unwrap_or_else(|| "linear".into()),
+                num_qubits: quantum
+                    .get("num_qubits")
+                    .and_then(|v| v.parse().ok())
+                    .unwrap_or(5),
                 error_mitigation: quantum.get("error_mitigation").cloned(),
                 shots: quantum.get("shots").and_then(|v| v.parse().ok()),
+                provider: quantum
+                    .get("provider")
+                    .and_then(|v| QuantumProvider::from_str_opt(v)),
             };
             config.quantum = Some(qc);
         }
@@ -152,7 +166,9 @@ impl ConfigParser {
 }
 
 impl Default for ConfigParser {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]

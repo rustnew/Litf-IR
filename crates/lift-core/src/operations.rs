@@ -1,10 +1,10 @@
-use slotmap::new_key_type;
-use serde::{Serialize, Deserialize};
-use crate::interning::StringId;
-use crate::values::ValueKey;
-use crate::regions::RegionKey;
 use crate::attributes::Attributes;
+use crate::interning::StringId;
 use crate::location::Location;
+use crate::regions::RegionKey;
+use crate::values::ValueKey;
+use serde::{Deserialize, Serialize};
+use slotmap::new_key_type;
 
 new_key_type! {
     pub struct OpKey;

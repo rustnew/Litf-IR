@@ -45,7 +45,10 @@ pub fn test_noise_modelling(report: &mut TestReport) {
     let depol = NoiseModel::Depolarizing { p: 0.001 };
     let fid_depol = depol.fidelity();
     println!("    Depolarizing(p=0.001): fidelity={:.6}", fid_depol);
-    report.check("Depolarizing fidelity ~0.999", (fid_depol - 0.999).abs() < 0.001);
+    report.check(
+        "Depolarizing fidelity ~0.999",
+        (fid_depol - 0.999).abs() < 0.001,
+    );
 
     let thermal = NoiseModel::ThermalRelaxation {
         t1_us: 100.0,
@@ -53,8 +56,14 @@ pub fn test_noise_modelling(report: &mut TestReport) {
         gate_time_us: 0.3,
     };
     let fid_therm = thermal.fidelity();
-    println!("    Thermal(T1=100, T2=80, t=0.3): fidelity={:.6}", fid_therm);
-    report.check("Thermal fidelity in (0, 1]", fid_therm > 0.0 && fid_therm <= 1.0);
+    println!(
+        "    Thermal(T1=100, T2=80, t=0.3): fidelity={:.6}",
+        fid_therm
+    );
+    report.check(
+        "Thermal fidelity in (0, 1]",
+        fid_therm > 0.0 && fid_therm <= 1.0,
+    );
 
     // ── Composed noise ──
     let composed = depol.compose(&thermal);
@@ -96,7 +105,10 @@ pub fn test_noise_modelling(report: &mut TestReport) {
         circuit.gate_count, circuit.two_qubit_count
     );
 
-    report.check("Fidelity degrades: after_CX < after_RY", after_cx < after_ry);
+    report.check(
+        "Fidelity degrades: after_CX < after_RY",
+        after_cx < after_ry,
+    );
     report.check("Total gates = 10", circuit.gate_count == 10);
     report.check("2Q gates = 2", circuit.two_qubit_count == 2);
     report.check("Meets 90% threshold", circuit.meets_threshold(0.90));
@@ -113,7 +125,11 @@ pub fn test_device_topology(report: &mut TestReport) {
 
     // ── Grid 2×2 (matches our 4-qubit VQC) ──
     let grid = DeviceTopology::grid(2, 2);
-    println!("    Grid 2×2: {} qubits, {} edges", grid.num_qubits, grid.edges.len());
+    println!(
+        "    Grid 2×2: {} qubits, {} edges",
+        grid.num_qubits,
+        grid.edges.len()
+    );
     report.check("Grid has 4 qubits", grid.num_qubits == 4);
 
     let conn_01 = grid.are_connected(0, 1);
@@ -121,7 +137,11 @@ pub fn test_device_topology(report: &mut TestReport) {
     report.check("Grid: q0─q1 connected", conn_01);
 
     if let Some(path) = grid.shortest_path(0, 3) {
-        println!("    Path q0→q3: {:?} ({} SWAPs)", path, path.len().saturating_sub(2));
+        println!(
+            "    Path q0→q3: {:?} ({} SWAPs)",
+            path,
+            path.len().saturating_sub(2)
+        );
         report.check("Path q0→q3 found", true);
     } else {
         report.check("Path q0→q3 found", false);
@@ -230,7 +250,9 @@ pub fn test_budget_enforcement(
     );
     report.check(
         "Generous fidelity OK",
-        generous.check_fidelity(vqc_analysis.estimated_fidelity).is_ok(),
+        generous
+            .check_fidelity(vqc_analysis.estimated_fidelity)
+            .is_ok(),
     );
 
     // ── Static budget: tight (should fail) ──
@@ -290,11 +312,7 @@ pub fn test_budget_enforcement(
 // ────────────────────────────────────────────────────────────────────────────
 
 /// Run all Step 6 feedback tests: noise, topology, energy, budgets.
-pub fn run(
-    cnn_report: &AnalysisReport,
-    vqc_analysis: &QuantumAnalysis,
-    report: &mut TestReport,
-) {
+pub fn run(cnn_report: &AnalysisReport, vqc_analysis: &QuantumAnalysis, report: &mut TestReport) {
     test_noise_modelling(report);
     test_device_topology(report);
     test_energy_estimation(cnn_report, report);

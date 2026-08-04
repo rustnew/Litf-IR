@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum EncodingStrategy {
@@ -27,8 +27,11 @@ impl EncodingStrategy {
             Self::AngleEncoding => classical_dim,
             Self::AmplitudeEncoding => {
                 // ceil(log2(classical_dim))
-                if classical_dim <= 1 { 1 }
-                else { (classical_dim as f64).log2().ceil() as usize }
+                if classical_dim <= 1 {
+                    1
+                } else {
+                    (classical_dim as f64).log2().ceil() as usize
+                }
             }
             Self::BasisEncoding => classical_dim,
             Self::IQPEncoding => classical_dim,

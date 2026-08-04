@@ -1,11 +1,16 @@
-use crate::token::{Token, TokenKind, Span};
 use crate::ast::*;
+use crate::token::{Span, Token, TokenKind};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum ParseError {
     #[error("Unexpected token {found} at line {line}:{col}, expected {expected}")]
-    UnexpectedToken { found: String, expected: String, line: u32, col: u32 },
+    UnexpectedToken {
+        found: String,
+        expected: String,
+        line: u32,
+        col: u32,
+    },
 
     #[error("Unexpected end of file")]
     UnexpectedEof,
@@ -22,7 +27,11 @@ pub struct Parser {
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, pos: 0, errors: Vec::new() }
+        Self {
+            tokens,
+            pos: 0,
+            errors: Vec::new(),
+        }
     }
 
     pub fn parse(&mut self) -> Result<Program, Vec<ParseError>> {
@@ -33,18 +42,20 @@ impl Parser {
 
         while !self.at_end() {
             match self.peek_kind() {
-                TokenKind::HashDialect(_) => {
-                    match self.parse_dialect_directive() {
-                        Ok(d) => program.dialect_directives.push(d),
-                        Err(e) => { self.errors.push(e); self.recover(); }
+                TokenKind::HashDialect(_) => match self.parse_dialect_directive() {
+                    Ok(d) => program.dialect_directives.push(d),
+                    Err(e) => {
+                        self.errors.push(e);
+                        self.recover();
                     }
-                }
-                TokenKind::Module => {
-                    match self.parse_module() {
-                        Ok(m) => program.modules.push(m),
-                        Err(e) => { self.errors.push(e); self.recover(); }
+                },
+                TokenKind::Module => match self.parse_module() {
+                    Ok(m) => program.modules.push(m),
+                    Err(e) => {
+                        self.errors.push(e);
+                        self.recover();
                     }
-                }
+                },
                 TokenKind::Eof => break,
                 _ => {
                     let tok = self.advance();
@@ -68,7 +79,10 @@ impl Parser {
     fn parse_dialect_directive(&mut self) -> Result<DialectDirective, ParseError> {
         let tok = self.advance();
         if let TokenKind::HashDialect(name) = &tok.kind {
-            Ok(DialectDirective { name: name.clone(), span: tok.span })
+            Ok(DialectDirective {
+                name: name.clone(),
+                span: tok.span,
+            })
         } else {
             Err(ParseError::General("Expected #dialect directive".into()))
         }
@@ -79,10 +93,14 @@ impl Parser {
 
         let name = match &self.advance().kind {
             TokenKind::AtIdent(n) => n.clone(),
-            other => return Err(ParseError::UnexpectedToken {
-                found: format!("{}", other), expected: "@module_name".into(),
-                line: start.line, col: start.column,
-            }),
+            other => {
+                return Err(ParseError::UnexpectedToken {
+                    found: format!("{}", other),
+                    expected: "@module_name".into(),
+                    line: start.line,
+                    col: start.column,
+                })
+            }
         };
 
         self.expect_kind(&TokenKind::LBrace)?;
@@ -91,13 +109,20 @@ impl Parser {
         while !self.check_kind(&TokenKind::RBrace) && !self.at_end() {
             match self.parse_function() {
                 Ok(f) => functions.push(f),
-                Err(e) => { self.errors.push(e); self.recover_to_func_or_rbrace(); }
+                Err(e) => {
+                    self.errors.push(e);
+                    self.recover_to_func_or_rbrace();
+                }
             }
         }
 
         self.expect_kind(&TokenKind::RBrace)?;
 
-        Ok(ModuleDecl { name, functions, span: start })
+        Ok(ModuleDecl {
+            name,
+            functions,
+            span: start,
+        })
     }
 
     fn parse_function(&mut self) -> Result<FuncDecl, ParseError> {
@@ -105,10 +130,14 @@ impl Parser {
 
         let name = match &self.advance().kind {
             TokenKind::AtIdent(n) => n.clone(),
-            other => return Err(ParseError::UnexpectedToken {
-                found: format!("{}", other), expected: "@func_name".into(),
-                line: start.line, col: start.column,
-            }),
+            other => {
+                return Err(ParseError::UnexpectedToken {
+                    found: format!("{}", other),
+                    expected: "@func_name".into(),
+                    line: start.line,
+                    col: start.column,
+                })
+            }
         };
 
         self.expect_kind(&TokenKind::LParen)?;
@@ -135,29 +164,46 @@ impl Parser {
         while !self.check_kind(&TokenKind::RBrace) && !self.at_end() {
             match self.parse_statement() {
                 Ok(s) => body.push(s),
-                Err(e) => { self.errors.push(e); self.recover_to_statement(); }
+                Err(e) => {
+                    self.errors.push(e);
+                    self.recover_to_statement();
+                }
             }
         }
 
         self.expect_kind(&TokenKind::RBrace)?;
 
-        Ok(FuncDecl { name, params, returns, body, span: start })
+        Ok(FuncDecl {
+            name,
+            params,
+            returns,
+            body,
+            span: start,
+        })
     }
 
     fn parse_param(&mut self) -> Result<ParamDecl, ParseError> {
         let tok = self.advance();
         let name = match &tok.kind {
             TokenKind::PercentIdent(n) => n.clone(),
-            other => return Err(ParseError::UnexpectedToken {
-                found: format!("{}", other), expected: "%param_name".into(),
-                line: tok.span.line, col: tok.span.column,
-            }),
+            other => {
+                return Err(ParseError::UnexpectedToken {
+                    found: format!("{}", other),
+                    expected: "%param_name".into(),
+                    line: tok.span.line,
+                    col: tok.span.column,
+                })
+            }
         };
 
         self.expect_kind(&TokenKind::Colon)?;
         let ty = self.parse_type()?;
 
-        Ok(ParamDecl { name, ty, span: tok.span })
+        Ok(ParamDecl {
+            name,
+            ty,
+            span: tok.span,
+        })
     }
 
     fn parse_return_types(&mut self) -> Result<Vec<TypeExpr>, ParseError> {
@@ -187,7 +233,6 @@ impl Parser {
                 loop {
                     match self.peek_kind() {
                         TokenKind::Integer(n) => {
-                            let n = n;
                             self.advance();
                             shape.push(DimExpr::Constant(n as usize));
                         }
@@ -199,7 +244,6 @@ impl Parser {
                                 self.expect_kind(&TokenKind::RAngle)?;
                                 return Ok(TypeExpr::Tensor(TensorTypeExpr { shape, dtype }));
                             } else {
-                                let s = s;
                                 self.advance();
                                 shape.push(DimExpr::Symbolic(s));
                             }
@@ -209,10 +253,10 @@ impl Parser {
                             shape.push(DimExpr::Dynamic);
                         }
                         _ => {
-                            return Err(ParseError::General(
-                                format!("Expected dimension or dtype in tensor type at line {}",
-                                        self.current_span().line)
-                            ));
+                            return Err(ParseError::General(format!(
+                                "Expected dimension or dtype in tensor type at line {}",
+                                self.current_span().line
+                            )));
                         }
                     }
                     // After a dimension, expect 'x' separator or end
@@ -251,7 +295,6 @@ impl Parser {
                 Ok(TypeExpr::Hamiltonian(n as usize))
             }
             TokenKind::Ident(s) if is_scalar_type(&s) => {
-                let s = s;
                 self.advance();
                 Ok(TypeExpr::Scalar(ScalarTypeExpr { name: s }))
             }
@@ -295,8 +338,10 @@ impl Parser {
         let span = self.advance().span; // 'return'
 
         let mut values = Vec::new();
-        while !self.check_kind(&TokenKind::RBrace) && !self.at_end() &&
-              !self.check_kind(&TokenKind::Eof) {
+        while !self.check_kind(&TokenKind::RBrace)
+            && !self.at_end()
+            && !self.check_kind(&TokenKind::Eof)
+        {
             if !values.is_empty() {
                 self.expect_kind(&TokenKind::Comma)?;
             }
@@ -315,15 +360,21 @@ impl Parser {
             let tok = self.advance();
             match &tok.kind {
                 TokenKind::PercentIdent(n) => results.push(n.clone()),
-                other => return Err(ParseError::UnexpectedToken {
-                    found: format!("{}", other), expected: "%result_name".into(),
-                    line: tok.span.line, col: tok.span.column,
-                }),
+                other => {
+                    return Err(ParseError::UnexpectedToken {
+                        found: format!("{}", other),
+                        expected: "%result_name".into(),
+                        line: tok.span.line,
+                        col: tok.span.column,
+                    })
+                }
             }
             if self.check_kind(&TokenKind::Comma) {
                 self.advance();
                 // If next is '=' then the comma was part of a different grammar
-                if self.check_kind(&TokenKind::Equal) { break; }
+                if self.check_kind(&TokenKind::Equal) {
+                    break;
+                }
             } else {
                 break;
             }
@@ -334,9 +385,12 @@ impl Parser {
         // Parse operation name (string literal)
         let op_name = match &self.advance().kind {
             TokenKind::StringLiteral(s) => s.clone(),
-            other => return Err(ParseError::General(
-                format!("Expected operation name string, got {}", other)
-            )),
+            other => {
+                return Err(ParseError::General(format!(
+                    "Expected operation name string, got {}",
+                    other
+                )))
+            }
         };
 
         // Parse operands
@@ -364,7 +418,14 @@ impl Parser {
             None
         };
 
-        Ok(OpAssign { results, op_name, operands, attrs, type_sig, span })
+        Ok(OpAssign {
+            results,
+            op_name,
+            operands,
+            attrs,
+            type_sig,
+            span,
+        })
     }
 
     fn parse_bare_op(&mut self) -> Result<OpAssign, ParseError> {
@@ -372,9 +433,12 @@ impl Parser {
 
         let op_name = match &self.advance().kind {
             TokenKind::StringLiteral(s) => s.clone(),
-            other => return Err(ParseError::General(
-                format!("Expected operation name string, got {}", other)
-            )),
+            other => {
+                return Err(ParseError::General(format!(
+                    "Expected operation name string, got {}",
+                    other
+                )))
+            }
         };
 
         self.expect_kind(&TokenKind::LParen)?;
@@ -399,28 +463,31 @@ impl Parser {
             None
         };
 
-        Ok(OpAssign { results: Vec::new(), op_name, operands, attrs, type_sig, span })
+        Ok(OpAssign {
+            results: Vec::new(),
+            op_name,
+            operands,
+            attrs,
+            type_sig,
+            span,
+        })
     }
 
     fn parse_operand(&mut self) -> Result<Operand, ParseError> {
         match self.peek_kind() {
             TokenKind::PercentIdent(n) => {
-                let n = n;
                 self.advance();
                 Ok(Operand::Value(n))
             }
             TokenKind::AtIdent(n) => {
-                let n = n;
                 self.advance();
                 Ok(Operand::FuncRef(n))
             }
             TokenKind::Integer(v) => {
-                let v = v;
                 self.advance();
                 Ok(Operand::Literal(LiteralValue::Integer(v)))
             }
             TokenKind::Float(v) => {
-                let v = v;
                 self.advance();
                 Ok(Operand::Literal(LiteralValue::Float(v)))
             }
@@ -435,8 +502,10 @@ impl Parser {
             _ => {
                 let tok = self.advance();
                 Err(ParseError::UnexpectedToken {
-                    found: format!("{}", tok.kind), expected: "operand".into(),
-                    line: tok.span.line, col: tok.span.column,
+                    found: format!("{}", tok.kind),
+                    expected: "operand".into(),
+                    line: tok.span.line,
+                    col: tok.span.column,
                 })
             }
         }
@@ -452,9 +521,12 @@ impl Parser {
             }
             let key = match &self.advance().kind {
                 TokenKind::Ident(s) => s.clone(),
-                other => return Err(ParseError::General(
-                    format!("Expected attribute key, got {}", other)
-                )),
+                other => {
+                    return Err(ParseError::General(format!(
+                        "Expected attribute key, got {}",
+                        other
+                    )))
+                }
             };
             self.expect_kind(&TokenKind::Equal)?;
             let value = self.parse_attr_value()?;
@@ -467,16 +539,33 @@ impl Parser {
 
     fn parse_attr_value(&mut self) -> Result<AttrValue, ParseError> {
         match self.peek_kind() {
-            TokenKind::Integer(v) => { let v = v; self.advance(); Ok(AttrValue::Integer(v)) }
-            TokenKind::Float(v) => { let v = v; self.advance(); Ok(AttrValue::Float(v)) }
-            TokenKind::True => { self.advance(); Ok(AttrValue::Bool(true)) }
-            TokenKind::False => { self.advance(); Ok(AttrValue::Bool(false)) }
-            TokenKind::StringLiteral(s) => { let s = s; self.advance(); Ok(AttrValue::String(s)) }
+            TokenKind::Integer(v) => {
+                self.advance();
+                Ok(AttrValue::Integer(v))
+            }
+            TokenKind::Float(v) => {
+                self.advance();
+                Ok(AttrValue::Float(v))
+            }
+            TokenKind::True => {
+                self.advance();
+                Ok(AttrValue::Bool(true))
+            }
+            TokenKind::False => {
+                self.advance();
+                Ok(AttrValue::Bool(false))
+            }
+            TokenKind::StringLiteral(s) => {
+                self.advance();
+                Ok(AttrValue::String(s))
+            }
             TokenKind::LBracket => {
                 self.advance();
                 let mut elems = Vec::new();
                 while !self.check_kind(&TokenKind::RBracket) && !self.at_end() {
-                    if !elems.is_empty() { self.expect_kind(&TokenKind::Comma)?; }
+                    if !elems.is_empty() {
+                        self.expect_kind(&TokenKind::Comma)?;
+                    }
                     elems.push(self.parse_attr_value()?);
                 }
                 self.expect_kind(&TokenKind::RBracket)?;
@@ -485,8 +574,10 @@ impl Parser {
             _ => {
                 let tok = self.advance();
                 Err(ParseError::UnexpectedToken {
-                    found: format!("{}", tok.kind), expected: "attribute value".into(),
-                    line: tok.span.line, col: tok.span.column,
+                    found: format!("{}", tok.kind),
+                    expected: "attribute value".into(),
+                    line: tok.span.line,
+                    col: tok.span.column,
                 })
             }
         }
@@ -496,7 +587,9 @@ impl Parser {
         self.expect_kind(&TokenKind::LParen)?;
         let mut inputs = Vec::new();
         while !self.check_kind(&TokenKind::RParen) && !self.at_end() {
-            if !inputs.is_empty() { self.expect_kind(&TokenKind::Comma)?; }
+            if !inputs.is_empty() {
+                self.expect_kind(&TokenKind::Comma)?;
+            }
             inputs.push(self.parse_type()?);
         }
         self.expect_kind(&TokenKind::RParen)?;
@@ -542,7 +635,12 @@ impl Parser {
         } else {
             Token {
                 kind: TokenKind::Eof,
-                span: Span { start: 0, end: 0, line: 0, column: 0 },
+                span: Span {
+                    start: 0,
+                    end: 0,
+                    line: 0,
+                    column: 0,
+                },
                 text: String::new(),
             }
         }
@@ -567,8 +665,10 @@ impl Parser {
         match tok.kind {
             TokenKind::Integer(v) => Ok(v),
             _ => Err(ParseError::UnexpectedToken {
-                found: format!("{}", tok.kind), expected: "integer".into(),
-                line: tok.span.line, col: tok.span.column,
+                found: format!("{}", tok.kind),
+                expected: "integer".into(),
+                line: tok.span.line,
+                col: tok.span.column,
             }),
         }
     }
@@ -577,7 +677,12 @@ impl Parser {
         if self.pos < self.tokens.len() {
             self.tokens[self.pos].span
         } else {
-            Span { start: 0, end: 0, line: 0, column: 0 }
+            Span {
+                start: 0,
+                end: 0,
+                line: 0,
+                column: 0,
+            }
         }
     }
 
@@ -589,8 +694,13 @@ impl Parser {
         while !self.at_end() {
             match self.peek_kind() {
                 TokenKind::Module | TokenKind::Func | TokenKind::HashDialect(_) => return,
-                TokenKind::RBrace => { self.advance(); return; }
-                _ => { self.advance(); }
+                TokenKind::RBrace => {
+                    self.advance();
+                    return;
+                }
+                _ => {
+                    self.advance();
+                }
             }
         }
     }
@@ -599,7 +709,9 @@ impl Parser {
         while !self.at_end() {
             match self.peek_kind() {
                 TokenKind::Func | TokenKind::RBrace => return,
-                _ => { self.advance(); }
+                _ => {
+                    self.advance();
+                }
             }
         }
     }
@@ -607,9 +719,13 @@ impl Parser {
     fn recover_to_statement(&mut self) {
         while !self.at_end() {
             match self.peek_kind() {
-                TokenKind::PercentIdent(_) | TokenKind::Return |
-                TokenKind::StringLiteral(_) | TokenKind::RBrace => return,
-                _ => { self.advance(); }
+                TokenKind::PercentIdent(_)
+                | TokenKind::Return
+                | TokenKind::StringLiteral(_)
+                | TokenKind::RBrace => return,
+                _ => {
+                    self.advance();
+                }
             }
         }
     }
@@ -620,12 +736,31 @@ impl Parser {
 }
 
 fn is_dtype(s: &str) -> bool {
-    matches!(s, "f64" | "f32" | "f16" | "bf16" | "fp8e4m3" | "fp8e5m2" |
-             "i64" | "i32" | "i16" | "i8" | "i4" | "i2" | "u8" | "i1" | "index")
+    matches!(
+        s,
+        "f64"
+            | "f32"
+            | "f16"
+            | "bf16"
+            | "fp8e4m3"
+            | "fp8e5m2"
+            | "i64"
+            | "i32"
+            | "i16"
+            | "i8"
+            | "i4"
+            | "i2"
+            | "u8"
+            | "i1"
+            | "index"
+    )
 }
 
 fn is_scalar_type(s: &str) -> bool {
-    matches!(s, "f64" | "f32" | "f16" | "bf16" | "i64" | "i32" | "i16" | "i8" | "u8" | "bool")
+    matches!(
+        s,
+        "f64" | "f32" | "f16" | "bf16" | "i64" | "i32" | "i16" | "i8" | "u8" | "bool"
+    )
 }
 
 #[cfg(test)]

@@ -1,4 +1,4 @@
-use crate::token::{Token, TokenKind, Span};
+use crate::token::{Span, Token, TokenKind};
 
 pub struct Lexer {
     source: Vec<char>,
@@ -24,7 +24,9 @@ impl Lexer {
     pub fn tokenize(&mut self) -> &[Token] {
         while !self.at_end() {
             self.skip_whitespace();
-            if self.at_end() { break; }
+            if self.at_end() {
+                break;
+            }
 
             let start = self.pos;
             let start_line = self.line;
@@ -38,7 +40,12 @@ impl Lexer {
                     let text = self.source[start..self.pos].iter().collect();
                     self.tokens.push(Token {
                         kind,
-                        span: Span { start, end: self.pos, line: start_line, column: start_col },
+                        span: Span {
+                            start,
+                            end: self.pos,
+                            line: start_line,
+                            column: start_col,
+                        },
                         text,
                     });
                 }
@@ -47,7 +54,12 @@ impl Lexer {
 
         self.tokens.push(Token {
             kind: TokenKind::Eof,
-            span: Span { start: self.pos, end: self.pos, line: self.line, column: self.column },
+            span: Span {
+                start: self.pos,
+                end: self.pos,
+                line: self.line,
+                column: self.column,
+            },
             text: String::new(),
         });
 
@@ -59,32 +71,88 @@ impl Lexer {
 
         match ch {
             '/' if self.peek_next() == '/' => self.lex_comment(),
-            '\n' => { self.advance(); self.line += 1; self.column = 1; TokenKind::Newline }
+            '\n' => {
+                self.advance();
+                self.line += 1;
+                self.column = 1;
+                TokenKind::Newline
+            }
             '"' => self.lex_string(),
             '@' => self.lex_at_ident(),
             '%' => self.lex_percent_ident(),
             '^' => self.lex_caret_ident(),
             '#' => self.lex_hash_directive(),
-            '(' => { self.advance(); TokenKind::LParen }
-            ')' => { self.advance(); TokenKind::RParen }
-            '{' => { self.advance(); TokenKind::LBrace }
-            '}' => { self.advance(); TokenKind::RBrace }
-            '[' => { self.advance(); TokenKind::LBracket }
-            ']' => { self.advance(); TokenKind::RBracket }
-            '<' => { self.advance(); TokenKind::LAngle }
-            '>' => { self.advance(); TokenKind::RAngle }
-            ',' => { self.advance(); TokenKind::Comma }
-            ':' => { self.advance(); TokenKind::Colon }
-            ';' => { self.advance(); TokenKind::Semicolon }
-            '=' => { self.advance(); TokenKind::Equal }
-            '.' => { self.advance(); TokenKind::Dot }
-            '*' => { self.advance(); TokenKind::Star }
-            '-' if self.peek_next() == '>' => { self.advance(); self.advance(); TokenKind::Arrow }
+            '(' => {
+                self.advance();
+                TokenKind::LParen
+            }
+            ')' => {
+                self.advance();
+                TokenKind::RParen
+            }
+            '{' => {
+                self.advance();
+                TokenKind::LBrace
+            }
+            '}' => {
+                self.advance();
+                TokenKind::RBrace
+            }
+            '[' => {
+                self.advance();
+                TokenKind::LBracket
+            }
+            ']' => {
+                self.advance();
+                TokenKind::RBracket
+            }
+            '<' => {
+                self.advance();
+                TokenKind::LAngle
+            }
+            '>' => {
+                self.advance();
+                TokenKind::RAngle
+            }
+            ',' => {
+                self.advance();
+                TokenKind::Comma
+            }
+            ':' => {
+                self.advance();
+                TokenKind::Colon
+            }
+            ';' => {
+                self.advance();
+                TokenKind::Semicolon
+            }
+            '=' => {
+                self.advance();
+                TokenKind::Equal
+            }
+            '.' => {
+                self.advance();
+                TokenKind::Dot
+            }
+            '*' => {
+                self.advance();
+                TokenKind::Star
+            }
+            '-' if self.peek_next() == '>' => {
+                self.advance();
+                self.advance();
+                TokenKind::Arrow
+            }
             '-' | '0'..='9' => self.lex_number(),
             c if c.is_alphabetic() || c == '_' => self.lex_ident_or_keyword(),
             c => {
                 self.advance();
-                let msg = format!("Unexpected character '{}' at line {}:{}", c, self.line, self.column - 1);
+                let msg = format!(
+                    "Unexpected character '{}' at line {}:{}",
+                    c,
+                    self.line,
+                    self.column - 1
+                );
                 self.errors.push(msg.clone());
                 TokenKind::Error(msg)
             }
@@ -106,18 +174,25 @@ impl Lexer {
         self.advance(); // opening "
         let start = self.pos;
         while !self.at_end() && self.peek() != '"' {
-            if self.peek() == '\n' { self.line += 1; self.column = 1; }
+            if self.peek() == '\n' {
+                self.line += 1;
+                self.column = 1;
+            }
             self.advance();
         }
         let text: String = self.source[start..self.pos].iter().collect();
-        if !self.at_end() { self.advance(); } // closing "
+        if !self.at_end() {
+            self.advance();
+        } // closing "
         TokenKind::StringLiteral(text)
     }
 
     fn lex_at_ident(&mut self) -> TokenKind {
         self.advance(); // '@'
         let start = self.pos;
-        while !self.at_end() && (self.peek().is_alphanumeric() || self.peek() == '_' || self.peek() == ':') {
+        while !self.at_end()
+            && (self.peek().is_alphanumeric() || self.peek() == '_' || self.peek() == ':')
+        {
             self.advance();
         }
         let name: String = self.source[start..self.pos].iter().collect();
@@ -136,7 +211,9 @@ impl Lexer {
             while !self.at_end() && self.peek() != ']' {
                 self.advance();
             }
-            if !self.at_end() { self.advance(); } // ']'
+            if !self.at_end() {
+                self.advance();
+            } // ']'
         }
         let name: String = self.source[start..self.pos].iter().collect();
         TokenKind::PercentIdent(name)
@@ -175,7 +252,9 @@ impl Lexer {
     fn lex_number(&mut self) -> TokenKind {
         let start = self.pos;
         let negative = self.peek() == '-';
-        if negative { self.advance(); }
+        if negative {
+            self.advance();
+        }
 
         while !self.at_end() && self.peek().is_ascii_digit() {
             self.advance();
@@ -245,11 +324,19 @@ impl Lexer {
     }
 
     fn peek(&self) -> char {
-        if self.at_end() { '\0' } else { self.source[self.pos] }
+        if self.at_end() {
+            '\0'
+        } else {
+            self.source[self.pos]
+        }
     }
 
     fn peek_next(&self) -> char {
-        if self.pos + 1 >= self.source.len() { '\0' } else { self.source[self.pos + 1] }
+        if self.pos + 1 >= self.source.len() {
+            '\0'
+        } else {
+            self.source[self.pos + 1]
+        }
     }
 
     fn advance(&mut self) -> char {
@@ -266,8 +353,14 @@ impl Lexer {
     fn skip_whitespace(&mut self) {
         while !self.at_end() {
             match self.peek() {
-                ' ' | '\t' | '\r' => { self.advance(); }
-                '\n' => { self.advance(); self.line += 1; self.column = 1; }
+                ' ' | '\t' | '\r' => {
+                    self.advance();
+                }
+                '\n' => {
+                    self.advance();
+                    self.line += 1;
+                    self.column = 1;
+                }
                 _ => break,
             }
         }
@@ -319,10 +412,10 @@ mod tests {
 
     #[test]
     fn test_lex_numbers() {
-        let mut lexer = Lexer::new("42 3.14 -1");
+        let mut lexer = Lexer::new("42 2.5 -1");
         let tokens = lexer.tokenize();
         assert_eq!(tokens[0].kind, TokenKind::Integer(42));
-        assert_eq!(tokens[1].kind, TokenKind::Float(3.14));
+        assert_eq!(tokens[1].kind, TokenKind::Float(2.5));
         assert_eq!(tokens[2].kind, TokenKind::Integer(-1));
     }
 }

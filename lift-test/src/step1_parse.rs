@@ -65,8 +65,12 @@ pub fn parse_lif_file(path: &str) -> Option<Context> {
     let mut builder = lift_ast::IrBuilder::new();
     match builder.build_program(&mut ctx, &program) {
         Ok(()) => {
-            println!("    Built IR: {} ops, {} values, {} blocks",
-                ctx.ops.len(), ctx.values.len(), ctx.blocks.len());
+            println!(
+                "    Built IR: {} ops, {} values, {} blocks",
+                ctx.ops.len(),
+                ctx.values.len(),
+                ctx.blocks.len()
+            );
             Some(ctx)
         }
         Err(e) => {
@@ -110,11 +114,7 @@ pub fn print_ir(ctx: &Context, label: &str) -> String {
 // ────────────────────────────────────────────────────────────────────────────
 
 /// Run all Step 1 tests: parse `.lif` files, verify IR, print IR.
-pub fn run(
-    cnn_ctx: &Context,
-    vqc_ctx: &Context,
-    report: &mut TestReport,
-) {
+pub fn run(cnn_ctx: &Context, vqc_ctx: &Context, report: &mut TestReport) {
     // 1a. Parse .lif files from disk
     let cnn_parsed = parse_lif_file("examples/cnn_encoder.lif");
     report.check("Parse CNN encoder .lif", cnn_parsed.is_some());

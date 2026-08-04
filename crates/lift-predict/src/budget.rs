@@ -1,7 +1,7 @@
-use lift_sim::cost::Budget;
-use lift_sim::analysis::AnalysisReport;
 use crate::roofline::RooflineResult;
-use serde::{Serialize, Deserialize};
+use lift_sim::analysis::AnalysisReport;
+use lift_sim::cost::Budget;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BudgetCheck {

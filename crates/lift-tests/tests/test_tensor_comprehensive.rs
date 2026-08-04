@@ -18,23 +18,54 @@ fn mk(shape: Vec<usize>, dtype: DataType) -> TensorTypeInfo {
 #[test]
 fn test_every_op_name_roundtrip() {
     let ops = vec![
-        TensorOp::MatMul, TensorOp::Conv2D, TensorOp::Add, TensorOp::Sub,
-        TensorOp::Mul, TensorOp::Div, TensorOp::Neg, TensorOp::Linear,
-        TensorOp::Embedding, TensorOp::ReLU, TensorOp::GeLU, TensorOp::SiLU,
-        TensorOp::Sigmoid, TensorOp::Tanh, TensorOp::Softmax,
-        TensorOp::LayerNorm, TensorOp::RMSNorm, TensorOp::BatchNorm,
-        TensorOp::Reshape, TensorOp::Transpose, TensorOp::Concat, TensorOp::Split,
-        TensorOp::Gather, TensorOp::Scatter,
-        TensorOp::Constant, TensorOp::Zeros, TensorOp::Ones,
-        TensorOp::Attention, TensorOp::PagedAttention,
-        TensorOp::MoEDispatch, TensorOp::MoECombine,
-        TensorOp::Quantize, TensorOp::Dequantize,
-        TensorOp::Checkpoint, TensorOp::Offload, TensorOp::GradAccumulate,
-        TensorOp::GradMatMul, TensorOp::GradReLU, TensorOp::GradSoftmax,
-        TensorOp::GradLayerNorm, TensorOp::GradAttention,
-        TensorOp::ParallelSplit, TensorOp::ParallelAllReduce,
-        TensorOp::PipelineSend, TensorOp::PipelineReceive,
-        TensorOp::FusedMatMulBiasReLU, TensorOp::FusedMatMulBias, TensorOp::FusedLinearGeLU,
+        TensorOp::MatMul,
+        TensorOp::Conv2D,
+        TensorOp::Add,
+        TensorOp::Sub,
+        TensorOp::Mul,
+        TensorOp::Div,
+        TensorOp::Neg,
+        TensorOp::Linear,
+        TensorOp::Embedding,
+        TensorOp::ReLU,
+        TensorOp::GeLU,
+        TensorOp::SiLU,
+        TensorOp::Sigmoid,
+        TensorOp::Tanh,
+        TensorOp::Softmax,
+        TensorOp::LayerNorm,
+        TensorOp::RMSNorm,
+        TensorOp::BatchNorm,
+        TensorOp::Reshape,
+        TensorOp::Transpose,
+        TensorOp::Concat,
+        TensorOp::Split,
+        TensorOp::Gather,
+        TensorOp::Scatter,
+        TensorOp::Constant,
+        TensorOp::Zeros,
+        TensorOp::Ones,
+        TensorOp::Attention,
+        TensorOp::PagedAttention,
+        TensorOp::MoEDispatch,
+        TensorOp::MoECombine,
+        TensorOp::Quantize,
+        TensorOp::Dequantize,
+        TensorOp::Checkpoint,
+        TensorOp::Offload,
+        TensorOp::GradAccumulate,
+        TensorOp::GradMatMul,
+        TensorOp::GradReLU,
+        TensorOp::GradSoftmax,
+        TensorOp::GradLayerNorm,
+        TensorOp::GradAttention,
+        TensorOp::ParallelSplit,
+        TensorOp::ParallelAllReduce,
+        TensorOp::PipelineSend,
+        TensorOp::PipelineReceive,
+        TensorOp::FusedMatMulBiasReLU,
+        TensorOp::FusedMatMulBias,
+        TensorOp::FusedLinearGeLU,
     ];
     for op in &ops {
         let name = op.name();
@@ -46,11 +77,20 @@ fn test_every_op_name_roundtrip() {
 #[test]
 fn test_every_op_has_tensor_prefix() {
     let ops = vec![
-        TensorOp::MatMul, TensorOp::Conv2D, TensorOp::Add, TensorOp::ReLU,
-        TensorOp::Softmax, TensorOp::Attention, TensorOp::LayerNorm,
+        TensorOp::MatMul,
+        TensorOp::Conv2D,
+        TensorOp::Add,
+        TensorOp::ReLU,
+        TensorOp::Softmax,
+        TensorOp::Attention,
+        TensorOp::LayerNorm,
     ];
     for op in &ops {
-        assert!(op.name().starts_with("tensor."), "{} missing tensor. prefix", op.name());
+        assert!(
+            op.name().starts_with("tensor."),
+            "{} missing tensor. prefix",
+            op.name()
+        );
     }
 }
 
@@ -99,8 +139,13 @@ fn test_elementwise_ops_shapes() {
 #[test]
 fn test_unary_ops_preserve_shape() {
     let a = mk(vec![4, 8, 16], DataType::FP32);
-    for op in &[TensorOp::ReLU, TensorOp::GeLU, TensorOp::Sigmoid, TensorOp::Tanh,
-                TensorOp::Neg] {
+    for op in &[
+        TensorOp::ReLU,
+        TensorOp::GeLU,
+        TensorOp::Sigmoid,
+        TensorOp::Tanh,
+        TensorOp::Neg,
+    ] {
         let out = ShapeInference::infer_output_shape(op, &[&a]).unwrap();
         assert_eq!(out[0].shape.len(), 3, "{:?} must preserve rank", op);
         assert_eq!(out[0].shape[0].static_value(), Some(4));
@@ -154,7 +199,7 @@ fn test_conv2d_flops_exact() {
     let input = mk(vec![1, 3, 32, 32], DataType::FP32);
     let kernel = mk(vec![64, 3, 3, 3], DataType::FP32);
     let flops = ShapeInference::compute_flops(&TensorOp::Conv2D, &[&input, &kernel]).unwrap();
-    assert_eq!(flops, 2 * 1 * 64 * 30 * 30 * 3 * 3 * 3);
+    assert_eq!(flops, 2 * 64 * 30 * 30 * 3 * 3 * 3);
 }
 
 #[test]
@@ -181,7 +226,7 @@ fn test_memory_matmul() {
     let a = mk(vec![64, 128], DataType::FP32);
     let b = mk(vec![128, 256], DataType::FP32);
     let mem = ShapeInference::compute_memory_bytes(&TensorOp::MatMul, &[&a, &b]).unwrap();
-    let expected = (64*128 + 128*256 + 64*256) * 4;
+    let expected = (64 * 128 + 128 * 256 + 64 * 256) * 4;
     assert_eq!(mem, expected);
 }
 
@@ -212,7 +257,11 @@ fn test_benchmark_resnet50_first_conv() {
     let input = mk(vec![1, 3, 224, 224], DataType::FP32);
     let kernel = mk(vec![64, 3, 7, 7], DataType::FP32);
     let flops = ShapeInference::compute_flops(&TensorOp::Conv2D, &[&input, &kernel]).unwrap();
-    assert!(flops > 100_000_000, "ResNet-50 first conv > 100M FLOPs: {}", flops);
+    assert!(
+        flops > 100_000_000,
+        "ResNet-50 first conv > 100M FLOPs: {}",
+        flops
+    );
 }
 
 #[test]

@@ -18,11 +18,11 @@
 //
 // ============================================================================
 
+use crate::attributes::{Attribute, Attributes};
 use crate::context::Context;
-use crate::types::{DataType, Dimension, MemoryLayout};
-use crate::attributes::{Attributes, Attribute};
 use crate::functions::FunctionData;
 use crate::location::Location;
+use crate::types::{DataType, Dimension, MemoryLayout};
 
 /// Shape descriptor for tensor types.
 #[derive(Debug, Clone)]
@@ -45,27 +45,42 @@ pub enum ModelType {
 
 /// Convenience: create a tensor type descriptor.
 pub fn tensor(shape: &[usize], dtype: DataType) -> ModelType {
-    ModelType::Tensor { shape: shape.to_vec(), dtype }
+    ModelType::Tensor {
+        shape: shape.to_vec(),
+        dtype,
+    }
 }
 
 /// Convenience: create a 2D tensor type descriptor.
 pub fn tensor_2d(m: usize, n: usize, dtype: DataType) -> ModelType {
-    ModelType::Tensor { shape: vec![m, n], dtype }
+    ModelType::Tensor {
+        shape: vec![m, n],
+        dtype,
+    }
 }
 
 /// Convenience: create a 3D tensor type descriptor.
 pub fn tensor_3d(b: usize, s: usize, d: usize, dtype: DataType) -> ModelType {
-    ModelType::Tensor { shape: vec![b, s, d], dtype }
+    ModelType::Tensor {
+        shape: vec![b, s, d],
+        dtype,
+    }
 }
 
 /// Convenience: create a 4D tensor type descriptor.
 pub fn tensor_4d(b: usize, c: usize, h: usize, w: usize, dtype: DataType) -> ModelType {
-    ModelType::Tensor { shape: vec![b, c, h, w], dtype }
+    ModelType::Tensor {
+        shape: vec![b, c, h, w],
+        dtype,
+    }
 }
 
 /// Convenience: create a 1D tensor type descriptor.
 pub fn tensor_1d(n: usize, dtype: DataType) -> ModelType {
-    ModelType::Tensor { shape: vec![n], dtype }
+    ModelType::Tensor {
+        shape: vec![n],
+        dtype,
+    }
 }
 
 /// Represents a single operation in the builder.
@@ -106,7 +121,13 @@ impl FunctionBuilder {
     }
 
     /// Add an operation.
-    pub fn op(mut self, op_name: &str, inputs: &[&str], result: &str, result_type: ModelType) -> Self {
+    pub fn op(
+        mut self,
+        op_name: &str,
+        inputs: &[&str],
+        result: &str,
+        result_type: ModelType,
+    ) -> Self {
         self.ops.push(OpDef {
             op_name: op_name.to_string(),
             inputs: inputs.iter().map(|s| s.to_string()).collect(),
@@ -178,7 +199,10 @@ impl ModelBuilder {
         let fb = FunctionBuilder::new(name);
         let idx = self.functions.len();
         self.functions.push(fb);
-        FunctionBuilderHandle { model: self, func_idx: idx }
+        FunctionBuilderHandle {
+            model: self,
+            func_idx: idx,
+        }
     }
 
     /// Build the model into a LIFT Context and return it.
@@ -220,10 +244,12 @@ impl ModelBuilder {
         // func @name(%p0: type, %p1: type) -> ret_type {
         out.push_str(&format!("    func @{}(", fb.name));
         for (i, (pname, pty)) in fb.params.iter().enumerate() {
-            if i > 0 { out.push_str(", "); }
+            if i > 0 {
+                out.push_str(", ");
+            }
             out.push_str(&format!("%{}: {}", pname, format_model_type(pty)));
         }
-        out.push_str(")");
+        out.push(')');
 
         // Return type
         if let Some(ref ret_name) = fb.return_name {
@@ -238,20 +264,25 @@ impl ModelBuilder {
 
         // Operations
         for op_def in &fb.ops {
-            let inputs: String = op_def.inputs.iter()
+            let inputs: String = op_def
+                .inputs
+                .iter()
                 .map(|n| format!("%{}", n))
                 .collect::<Vec<_>>()
                 .join(", ");
 
-            let input_types: String = op_def.inputs.iter()
+            let input_types: String = op_def
+                .inputs
+                .iter()
                 .filter_map(|n| {
                     // Look up type: first in params, then in previous op results
                     if let Some((_, ty)) = fb.params.iter().find(|(pn, _)| pn == n) {
                         Some(format_model_type(ty))
-                    } else if let Some(prev_op) = fb.ops.iter().find(|o| o.result_name == *n) {
-                        Some(format_model_type(&prev_op.result_type))
                     } else {
-                        None
+                        fb.ops
+                            .iter()
+                            .find(|o| o.result_name == *n)
+                            .map(|prev_op| format_model_type(&prev_op.result_type))
                     }
                 })
                 .collect::<Vec<_>>()
@@ -278,7 +309,9 @@ impl ModelBuilder {
         let name_id = ctx.intern_string(&fb.name);
 
         // Resolve parameter types
-        let param_types: Vec<_> = fb.params.iter()
+        let param_types: Vec<_> = fb
+            .params
+            .iter()
             .map(|(_, ty)| self.resolve_model_type(ctx, ty))
             .collect();
 
@@ -312,13 +345,17 @@ impl ModelBuilder {
 
         // Build operations
         for op_def in &fb.ops {
-            let inputs: Vec<_> = op_def.inputs.iter()
+            let inputs: Vec<_> = op_def
+                .inputs
+                .iter()
                 .filter_map(|name| name_map.get(name).copied())
                 .collect();
 
             let result_ty = self.resolve_model_type(ctx, &op_def.result_type);
 
-            let (dialect, _) = op_def.op_name.split_once('.')
+            let (dialect, _) = op_def
+                .op_name
+                .split_once('.')
                 .unwrap_or(("core", &op_def.op_name));
 
             let mut attrs = Attributes::new();
@@ -327,9 +364,12 @@ impl ModelBuilder {
             }
 
             let (op_key, results) = ctx.create_op(
-                &op_def.op_name, dialect,
-                inputs, vec![result_ty],
-                attrs, Location::unknown(),
+                &op_def.op_name,
+                dialect,
+                inputs,
+                vec![result_ty],
+                attrs,
+                Location::unknown(),
             );
             ctx.add_op_to_block(block, op_key);
 
@@ -342,9 +382,12 @@ impl ModelBuilder {
         if let Some(ref ret_name) = fb.return_name {
             if let Some(&ret_val) = name_map.get(ret_name) {
                 let (ret_op, _) = ctx.create_op(
-                    "core.return", "core",
-                    vec![ret_val], vec![],
-                    Attributes::new(), Location::unknown(),
+                    "core.return",
+                    "core",
+                    vec![ret_val],
+                    vec![],
+                    Attributes::new(),
+                    Location::unknown(),
                 );
                 ctx.add_op_to_block(block, ret_op);
             }
@@ -383,7 +426,13 @@ impl FunctionBuilderHandle {
         self
     }
 
-    pub fn op(mut self, op_name: &str, inputs: &[&str], result: &str, result_type: ModelType) -> Self {
+    pub fn op(
+        mut self,
+        op_name: &str,
+        inputs: &[&str],
+        result: &str,
+        result_type: ModelType,
+    ) -> Self {
         let fb = std::mem::replace(
             &mut self.model.functions[self.func_idx],
             FunctionBuilder::new("__tmp__"),
@@ -404,7 +453,8 @@ impl FunctionBuilderHandle {
             &mut self.model.functions[self.func_idx],
             FunctionBuilder::new("__tmp__"),
         );
-        self.model.functions[self.func_idx] = fb.op_with_attrs(op_name, inputs, result, result_type, attrs);
+        self.model.functions[self.func_idx] =
+            fb.op_with_attrs(op_name, inputs, result, result_type, attrs);
         self
     }
 
@@ -436,7 +486,8 @@ impl FunctionBuilderHandle {
 fn format_model_type(mt: &ModelType) -> String {
     match mt {
         ModelType::Tensor { shape, dtype } => {
-            let dims: String = shape.iter()
+            let dims: String = shape
+                .iter()
                 .map(|d| d.to_string())
                 .collect::<Vec<_>>()
                 .join("x");
@@ -475,12 +526,19 @@ pub fn build_lith_config(
     max_memory: Option<u64>,
 ) -> String {
     let mut out = String::new();
-    out.push_str(&format!("[target]\nbackend = \"{}\"\ndevice = \"{}\"\nprecision = \"{}\"\n\n", backend, device, precision));
+    out.push_str(&format!(
+        "[target]\nbackend = \"{}\"\ndevice = \"{}\"\nprecision = \"{}\"\n\n",
+        backend, device, precision
+    ));
 
     if max_flops.is_some() || max_memory.is_some() {
         out.push_str("[budget]\n");
-        if let Some(f) = max_flops { out.push_str(&format!("max_flops = {}\n", f)); }
-        if let Some(m) = max_memory { out.push_str(&format!("max_memory_bytes = {}\n", m)); }
+        if let Some(f) = max_flops {
+            out.push_str(&format!("max_flops = {}\n", f));
+        }
+        if let Some(m) = max_memory {
+            out.push_str(&format!("max_memory_bytes = {}\n", m));
+        }
         out.push('\n');
     }
 
@@ -501,12 +559,22 @@ mod tests {
     fn test_simple_model() {
         let lif = ModelBuilder::new("test_mlp")
             .function("forward")
-                .param("x", tensor(&[1, 784], DataType::FP32))
-                .param("w", tensor_2d(784, 256, DataType::FP32))
-                .op("tensor.matmul", &["x", "w"], "h", tensor(&[1, 256], DataType::FP32))
-                .op("tensor.relu", &["h"], "out", tensor(&[1, 256], DataType::FP32))
-                .returns("out")
-                .done()
+            .param("x", tensor(&[1, 784], DataType::FP32))
+            .param("w", tensor_2d(784, 256, DataType::FP32))
+            .op(
+                "tensor.matmul",
+                &["x", "w"],
+                "h",
+                tensor(&[1, 256], DataType::FP32),
+            )
+            .op(
+                "tensor.relu",
+                &["h"],
+                "out",
+                tensor(&[1, 256], DataType::FP32),
+            )
+            .returns("out")
+            .done()
             .build_lif();
 
         assert!(lif.contains("#dialect tensor"));
@@ -520,11 +588,16 @@ mod tests {
     fn test_build_context() {
         let ctx = ModelBuilder::new("ctx_test")
             .function("f")
-                .param("a", tensor(&[4, 4], DataType::FP32))
-                .param("b", tensor(&[4, 4], DataType::FP32))
-                .op("tensor.add", &["a", "b"], "c", tensor(&[4, 4], DataType::FP32))
-                .returns("c")
-                .done()
+            .param("a", tensor(&[4, 4], DataType::FP32))
+            .param("b", tensor(&[4, 4], DataType::FP32))
+            .op(
+                "tensor.add",
+                &["a", "b"],
+                "c",
+                tensor(&[4, 4], DataType::FP32),
+            )
+            .returns("c")
+            .done()
             .build_context();
 
         assert_eq!(ctx.modules.len(), 1);
@@ -537,10 +610,10 @@ mod tests {
         let path = "/tmp/lift_builder_test.lif";
         ModelBuilder::new("write_test")
             .function("f")
-                .param("x", tensor(&[8], DataType::FP32))
-                .op("tensor.relu", &["x"], "y", tensor(&[8], DataType::FP32))
-                .returns("y")
-                .done()
+            .param("x", tensor(&[8], DataType::FP32))
+            .op("tensor.relu", &["x"], "y", tensor(&[8], DataType::FP32))
+            .returns("y")
+            .done()
             .write_lif(path)
             .unwrap();
 
@@ -552,7 +625,9 @@ mod tests {
     #[test]
     fn test_lith_config() {
         let config = build_lith_config(
-            "llvm", "h100", "fp16",
+            "llvm",
+            "h100",
+            "fp16",
             &["canonicalize", "dce", "tensor-fusion"],
             Some(1_000_000_000),
             Some(80_000_000_000),

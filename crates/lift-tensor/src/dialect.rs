@@ -1,13 +1,20 @@
-use lift_core::dialect::Dialect;
 use crate::ops::TensorOp;
+use lift_core::dialect::Dialect;
 
 #[derive(Debug)]
 pub struct TensorDialect;
 
 impl Dialect for TensorDialect {
-    fn name(&self) -> &str { "tensor" }
+    fn name(&self) -> &str {
+        "tensor"
+    }
 
-    fn verify_op(&self, op_name: &str, num_inputs: usize, num_results: usize) -> Result<(), String> {
+    fn verify_op(
+        &self,
+        op_name: &str,
+        num_inputs: usize,
+        num_results: usize,
+    ) -> Result<(), String> {
         let full_name = if op_name.starts_with("tensor.") {
             op_name.to_string()
         } else {

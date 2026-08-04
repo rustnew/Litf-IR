@@ -1,8 +1,8 @@
-use lift_quantum::gates::{QuantumGate, Provider};
+use lift_quantum::gates::{Provider, QuantumGate};
 use lift_quantum::kraus::{ComplexMatrix, KrausChannel};
-use lift_quantum::qec::{QecCode, QecAnalysis};
+use lift_quantum::noise::{CircuitNoise, GateNoise, NoiseModel};
+use lift_quantum::qec::{QecAnalysis, QecCode};
 use lift_quantum::topology::DeviceTopology;
-use lift_quantum::noise::{NoiseModel, GateNoise, CircuitNoise};
 
 // ═══════════════════════════════════════════════════════════
 // Gate tests — new gates
@@ -11,17 +11,30 @@ use lift_quantum::noise::{NoiseModel, GateNoise, CircuitNoise};
 #[test]
 fn test_new_gate_roundtrip() {
     let gates = [
-        QuantumGate::Rx90, QuantumGate::Rx180,
-        QuantumGate::CPhase, QuantumGate::XY, QuantumGate::CP,
-        QuantumGate::GPI, QuantumGate::GPI2, QuantumGate::MS,
-        QuantumGate::MCX, QuantumGate::MCZ,
-        QuantumGate::GlobalPhase, QuantumGate::Delay,
-        QuantumGate::VirtualRZ, QuantumGate::IfElse,
+        QuantumGate::Rx90,
+        QuantumGate::Rx180,
+        QuantumGate::CPhase,
+        QuantumGate::XY,
+        QuantumGate::CP,
+        QuantumGate::GPI,
+        QuantumGate::GPI2,
+        QuantumGate::MS,
+        QuantumGate::MCX,
+        QuantumGate::MCZ,
+        QuantumGate::GlobalPhase,
+        QuantumGate::Delay,
+        QuantumGate::VirtualRZ,
+        QuantumGate::IfElse,
     ];
     for gate in &gates {
         let name = gate.op_name();
         let recovered = QuantumGate::from_name(name);
-        assert_eq!(recovered.as_ref(), Some(gate), "roundtrip failed for {:?}", gate);
+        assert_eq!(
+            recovered.as_ref(),
+            Some(gate),
+            "roundtrip failed for {:?}",
+            gate
+        );
     }
 }
 
@@ -75,18 +88,29 @@ fn test_special_gates() {
 #[test]
 fn test_entangling_classification() {
     let entangling = [
-        QuantumGate::CX, QuantumGate::CZ, QuantumGate::CY,
-        QuantumGate::SWAP, QuantumGate::ISWAP, QuantumGate::ECR,
-        QuantumGate::CPhase, QuantumGate::XY, QuantumGate::CP,
-        QuantumGate::MS, QuantumGate::CCX, QuantumGate::CSWAP,
+        QuantumGate::CX,
+        QuantumGate::CZ,
+        QuantumGate::CY,
+        QuantumGate::SWAP,
+        QuantumGate::ISWAP,
+        QuantumGate::ECR,
+        QuantumGate::CPhase,
+        QuantumGate::XY,
+        QuantumGate::CP,
+        QuantumGate::MS,
+        QuantumGate::CCX,
+        QuantumGate::CSWAP,
     ];
     for g in &entangling {
         assert!(g.is_entangling(), "{:?} should be entangling", g);
     }
 
     let non_entangling = [
-        QuantumGate::H, QuantumGate::X, QuantumGate::RZ,
-        QuantumGate::Measure, QuantumGate::Barrier,
+        QuantumGate::H,
+        QuantumGate::X,
+        QuantumGate::RZ,
+        QuantumGate::Measure,
+        QuantumGate::Barrier,
     ];
     for g in &non_entangling {
         assert!(!g.is_entangling(), "{:?} should not be entangling", g);
@@ -352,11 +376,7 @@ fn test_ldpc_code_zero_k() {
 
 #[test]
 fn test_qec_analysis_physical_qubits() {
-    let analysis = QecAnalysis::analyse(
-        10, 100,
-        QecCode::SurfaceCode { distance: 5 },
-        0.001,
-    );
+    let analysis = QecAnalysis::analyse(10, 100, QecCode::SurfaceCode { distance: 5 }, 0.001);
     assert_eq!(analysis.physical_qubits, 250); // 10 * 25
     assert_eq!(analysis.logical_qubits, 10);
     assert_eq!(analysis.overhead_qubits, 25);
@@ -364,11 +384,7 @@ fn test_qec_analysis_physical_qubits() {
 
 #[test]
 fn test_qec_error_rate_valid() {
-    let analysis = QecAnalysis::analyse(
-        5, 50,
-        QecCode::SurfaceCode { distance: 7 },
-        0.001,
-    );
+    let analysis = QecAnalysis::analyse(5, 50, QecCode::SurfaceCode { distance: 7 }, 0.001);
     assert!(analysis.logical_error_rate >= 0.0);
     assert!(analysis.logical_error_rate <= 1.0);
 }
@@ -382,11 +398,7 @@ fn test_qec_higher_distance_lower_error() {
 
 #[test]
 fn test_qec_meets_target() {
-    let analysis = QecAnalysis::analyse(
-        1, 10,
-        QecCode::SurfaceCode { distance: 15 },
-        0.001,
-    );
+    let analysis = QecAnalysis::analyse(1, 10, QecCode::SurfaceCode { distance: 15 }, 0.001);
     assert!(analysis.meets_target(0.1));
 }
 

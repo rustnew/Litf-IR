@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -28,20 +28,27 @@ impl DeviceTopology {
     }
 
     pub fn are_connected(&self, q0: usize, q1: usize) -> bool {
-        self.edges.iter().any(|&(a, b)| (a == q0 && b == q1) || (a == q1 && b == q0))
+        self.edges
+            .iter()
+            .any(|&(a, b)| (a == q0 && b == q1) || (a == q1 && b == q0))
     }
 
     pub fn neighbors(&self, q: usize) -> Vec<usize> {
         let mut result = Vec::new();
         for &(a, b) in &self.edges {
-            if a == q { result.push(b); }
-            else if b == q { result.push(a); }
+            if a == q {
+                result.push(b);
+            } else if b == q {
+                result.push(a);
+            }
         }
         result
     }
 
     pub fn shortest_path(&self, from: usize, to: usize) -> Option<Vec<usize>> {
-        if from == to { return Some(vec![from]); }
+        if from == to {
+            return Some(vec![from]);
+        }
         let mut visited = HashSet::new();
         let mut queue = VecDeque::new();
         let mut parent: HashMap<usize, usize> = HashMap::new();
@@ -71,7 +78,8 @@ impl DeviceTopology {
     }
 
     pub fn swap_distance(&self, from: usize, to: usize) -> Option<usize> {
-        self.shortest_path(from, to).map(|p| if p.len() > 1 { p.len() - 2 } else { 0 })
+        self.shortest_path(from, to)
+            .map(|p| if p.len() > 1 { p.len() - 2 } else { 0 })
     }
 
     pub fn linear(n: usize) -> Self {
@@ -88,8 +96,12 @@ impl DeviceTopology {
         for r in 0..rows {
             for c in 0..cols {
                 let q = r * cols + c;
-                if c + 1 < cols { topo.add_edge(q, q + 1, 0.99); }
-                if r + 1 < rows { topo.add_edge(q, q + cols, 0.99); }
+                if c + 1 < cols {
+                    topo.add_edge(q, q + 1, 0.99);
+                }
+                if r + 1 < rows {
+                    topo.add_edge(q, q + cols, 0.99);
+                }
             }
         }
         topo
@@ -128,15 +140,20 @@ impl DeviceTopology {
         for i in 0..n {
             let left = 2 * i + 1;
             let right = 2 * i + 2;
-            if left < n { topo.add_edge(i, left, 0.99); }
-            if right < n { topo.add_edge(i, right, 0.99); }
+            if left < n {
+                topo.add_edge(i, left, 0.99);
+            }
+            if right < n {
+                topo.add_edge(i, right, 0.99);
+            }
         }
         topo
     }
 
     /// Custom topology from an adjacency list.
     pub fn custom(name: &str, adjacency: &[(usize, usize)], fidelity: f64) -> Self {
-        let max_q = adjacency.iter()
+        let max_q = adjacency
+            .iter()
             .flat_map(|&(a, b)| [a, b])
             .max()
             .map_or(0, |m| m + 1);
@@ -149,7 +166,9 @@ impl DeviceTopology {
 
     /// Average connectivity (edges per qubit).
     pub fn avg_connectivity(&self) -> f64 {
-        if self.num_qubits == 0 { return 0.0; }
+        if self.num_qubits == 0 {
+            return 0.0;
+        }
         (2.0 * self.edges.len() as f64) / self.num_qubits as f64
     }
 
@@ -160,7 +179,9 @@ impl DeviceTopology {
             for j in (i + 1)..self.num_qubits {
                 if let Some(path) = self.shortest_path(i, j) {
                     let dist = path.len().saturating_sub(1);
-                    if dist > max_dist { max_dist = dist; }
+                    if dist > max_dist {
+                        max_dist = dist;
+                    }
                 }
             }
         }

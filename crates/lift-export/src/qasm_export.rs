@@ -1,7 +1,7 @@
 use lift_core::context::Context;
 use lift_quantum::gates::QuantumGate;
-use thiserror::Error;
 use std::fmt::Write;
+use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum QasmExportError {
@@ -15,7 +15,9 @@ pub enum QasmExportError {
 pub struct QasmExporter;
 
 impl QasmExporter {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 
     pub fn export(&self, ctx: &Context) -> Result<String, QasmExportError> {
         let mut output = String::new();
@@ -43,7 +45,11 @@ impl QasmExporter {
                 }
             }
         }
-        let num_qubits = if qubit_args > 0 { qubit_args } else { max_qubits.max(1) };
+        let num_qubits = if qubit_args > 0 {
+            qubit_args
+        } else {
+            max_qubits.max(1)
+        };
 
         let _ = writeln!(output, "qubit[{}] q;", num_qubits);
         let _ = writeln!(output, "bit[{}] c;", num_qubits);
@@ -65,68 +71,162 @@ impl QasmExporter {
 
                 match gate {
                     // 1-qubit standard
-                    QuantumGate::H => { let _ = writeln!(output, "h q[{}];", q0); }
-                    QuantumGate::X => { let _ = writeln!(output, "x q[{}];", q0); }
-                    QuantumGate::Y => { let _ = writeln!(output, "y q[{}];", q0); }
-                    QuantumGate::Z => { let _ = writeln!(output, "z q[{}];", q0); }
-                    QuantumGate::S => { let _ = writeln!(output, "s q[{}];", q0); }
-                    QuantumGate::Sdg => { let _ = writeln!(output, "sdg q[{}];", q0); }
-                    QuantumGate::T => { let _ = writeln!(output, "t q[{}];", q0); }
-                    QuantumGate::Tdg => { let _ = writeln!(output, "tdg q[{}];", q0); }
-                    QuantumGate::SX => { let _ = writeln!(output, "sx q[{}];", q0); }
+                    QuantumGate::H => {
+                        let _ = writeln!(output, "h q[{}];", q0);
+                    }
+                    QuantumGate::X => {
+                        let _ = writeln!(output, "x q[{}];", q0);
+                    }
+                    QuantumGate::Y => {
+                        let _ = writeln!(output, "y q[{}];", q0);
+                    }
+                    QuantumGate::Z => {
+                        let _ = writeln!(output, "z q[{}];", q0);
+                    }
+                    QuantumGate::S => {
+                        let _ = writeln!(output, "s q[{}];", q0);
+                    }
+                    QuantumGate::Sdg => {
+                        let _ = writeln!(output, "sdg q[{}];", q0);
+                    }
+                    QuantumGate::T => {
+                        let _ = writeln!(output, "t q[{}];", q0);
+                    }
+                    QuantumGate::Tdg => {
+                        let _ = writeln!(output, "tdg q[{}];", q0);
+                    }
+                    QuantumGate::SX => {
+                        let _ = writeln!(output, "sx q[{}];", q0);
+                    }
                     // 1-qubit parametric
-                    QuantumGate::RX => { let _ = writeln!(output, "rx({}) q[{}];", angle, q0); }
-                    QuantumGate::RY => { let _ = writeln!(output, "ry({}) q[{}];", angle, q0); }
-                    QuantumGate::RZ => { let _ = writeln!(output, "rz({}) q[{}];", angle, q0); }
-                    QuantumGate::P => { let _ = writeln!(output, "p({}) q[{}];", angle, q0); }
-                    QuantumGate::U1 => { let _ = writeln!(output, "u1({}) q[{}];", lambda, q0); }
-                    QuantumGate::U2 => { let _ = writeln!(output, "u2({}, {}) q[{}];", phi, lambda, q0); }
-                    QuantumGate::U3 => { let _ = writeln!(output, "u3({}, {}, {}) q[{}];", theta, phi, lambda, q0); }
+                    QuantumGate::RX => {
+                        let _ = writeln!(output, "rx({}) q[{}];", angle, q0);
+                    }
+                    QuantumGate::RY => {
+                        let _ = writeln!(output, "ry({}) q[{}];", angle, q0);
+                    }
+                    QuantumGate::RZ => {
+                        let _ = writeln!(output, "rz({}) q[{}];", angle, q0);
+                    }
+                    QuantumGate::P => {
+                        let _ = writeln!(output, "p({}) q[{}];", angle, q0);
+                    }
+                    QuantumGate::U1 => {
+                        let _ = writeln!(output, "u1({}) q[{}];", lambda, q0);
+                    }
+                    QuantumGate::U2 => {
+                        let _ = writeln!(output, "u2({}, {}) q[{}];", phi, lambda, q0);
+                    }
+                    QuantumGate::U3 => {
+                        let _ = writeln!(output, "u3({}, {}, {}) q[{}];", theta, phi, lambda, q0);
+                    }
                     // 1-qubit fixed-angle
-                    QuantumGate::Rx90 => { let _ = writeln!(output, "rx(pi/2) q[{}];", q0); }
-                    QuantumGate::Rx180 => { let _ = writeln!(output, "rx(pi) q[{}];", q0); }
+                    QuantumGate::Rx90 => {
+                        let _ = writeln!(output, "rx(pi/2) q[{}];", q0);
+                    }
+                    QuantumGate::Rx180 => {
+                        let _ = writeln!(output, "rx(pi) q[{}];", q0);
+                    }
                     // 1-qubit special
-                    QuantumGate::VirtualRZ => { let _ = writeln!(output, "rz({}) q[{}]; // virtual", angle, q0); }
-                    QuantumGate::GlobalPhase => { let _ = writeln!(output, "gphase({});", angle); }
+                    QuantumGate::VirtualRZ => {
+                        let _ = writeln!(output, "rz({}) q[{}]; // virtual", angle, q0);
+                    }
+                    QuantumGate::GlobalPhase => {
+                        let _ = writeln!(output, "gphase({});", angle);
+                    }
                     // 2-qubit standard
-                    QuantumGate::CX => { let _ = writeln!(output, "cx q[{}], q[{}];", q0, q1); }
-                    QuantumGate::CZ => { let _ = writeln!(output, "cz q[{}], q[{}];", q0, q1); }
-                    QuantumGate::CY => { let _ = writeln!(output, "cy q[{}], q[{}];", q0, q1); }
-                    QuantumGate::SWAP => { let _ = writeln!(output, "swap q[{}], q[{}];", q0, q1); }
-                    QuantumGate::ISWAP => { let _ = writeln!(output, "iswap q[{}], q[{}];", q0, q1); }
-                    QuantumGate::ECR => { let _ = writeln!(output, "ecr q[{}], q[{}];", q0, q1); }
-                    QuantumGate::RZX => { let _ = writeln!(output, "rzx({}) q[{}], q[{}];", angle, q0, q1); }
+                    QuantumGate::CX => {
+                        let _ = writeln!(output, "cx q[{}], q[{}];", q0, q1);
+                    }
+                    QuantumGate::CZ => {
+                        let _ = writeln!(output, "cz q[{}], q[{}];", q0, q1);
+                    }
+                    QuantumGate::CY => {
+                        let _ = writeln!(output, "cy q[{}], q[{}];", q0, q1);
+                    }
+                    QuantumGate::SWAP => {
+                        let _ = writeln!(output, "swap q[{}], q[{}];", q0, q1);
+                    }
+                    QuantumGate::ISWAP => {
+                        let _ = writeln!(output, "iswap q[{}], q[{}];", q0, q1);
+                    }
+                    QuantumGate::ECR => {
+                        let _ = writeln!(output, "ecr q[{}], q[{}];", q0, q1);
+                    }
+                    QuantumGate::RZX => {
+                        let _ = writeln!(output, "rzx({}) q[{}], q[{}];", angle, q0, q1);
+                    }
                     // 2-qubit parametric
-                    QuantumGate::CP => { let _ = writeln!(output, "cp({}) q[{}], q[{}];", angle, q0, q1); }
-                    QuantumGate::CPhase => { let _ = writeln!(output, "cphase({}) q[{}], q[{}];", angle, q0, q1); }
-                    QuantumGate::XX => { let _ = writeln!(output, "rxx({}) q[{}], q[{}];", angle, q0, q1); }
-                    QuantumGate::YY => { let _ = writeln!(output, "ryy({}) q[{}], q[{}];", angle, q0, q1); }
-                    QuantumGate::ZZ => { let _ = writeln!(output, "rzz({}) q[{}], q[{}];", angle, q0, q1); }
-                    QuantumGate::XY => { let _ = writeln!(output, "xy({}) q[{}], q[{}];", angle, q0, q1); }
-                    QuantumGate::MS => { let _ = writeln!(output, "ms q[{}], q[{}];", q0, q1); }
+                    QuantumGate::CP => {
+                        let _ = writeln!(output, "cp({}) q[{}], q[{}];", angle, q0, q1);
+                    }
+                    QuantumGate::CPhase => {
+                        let _ = writeln!(output, "cphase({}) q[{}], q[{}];", angle, q0, q1);
+                    }
+                    QuantumGate::XX => {
+                        let _ = writeln!(output, "rxx({}) q[{}], q[{}];", angle, q0, q1);
+                    }
+                    QuantumGate::YY => {
+                        let _ = writeln!(output, "ryy({}) q[{}], q[{}];", angle, q0, q1);
+                    }
+                    QuantumGate::ZZ => {
+                        let _ = writeln!(output, "rzz({}) q[{}], q[{}];", angle, q0, q1);
+                    }
+                    QuantumGate::XY => {
+                        let _ = writeln!(output, "xy({}) q[{}], q[{}];", angle, q0, q1);
+                    }
+                    QuantumGate::MS => {
+                        let _ = writeln!(output, "ms q[{}], q[{}];", q0, q1);
+                    }
                     // 3-qubit
-                    QuantumGate::CCX => { let _ = writeln!(output, "ccx q[{}], q[{}], q[{}];", q0, q1, q2); }
-                    QuantumGate::CSWAP => { let _ = writeln!(output, "cswap q[{}], q[{}], q[{}];", q0, q1, q2); }
+                    QuantumGate::CCX => {
+                        let _ = writeln!(output, "ccx q[{}], q[{}], q[{}];", q0, q1, q2);
+                    }
+                    QuantumGate::CSWAP => {
+                        let _ = writeln!(output, "cswap q[{}], q[{}], q[{}];", q0, q1, q2);
+                    }
                     // Multi-controlled
-                    QuantumGate::MCX => { let _ = writeln!(output, "mcx q[{}], q[{}], q[{}];", q0, q1, q2); }
-                    QuantumGate::MCZ => { let _ = writeln!(output, "mcz q[{}], q[{}], q[{}];", q0, q1, q2); }
+                    QuantumGate::MCX => {
+                        let _ = writeln!(output, "mcx q[{}], q[{}], q[{}];", q0, q1, q2);
+                    }
+                    QuantumGate::MCZ => {
+                        let _ = writeln!(output, "mcz q[{}], q[{}], q[{}];", q0, q1, q2);
+                    }
                     // Measurement and control
-                    QuantumGate::Measure => { let _ = writeln!(output, "c[{}] = measure q[{}];", q0, q0); }
+                    QuantumGate::Measure => {
+                        let _ = writeln!(output, "c[{}] = measure q[{}];", q0, q0);
+                    }
                     QuantumGate::MeasureAll => {
                         for i in 0..num_qubits {
                             let _ = writeln!(output, "c[{}] = measure q[{}];", i, i);
                         }
                     }
-                    QuantumGate::Reset => { let _ = writeln!(output, "reset q[{}];", q0); }
-                    QuantumGate::Barrier => { let _ = writeln!(output, "barrier q;"); }
-                    QuantumGate::Init => { let _ = writeln!(output, "reset q[{}];", q0); }
-                    QuantumGate::Delay => { let _ = writeln!(output, "delay[100ns] q[{}];", q0); }
+                    QuantumGate::Reset => {
+                        let _ = writeln!(output, "reset q[{}];", q0);
+                    }
+                    QuantumGate::Barrier => {
+                        let _ = writeln!(output, "barrier q;");
+                    }
+                    QuantumGate::Init => {
+                        let _ = writeln!(output, "reset q[{}];", q0);
+                    }
+                    QuantumGate::Delay => {
+                        let _ = writeln!(output, "delay[100ns] q[{}];", q0);
+                    }
                     // IonQ native
-                    QuantumGate::GPI => { let _ = writeln!(output, "gpi({}) q[{}];", angle, q0); }
-                    QuantumGate::GPI2 => { let _ = writeln!(output, "gpi2({}) q[{}];", angle, q0); }
+                    QuantumGate::GPI => {
+                        let _ = writeln!(output, "gpi({}) q[{}];", angle, q0);
+                    }
+                    QuantumGate::GPI2 => {
+                        let _ = writeln!(output, "gpi2({}) q[{}];", angle, q0);
+                    }
                     // Control flow and generic
-                    QuantumGate::IfElse => { let _ = writeln!(output, "// if-else control flow"); }
-                    QuantumGate::ParamGate => { let _ = writeln!(output, "// parameterised gate: {}", op_name); }
+                    QuantumGate::IfElse => {
+                        let _ = writeln!(output, "// if-else control flow");
+                    }
+                    QuantumGate::ParamGate => {
+                        let _ = writeln!(output, "// parameterised gate: {}", op_name);
+                    }
                 }
                 qubit_counter += 1;
             }
@@ -137,5 +237,7 @@ impl QasmExporter {
 }
 
 impl Default for QasmExporter {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

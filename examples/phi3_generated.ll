@@ -49,8 +49,10 @@ declare ptr @lift_rt_generic_op(ptr, ptr, ptr, i64, i64)
 define ptr @embedding(ptr %arg0, ptr %arg1) {
 entry:
   ; tensor.embedding (2 inputs -> 1 outputs)
+  ;   input type: <128 x float>
   %r0 = call ptr @lift_rt_embedding(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
   ; core.return (1 inputs -> 0 outputs)
+  ;   input type: <393216 x float>
   %r1 = call ptr @lift_rt_generic_op(ptr %arg0, ptr null, ptr null, i64 1, i64 0)
   ret ptr %r1
 }
@@ -58,34 +60,49 @@ entry:
 define ptr @layer(ptr %arg0, ptr %arg1, ptr %arg2, ptr %arg3, ptr %arg4, ptr %arg5, ptr %arg6, ptr %arg7, ptr %arg8, ptr %arg9) {
 entry:
   ; tensor.rmsnorm (2 inputs -> 1 outputs)
+  ;   input type: <393216 x float>
   %r0 = call ptr @lift_rt_rmsnorm(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
   ; tensor.matmul (2 inputs -> 1 outputs)
+  ;   input type: <393216 x float>
   %r1 = call ptr @lift_rt_matmul(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
   ; tensor.matmul (2 inputs -> 1 outputs)
+  ;   input type: <393216 x float>
   %r2 = call ptr @lift_rt_matmul(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
   ; tensor.matmul (2 inputs -> 1 outputs)
+  ;   input type: <393216 x float>
   %r3 = call ptr @lift_rt_matmul(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
   ; tensor.grouped_query_attention (3 inputs -> 1 outputs)
+  ;   input type: <393216 x float>
   %r4 = call ptr @lift_rt_grouped_query_attention(ptr %arg0, ptr %arg1, ptr null, i64 3, i64 1)
   ; tensor.matmul (2 inputs -> 1 outputs)
+  ;   input type: <393216 x float>
   %r5 = call ptr @lift_rt_matmul(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
   ; tensor.add (2 inputs -> 1 outputs)
+  ;   input type: <393216 x float>
   %r6 = call ptr @lift_rt_add(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
   ; tensor.rmsnorm (2 inputs -> 1 outputs)
+  ;   input type: <393216 x float>
   %r7 = call ptr @lift_rt_rmsnorm(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
   ; tensor.matmul (2 inputs -> 1 outputs)
+  ;   input type: <393216 x float>
   %r8 = call ptr @lift_rt_matmul(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
   ; tensor.silu (1 inputs -> 1 outputs)
+  ;   input type: <1048576 x float>
   %r9 = call ptr @lift_rt_silu(ptr %arg0, ptr null, ptr null, i64 1, i64 1)
   ; tensor.matmul (2 inputs -> 1 outputs)
+  ;   input type: <393216 x float>
   %r10 = call ptr @lift_rt_matmul(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
   ; tensor.mul (2 inputs -> 1 outputs)
+  ;   input type: <1048576 x float>
   %r11 = call ptr @lift_rt_mul(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
   ; tensor.matmul (2 inputs -> 1 outputs)
+  ;   input type: <1048576 x float>
   %r12 = call ptr @lift_rt_matmul(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
   ; tensor.add (2 inputs -> 1 outputs)
+  ;   input type: <393216 x float>
   %r13 = call ptr @lift_rt_add(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
   ; core.return (1 inputs -> 0 outputs)
+  ;   input type: <393216 x float>
   %r14 = call ptr @lift_rt_generic_op(ptr %arg0, ptr null, ptr null, i64 1, i64 0)
   ret ptr %r14
 }
@@ -93,10 +110,13 @@ entry:
 define ptr @lm_head(ptr %arg0, ptr %arg1, ptr %arg2) {
 entry:
   ; tensor.rmsnorm (2 inputs -> 1 outputs)
+  ;   input type: <393216 x float>
   %r0 = call ptr @lift_rt_rmsnorm(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
   ; tensor.matmul (2 inputs -> 1 outputs)
+  ;   input type: <393216 x float>
   %r1 = call ptr @lift_rt_matmul(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
   ; core.return (1 inputs -> 0 outputs)
+  ;   input type: <4104192 x float>
   %r2 = call ptr @lift_rt_generic_op(ptr %arg0, ptr null, ptr null, i64 1, i64 0)
   ret ptr %r2
 }

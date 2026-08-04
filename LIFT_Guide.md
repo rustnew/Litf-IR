@@ -15,7 +15,7 @@ This document describes **every feature** of the LIFT framework, numbered and or
 4. [lift-tensor — Tensor Operations (107 ops)](#4-lift-tensor--tensor-operations-107-ops)
 5. [lift-quantum — Quantum Gates and Noise (46+ gates)](#5-lift-quantum--quantum-gates-and-noise-46-gates)
 6. [lift-hybrid — Classical-Quantum Hybrid Computation](#6-lift-hybrid--classical-quantum-hybrid-computation)
-7. [lift-opt — Optimisation Passes (11 passes)](#7-lift-opt--optimisation-passes-11-passes)
+7. [lift-opt — Optimisation Passes (13 passes)](#7-lift-opt--optimisation-passes-13-passes)
 8. [lift-sim — Simulation and Cost Analysis](#8-lift-sim--simulation-and-cost-analysis)
 9. [lift-predict — Performance Prediction](#9-lift-predict--performance-prediction)
 10. [lift-import — Model Import](#10-lift-import--model-import)
@@ -75,17 +75,17 @@ Source (.lif) → Lexer → Parser → IR (SSA) → Verification → Optimisatio
 
 ```toml
 [dependencies]
-lift-core     = "0.3.0"
-lift-ast      = "0.3.0"
-lift-tensor   = "0.3.0"
-lift-quantum  = "0.3.0"
-lift-hybrid   = "0.3.0"
-lift-opt      = "0.3.0"
-lift-sim      = "0.3.0"
-lift-predict  = "0.3.0"
-lift-import   = "0.3.0"
-lift-export   = "0.3.0"
-lift-config   = "0.3.0"
+lift-core     = "0.4.0"
+lift-ast      = "0.4.0"
+lift-tensor   = "0.4.0"
+lift-quantum  = "0.4.0"
+lift-hybrid   = "0.4.0"
+lift-opt      = "0.4.0"
+lift-sim      = "0.4.0"
+lift-predict  = "0.4.0"
+lift-import   = "0.4.0"
+lift-export   = "0.4.0"
+lift-config   = "0.4.0"
 ```
 
 ---
@@ -243,7 +243,7 @@ for (name, result) in &results {
 }
 ```
 
-**Combine with**: `lift-opt` (all 11 passes), `lift-config` (pass selection via configuration).
+**Combine with**: `lift-opt` (all 13 passes), `lift-config` (pass selection via configuration).
 
 ### 2.7 Dialect — Dialect System
 
@@ -958,7 +958,7 @@ let fm = FeatureMap::ZZFeatureMap; // ZZFeatureMap, PauliFeatureMap, AngleEncodi
 
 ---
 
-## 7. lift-opt — Optimisation Passes (11 passes)
+## 7. lift-opt — Optimisation Passes (13 passes)
 
 ### 7.1 Classical Passes (5 passes)
 
@@ -1106,7 +1106,63 @@ let pass = LayoutMapping;
 
 **Combine with**: `lift-quantum::topology::DeviceTopology`.
 
-### 7.4 Recommended Optimisation Pipeline
+#### 7.3.4 GateDecomposition — Hardware-Native Gate Sets
+
+```rust
+use lift_opt::gate_decompose::GateDecomposition;
+use lift_quantum::dialect::Provider;
+
+let pass = GateDecomposition::new(Some(Provider::Ibm));
+// Lowers high-level gates to hardware-native gate sets:
+//   H     → RZ(π/2) SX RZ(π/2)
+//   T/Tdg → RZ(±π/4)
+//   S/Sdg → RZ(±π/2)
+//   Y     → RZ(π/2) X RZ(-π/2)
+//   RX(θ) → RZ(-π/2) SX RZ(π+θ) SX RZ(π/2)
+// Provider is read from QuantumConfig (provider = ibm|rigetti|ionq|quantinuum|simulator)
+// Uses Context::insert_op_before to preserve SSA dominance
+```
+
+**Combine with**: `lift-config` `[quantum] provider` key.
+
+#### 7.3.5 RealRouting — SWAP-Based Qubit Routing
+
+```rust
+use lift_opt::real_routing::RealRouting;
+use lift_quantum::topology::DeviceTopology;
+
+let pass = RealRouting::new(DeviceTopology::linear(8));
+// Inserts actual quantum.swap operations so every 2-qubit gate
+// only acts on physically connected qubits.
+// Strategy: identity initial placement, BFS shortest-path routing,
+// logical↔physical placement maps updated after every swap.
+```
+
+**Combine with**: `lift-config` `[quantum] topology` / `num_qubits` keys.
+
+### 7.4 Optimisation Levels (O0-O3)
+
+`lift-config` provides preset pipelines so you don't have to enumerate passes by hand:
+
+| Level | Passes |
+|-------|--------|
+| `O0` | none |
+| `O1` | canonicalize, constant-folding, dce |
+| `O2` | O1 + cse, tensor-fusion |
+| `O3` | all 13 passes (incl. gate-decomposition, real-routing) |
+
+```toml
+[optimisation]
+level = "O3"                  # preset pipeline
+passes = []                   # (optional) explicit overrides the level
+disabled_passes = ["cse"]     # (optional) remove specific passes
+max_iterations = 5
+```
+
+Explicit `passes` take priority over `level`; unknown pass names are reported by
+`OptimisationConfig::validate()`.
+
+### 7.5 Recommended Optimisation Pipeline
 
 ```rust
 use lift_core::PassManager;
@@ -1129,6 +1185,10 @@ pm.add_pass(Box::new(lift_opt::GateCancellation));
 pm.add_pass(Box::new(lift_opt::RotationMerge));
 pm.add_pass(Box::new(lift_opt::NoiseAwareSchedule));
 pm.add_pass(Box::new(lift_opt::LayoutMapping));
+
+// Phase 3b: Hardware targeting
+pm.add_pass(Box::new(lift_opt::gate_decompose::GateDecomposition::new(Some(Provider::Ibm))));
+pm.add_pass(Box::new(lift_opt::real_routing::RealRouting::new(DeviceTopology::linear(8))));
 
 // Phase 4: Final cleanup
 pm.add_pass(Box::new(lift_opt::DeadCodeElimination));

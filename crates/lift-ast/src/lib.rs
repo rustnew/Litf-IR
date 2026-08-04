@@ -4,17 +4,17 @@
 //! LIFT source files. Use [`Lexer`] to tokenise, [`Parser`] to parse,
 //! and [`IrBuilder`] to lower the AST into the core IR.
 
-pub mod lexer;
-pub mod token;
-pub mod parser;
 pub mod ast;
 pub mod builder;
+pub mod lexer;
+pub mod parser;
+pub mod token;
 
-pub use lexer::Lexer;
-pub use token::{Token, TokenKind};
-pub use parser::Parser;
 pub use ast::*;
 pub use builder::IrBuilder;
+pub use lexer::Lexer;
+pub use parser::Parser;
+pub use token::{Token, TokenKind};
 
 /// Convenience: parse a `.lif` source string into a Program AST.
 pub fn parse_source(source: &str) -> Result<Program, Vec<parser::ParseError>> {

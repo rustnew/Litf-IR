@@ -1,7 +1,7 @@
 # LIFT User Manual — Complete Usage Guide
 
 > **LIFT** — *Language for Intelligent Frameworks and Technologies*
-> Version 0.3.0
+> Version 0.4.0
 
 This manual is the definitive reference for every use case of the LIFT compiler framework. It presents **real-world problems**, explains how LIFT solves them, and provides **working code examples** for each scenario.
 
@@ -88,10 +88,10 @@ The unified pipeline: **import → verify → analyse → optimise → predict �
 ### 2.2 Build
 
 ```bash
-git clone https://github.com/rustnew/Lift.git
+git clone https://github.com/lift-lang/lift.git
 cd Lift
 cargo build --release
-cargo test --workspace   # 505 tests, all pass
+cargo test --workspace   # 535 tests, all pass
 ```
 
 ### 2.3 Use as a Library
@@ -2378,4 +2378,4 @@ lift export input.lif --backend qasm -o circuit.qasm
 
 ---
 
-*LIFT v0.2.1 — MIT License — https://github.com/rustnew/Lift*
+*LIFT v0.4.0 — MIT License — https://github.com/lift-lang/lift*

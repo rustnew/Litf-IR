@@ -13,7 +13,7 @@ The first Intermediate Representation built natively for both AI and Quantum Com
 [![License: MIT](https://img.shields.io/badge/License-MIT-orange.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.80+-orange.svg)](https://rustlang.org)
 [![Tests](https://img.shields.io/badge/Tests-505%20passed-brightgreen.svg)]()
-[![Version](https://img.shields.io/badge/Version-0.3.0-blue.svg)]()
+[![Version](https://img.shields.io/badge/Version-0.4.0-blue.svg)]()
 [![Status](https://img.shields.io/badge/Status-Research%20Alpha-gold.svg)]()
 
 </div>
@@ -85,7 +85,7 @@ No existing IR handles both AI and quantum in a single representation.
 | `lift-hybrid` | Fusion dialect | 21 ops (VQC, VQE, QAOA), gradient methods, encoding strategies, GPU-QPU transfer |
 | `lift-sim` | Analysis engine | Cost models (A100/H100), quantum cost (superconducting/trapped-ion/neutral-atom), energy, carbon |
 | `lift-predict` | Prediction | Roofline model, budget enforcement |
-| `lift-opt` | Optimisation | 11 passes: DCE, constant fold, tensor fusion, flash attention, gate cancel, rotation merge, CSE, quantisation, noise-aware schedule, layout mapping, canonicalise |
+| `lift-opt` | Optimisation | 13 passes: DCE, constant fold, tensor fusion, flash attention, gate cancel, rotation merge, CSE, quantisation, noise-aware schedule, layout mapping, canonicalise, gate decomposition, real routing |
 | `lift-import` | Importers | ONNX, PyTorch FX, OpenQASM 3 |
 | `lift-export` | Backends | LLVM IR, ONNX (opset 21), OpenQASM 3 |
 | `lift-config` | Configuration | `.lith` parser and validator |
@@ -101,11 +101,11 @@ No existing IR handles both AI and quantum in a single representation.
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 # Clone and build
-git clone https://github.com/rustnew/Lift-IR
+git clone https://github.com/lift-lang/lift.git
 cd lift
 cargo build --release
 
-# Run tests (505 tests)
+# Run tests (535 tests)
 cargo test --workspace
 ```
 
@@ -203,7 +203,7 @@ prediction {
 | `lift-cli` | Stable | verify, analyse, print, optimise, predict, export |
 | `lift-codegen` | Stable | programmatic model generation, multi-format export |
 
-**Test suite:** 505 tests, 100% pass rate across 12 crates.
+**Test suite:** 535 tests, 100% pass rate across 14 crates.
 
 ---
 
@@ -212,7 +212,7 @@ prediction {
 | Phase | Target | Milestone |
 |-------|--------|-----------|
 | Core IR + Dialects | Done | SSA IR, tensor/quantum/hybrid dialects complete |
-| Optimisation Passes | Done | 11 passes implemented and tested |
+| Optimisation Passes | Done | 13 passes implemented and tested |
 | Analysis Engine | Done | Cost models, energy, noise simulation |
 | Import/Export | Active | ONNX, PyTorch FX, LLVM, ONNX (opset 21), OpenQASM |
 | Hardware Backends | Planned | CUDA PTX, native OpenQASM execution |

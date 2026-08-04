@@ -1,15 +1,17 @@
-use slotmap::SlotMap;
-use crate::values::{ValueKey, ValueData, DefSite};
-use crate::operations::{OpKey, OperationData};
-use crate::blocks::{BlockKey, BlockData};
-use crate::regions::{RegionKey, RegionData};
-use crate::functions::FunctionData;
-use crate::module::ModuleData;
-use crate::types::{TypeId, CoreType, TypeData, TensorTypeInfo, QubitTypeInfo, DataType, Dimension, MemoryLayout};
 use crate::attributes::Attributes;
-use crate::location::Location;
+use crate::blocks::{BlockData, BlockKey};
+use crate::dialect::{register_builtin_dialects, DialectRegistry};
+use crate::functions::FunctionData;
 use crate::interning::{StringId, StringInterner, TypeInterner};
-use crate::dialect::{DialectRegistry, register_builtin_dialects};
+use crate::location::Location;
+use crate::module::ModuleData;
+use crate::operations::{OpKey, OperationData};
+use crate::regions::{RegionData, RegionKey};
+use crate::types::{
+    CoreType, DataType, Dimension, MemoryLayout, QubitTypeInfo, TensorTypeInfo, TypeData, TypeId,
+};
+use crate::values::{DefSite, ValueData, ValueKey};
+use slotmap::SlotMap;
 
 #[derive(Debug)]
 pub struct Context {
@@ -81,13 +83,22 @@ impl Context {
         self.intern_type(CoreType::Index)
     }
 
-    pub fn make_tensor_type(&mut self, shape: Vec<Dimension>, dtype: DataType, layout: MemoryLayout) -> TypeId {
+    pub fn make_tensor_type(
+        &mut self,
+        shape: Vec<Dimension>,
+        dtype: DataType,
+        layout: MemoryLayout,
+    ) -> TypeId {
         let dialect = self.intern_string("tensor");
         let name = self.intern_string("tensor");
         self.intern_type(CoreType::Opaque {
             dialect,
             name,
-            data: TypeData::Tensor(TensorTypeInfo { shape, dtype, layout }),
+            data: TypeData::Tensor(TensorTypeInfo {
+                shape,
+                dtype,
+                layout,
+            }),
         })
     }
 
@@ -101,7 +112,14 @@ impl Context {
         })
     }
 
-    pub fn make_physical_qubit_type(&mut self, id: usize, t1: f64, t2: f64, freq: f64, fidelity: f64) -> TypeId {
+    pub fn make_physical_qubit_type(
+        &mut self,
+        id: usize,
+        t1: f64,
+        t2: f64,
+        freq: f64,
+        fidelity: f64,
+    ) -> TypeId {
         let dialect = self.intern_string("quantum");
         let name = self.intern_string("physical_qubit");
         use crate::types::OrderedFloat;
@@ -190,7 +208,10 @@ impl Context {
             let val_key = self.create_value(
                 *ty,
                 None,
-                DefSite::OpResult { op: op_key, result_index: i as u32 },
+                DefSite::OpResult {
+                    op: op_key,
+                    result_index: i as u32,
+                },
             );
             result_keys.push(val_key);
         }
@@ -225,17 +246,34 @@ impl Context {
 
     pub fn create_block_arg(&mut self, block: BlockKey, ty: TypeId) -> ValueKey {
         let arg_index = self.blocks[block].args.len() as u32;
-        let val_key = self.create_value(
-            ty,
-            None,
-            DefSite::BlockArg { block, arg_index },
-        );
+        let val_key = self.create_value(ty, None, DefSite::BlockArg { block, arg_index });
         self.blocks[block].args.push(val_key);
         val_key
     }
 
     pub fn add_op_to_block(&mut self, block: BlockKey, op: OpKey) {
         self.blocks[block].ops.push(op);
+        self.ops[op].parent_block = Some(block);
+    }
+
+    /// Inserts an operation immediately before `before` in its block.
+    /// If `before` has no parent block, falls back to appending at the end.
+    pub fn insert_op_before(&mut self, before: OpKey, op: OpKey) {
+        let parent = match self.ops.get(before) {
+            Some(b) => b.parent_block,
+            None => None,
+        };
+        let Some(block) = parent else {
+            // No parent block: append to every block is wrong; just detach.
+            return;
+        };
+        if let Some(ops) = self.blocks.get_mut(block) {
+            if let Some(pos) = ops.ops.iter().position(|&k| k == before) {
+                ops.ops.insert(pos, op);
+            } else {
+                ops.ops.push(op);
+            }
+        }
         self.ops[op].parent_block = Some(block);
     }
 
@@ -303,20 +341,41 @@ impl Context {
     // ── Type queries ──
 
     pub fn is_qubit_type(&self, ty: TypeId) -> bool {
-        matches!(self.resolve_type(ty), CoreType::Opaque { data: TypeData::Qubit(_), .. })
+        matches!(
+            self.resolve_type(ty),
+            CoreType::Opaque {
+                data: TypeData::Qubit(_),
+                ..
+            }
+        )
     }
 
     pub fn is_tensor_type(&self, ty: TypeId) -> bool {
-        matches!(self.resolve_type(ty), CoreType::Opaque { data: TypeData::Tensor(_), .. })
+        matches!(
+            self.resolve_type(ty),
+            CoreType::Opaque {
+                data: TypeData::Tensor(_),
+                ..
+            }
+        )
     }
 
     pub fn is_bit_type(&self, ty: TypeId) -> bool {
-        matches!(self.resolve_type(ty), CoreType::Opaque { data: TypeData::ClassicalBit, .. })
+        matches!(
+            self.resolve_type(ty),
+            CoreType::Opaque {
+                data: TypeData::ClassicalBit,
+                ..
+            }
+        )
     }
 
     pub fn get_tensor_info(&self, ty: TypeId) -> Option<&TensorTypeInfo> {
         match self.resolve_type(ty) {
-            CoreType::Opaque { data: TypeData::Tensor(info), .. } => Some(info),
+            CoreType::Opaque {
+                data: TypeData::Tensor(info),
+                ..
+            } => Some(info),
             _ => None,
         }
     }

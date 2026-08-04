@@ -1,5 +1,5 @@
-use lift_hybrid::ops::{HybridOp, AnsatzType, SyncPolicy, FeatureMap};
-use lift_sim::cost::{EnergyModel, ReactiveBudget, Budget, CostModel, QuantumCostModel};
+use lift_hybrid::ops::{AnsatzType, FeatureMap, HybridOp, SyncPolicy};
+use lift_sim::cost::{Budget, CostModel, EnergyModel, QuantumCostModel, ReactiveBudget};
 
 // ═══════════════════════════════════════════════════════════
 // HybridOp tests — new ops
@@ -22,18 +22,28 @@ fn test_new_hybrid_ops_roundtrip() {
     for op in &ops {
         let name = op.op_name();
         let recovered = HybridOp::from_name(name);
-        assert_eq!(recovered.as_ref(), Some(op), "roundtrip failed for {:?}", op);
+        assert_eq!(
+            recovered.as_ref(),
+            Some(op),
+            "roundtrip failed for {:?}",
+            op
+        );
     }
 }
 
 #[test]
 fn test_original_hybrid_ops_still_work() {
     let ops = [
-        HybridOp::Encode, HybridOp::Decode,
-        HybridOp::ParameterShift, HybridOp::FiniteDifference,
-        HybridOp::SPSA, HybridOp::JointGradient,
-        HybridOp::ClassicalPreprocess, HybridOp::QuantumPostprocess,
-        HybridOp::HybridForward, HybridOp::HybridBackward,
+        HybridOp::Encode,
+        HybridOp::Decode,
+        HybridOp::ParameterShift,
+        HybridOp::FiniteDifference,
+        HybridOp::SPSA,
+        HybridOp::JointGradient,
+        HybridOp::ClassicalPreprocess,
+        HybridOp::QuantumPostprocess,
+        HybridOp::HybridForward,
+        HybridOp::HybridBackward,
         HybridOp::CoExecute,
     ];
     for op in &ops {
@@ -44,9 +54,12 @@ fn test_original_hybrid_ops_still_work() {
 #[test]
 fn test_is_gradient() {
     let grad_ops = [
-        HybridOp::ParameterShift, HybridOp::FiniteDifference,
-        HybridOp::SPSA, HybridOp::AdjointDifferentiation,
-        HybridOp::StochasticParameterShift, HybridOp::JointGradient,
+        HybridOp::ParameterShift,
+        HybridOp::FiniteDifference,
+        HybridOp::SPSA,
+        HybridOp::AdjointDifferentiation,
+        HybridOp::StochasticParameterShift,
+        HybridOp::JointGradient,
     ];
     for op in &grad_ops {
         assert!(op.is_gradient(), "{:?} should be gradient", op);
@@ -58,8 +71,10 @@ fn test_is_gradient() {
 #[test]
 fn test_is_variational() {
     let var_ops = [
-        HybridOp::VqcLayer, HybridOp::VqeAnsatz,
-        HybridOp::QaoaLayer, HybridOp::QuantumKernel,
+        HybridOp::VqcLayer,
+        HybridOp::VqeAnsatz,
+        HybridOp::QaoaLayer,
+        HybridOp::QuantumKernel,
     ];
     for op in &var_ops {
         assert!(op.is_variational(), "{:?} should be variational", op);
@@ -102,8 +117,10 @@ fn test_sync_policy_variants() {
 #[test]
 fn test_feature_map_variants() {
     let maps = [
-        FeatureMap::ZZFeatureMap, FeatureMap::PauliFeatureMap,
-        FeatureMap::AngleEncoding, FeatureMap::AmplitudeEncoding,
+        FeatureMap::ZZFeatureMap,
+        FeatureMap::PauliFeatureMap,
+        FeatureMap::AngleEncoding,
+        FeatureMap::AmplitudeEncoding,
     ];
     for m in &maps {
         assert_eq!(m, m);

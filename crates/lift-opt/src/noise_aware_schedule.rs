@@ -1,5 +1,5 @@
 use lift_core::context::Context;
-use lift_core::pass::{Pass, PassResult, AnalysisCache};
+use lift_core::pass::{AnalysisCache, Pass, PassResult};
 
 /// Noise-aware scheduling pass: reorders quantum gates to minimise
 /// decoherence by scheduling operations on qubits with longer T1/T2
@@ -8,7 +8,9 @@ use lift_core::pass::{Pass, PassResult, AnalysisCache};
 pub struct NoiseAwareSchedule;
 
 impl Pass for NoiseAwareSchedule {
-    fn name(&self) -> &str { "noise-aware-schedule" }
+    fn name(&self) -> &str {
+        "noise-aware-schedule"
+    }
 
     fn run(&self, ctx: &mut Context, _cache: &mut AnalysisCache) -> PassResult {
         let mut reordered = 0usize;
@@ -21,7 +23,9 @@ impl Pass for NoiseAwareSchedule {
                 None => continue,
             };
 
-            if op_list.len() < 2 { continue; }
+            if op_list.len() < 2 {
+                continue;
+            }
 
             // Collect quantum ops with their gate times
             let mut quantum_ops: Vec<(lift_core::operations::OpKey, f64)> = Vec::new();
@@ -47,7 +51,9 @@ impl Pass for NoiseAwareSchedule {
                 }
             }
 
-            if quantum_ops.len() < 2 { continue; }
+            if quantum_ops.len() < 2 {
+                continue;
+            }
 
             // Sort quantum ops: shorter gate times first to reduce idle time
             // (Respecting data dependencies via SSA inputs)
@@ -83,7 +89,9 @@ impl Pass for NoiseAwareSchedule {
                 let orig: Vec<_> = group.iter().map(|(k, _)| *k).collect();
                 group.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
                 let sorted: Vec<_> = group.iter().map(|(k, _)| *k).collect();
-                if orig != sorted { reordered += 1; }
+                if orig != sorted {
+                    reordered += 1;
+                }
                 new_quantum_order.extend(group.iter().map(|(k, _)| *k));
             }
 

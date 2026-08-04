@@ -1,4 +1,4 @@
-use lift_hybrid::encoding::{EncodingStrategy, EncodingConfig};
+use lift_hybrid::encoding::{EncodingConfig, EncodingStrategy};
 
 // ═══════════════════════════════════════════════════════════
 // EncodingStrategy name roundtrip

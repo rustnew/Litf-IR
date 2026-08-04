@@ -1,10 +1,10 @@
-/// Comprehensive tests for lift-core: SSA IR, types, verifier, printer, pass manager
-use lift_core::*;
+use lift_core::attributes::*;
 use lift_core::context::Context;
+use lift_core::location::Location;
 use lift_core::types::*;
 use lift_core::values::*;
-use lift_core::attributes::*;
-use lift_core::location::Location;
+/// Comprehensive tests for lift-core: SSA IR, types, verifier, printer, pass manager
+use lift_core::*;
 
 // ═══════════════════════════════════════════════════
 //  TYPE SYSTEM TESTS
@@ -27,7 +27,7 @@ fn test_all_scalar_types() {
 
     let types = vec![i8t, i16t, i32t, i64t, u8t, f16t, f32t, f64t, bt, vt, it];
     for i in 0..types.len() {
-        for j in (i+1)..types.len() {
+        for j in (i + 1)..types.len() {
             assert_ne!(types[i], types[j], "types {} and {} should differ", i, j);
         }
     }
@@ -48,15 +48,18 @@ fn test_tensor_type_shapes() {
     let mut ctx = Context::new();
     let t1 = ctx.make_tensor_type(
         vec![Dimension::Constant(2), Dimension::Constant(3)],
-        DataType::FP32, MemoryLayout::Contiguous,
+        DataType::FP32,
+        MemoryLayout::Contiguous,
     );
     let t2 = ctx.make_tensor_type(
         vec![Dimension::Constant(2), Dimension::Constant(3)],
-        DataType::FP32, MemoryLayout::Contiguous,
+        DataType::FP32,
+        MemoryLayout::Contiguous,
     );
     let t3 = ctx.make_tensor_type(
         vec![Dimension::Constant(4), Dimension::Constant(5)],
-        DataType::FP32, MemoryLayout::Contiguous,
+        DataType::FP32,
+        MemoryLayout::Contiguous,
     );
     assert_eq!(t1, t2, "identical tensor types must dedup");
     assert_ne!(t1, t3, "different shapes must differ");
@@ -89,7 +92,9 @@ fn test_qubit_types() {
 fn test_type_queries() {
     let mut ctx = Context::new();
     let tensor_ty = ctx.make_tensor_type(
-        vec![Dimension::Constant(4)], DataType::FP32, MemoryLayout::Contiguous,
+        vec![Dimension::Constant(4)],
+        DataType::FP32,
+        MemoryLayout::Contiguous,
     );
     let qubit_ty = ctx.make_qubit_type();
     let bit_ty = ctx.make_bit_type();
@@ -107,8 +112,13 @@ fn test_type_queries() {
 fn test_tensor_info_extraction() {
     let mut ctx = Context::new();
     let ty = ctx.make_tensor_type(
-        vec![Dimension::Constant(2), Dimension::Constant(3), Dimension::Constant(4)],
-        DataType::FP16, MemoryLayout::NCHW,
+        vec![
+            Dimension::Constant(2),
+            Dimension::Constant(3),
+            Dimension::Constant(4),
+        ],
+        DataType::FP16,
+        MemoryLayout::NCHW,
     );
     let info = ctx.get_tensor_info(ty).unwrap();
     assert_eq!(info.shape.len(), 3);
@@ -159,12 +169,12 @@ fn test_string_interning_many() {
     for i in 0..1000 {
         ids.push(ctx.intern_string(&format!("string_{}", i)));
     }
-    for i in 0..1000 {
-        assert_eq!(ctx.resolve_string(ids[i]), format!("string_{}", i));
+    for (i, id) in ids.iter().enumerate() {
+        assert_eq!(ctx.resolve_string(*id), format!("string_{}", i));
     }
-    for i in 0..1000 {
+    for (i, id) in ids.iter().enumerate() {
         let re = ctx.intern_string(&format!("string_{}", i));
-        assert_eq!(re, ids[i]);
+        assert_eq!(re, *id);
     }
 }
 
@@ -176,7 +186,9 @@ fn test_string_interning_many() {
 fn test_ssa_basic_construction() {
     let mut ctx = Context::new();
     let f32_ty = ctx.make_tensor_type(
-        vec![Dimension::Constant(4)], DataType::FP32, MemoryLayout::Contiguous,
+        vec![Dimension::Constant(4)],
+        DataType::FP32,
+        MemoryLayout::Contiguous,
     );
 
     let region = ctx.create_region();
@@ -187,9 +199,12 @@ fn test_ssa_basic_construction() {
     let arg1 = ctx.create_block_arg(block, f32_ty);
 
     let (op, results) = ctx.create_op(
-        "tensor.add", "tensor",
-        vec![arg0, arg1], vec![f32_ty],
-        Attributes::new(), Location::unknown(),
+        "tensor.add",
+        "tensor",
+        vec![arg0, arg1],
+        vec![f32_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op);
 
@@ -204,27 +219,40 @@ fn test_ssa_chain_of_operations() {
     let mut ctx = Context::new();
     let ty = ctx.make_tensor_type(
         vec![Dimension::Constant(2), Dimension::Constant(3)],
-        DataType::FP32, MemoryLayout::Contiguous,
+        DataType::FP32,
+        MemoryLayout::Contiguous,
     );
 
     let block = ctx.create_block();
     let x = ctx.create_block_arg(block, ty);
 
     let (relu_op, relu_res) = ctx.create_op(
-        "tensor.relu", "tensor", vec![x], vec![ty],
-        Attributes::new(), Location::unknown(),
+        "tensor.relu",
+        "tensor",
+        vec![x],
+        vec![ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, relu_op);
 
     let (neg_op, neg_res) = ctx.create_op(
-        "tensor.neg", "tensor", vec![relu_res[0]], vec![ty],
-        Attributes::new(), Location::unknown(),
+        "tensor.neg",
+        "tensor",
+        vec![relu_res[0]],
+        vec![ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, neg_op);
 
     let (add_op, _add_res) = ctx.create_op(
-        "tensor.add", "tensor", vec![x, neg_res[0]], vec![ty],
-        Attributes::new(), Location::unknown(),
+        "tensor.add",
+        "tensor",
+        vec![x, neg_res[0]],
+        vec![ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, add_op);
 
@@ -245,9 +273,12 @@ fn test_ssa_multiple_results() {
     let q1 = ctx.create_block_arg(block, q_ty);
 
     let (cx_op, cx_res) = ctx.create_op(
-        "quantum.cx", "quantum",
-        vec![q0, q1], vec![q_ty, q_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.cx",
+        "quantum",
+        vec![q0, q1],
+        vec![q_ty, q_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, cx_op);
 
@@ -263,7 +294,9 @@ fn test_module_and_function_structure() {
     let mod_idx = ctx.create_module("test_module");
 
     let f32_ty = ctx.make_tensor_type(
-        vec![Dimension::Constant(4)], DataType::FP32, MemoryLayout::Contiguous,
+        vec![Dimension::Constant(4)],
+        DataType::FP32,
+        MemoryLayout::Contiguous,
     );
 
     let region = ctx.create_region();
@@ -307,10 +340,10 @@ fn test_attributes_crud() {
 fn test_attributes_get_helpers() {
     let mut attrs = Attributes::new();
     attrs.set("int_val", Attribute::Integer(42));
-    attrs.set("float_val", Attribute::Float(3.14));
+    attrs.set("float_val", Attribute::Float(2.5));
     attrs.set("bool_val", Attribute::Bool(true));
     assert_eq!(attrs.get_integer("int_val"), Some(42));
-    assert_eq!(attrs.get_float("float_val"), Some(3.14));
+    assert_eq!(attrs.get_float("float_val"), Some(2.5));
     assert_eq!(attrs.get_bool("bool_val"), Some(true));
     assert_eq!(attrs.get_integer("missing"), None);
 }
@@ -329,15 +362,21 @@ fn test_verifier_empty_context() {
 fn test_verifier_valid_tensor_program() {
     let mut ctx = Context::new();
     let ty = ctx.make_tensor_type(
-        vec![Dimension::Constant(4)], DataType::FP32, MemoryLayout::Contiguous,
+        vec![Dimension::Constant(4)],
+        DataType::FP32,
+        MemoryLayout::Contiguous,
     );
     let block = ctx.create_block();
     let x = ctx.create_block_arg(block, ty);
     let y = ctx.create_block_arg(block, ty);
 
     let (op, _) = ctx.create_op(
-        "tensor.add", "tensor", vec![x, y], vec![ty],
-        Attributes::new(), Location::unknown(),
+        "tensor.add",
+        "tensor",
+        vec![x, y],
+        vec![ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op);
 
@@ -352,14 +391,22 @@ fn test_verifier_qubit_linearity() {
     let q = ctx.create_block_arg(block, q_ty);
 
     let (op1, _) = ctx.create_op(
-        "quantum.h", "quantum", vec![q], vec![q_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.h",
+        "quantum",
+        vec![q],
+        vec![q_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op1);
 
     let (op2, _) = ctx.create_op(
-        "quantum.x", "quantum", vec![q], vec![q_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.x",
+        "quantum",
+        vec![q],
+        vec![q_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op2);
 
@@ -376,7 +423,8 @@ fn test_printer_tensor_type_format() {
     let mut ctx = Context::new();
     let ty = ctx.make_tensor_type(
         vec![Dimension::Constant(2), Dimension::Constant(3)],
-        DataType::FP32, MemoryLayout::Contiguous,
+        DataType::FP32,
+        MemoryLayout::Contiguous,
     );
     let formatted = format!("{}", ctx.resolve_type(ty));
     assert!(formatted.contains("tensor"));
@@ -390,7 +438,9 @@ fn test_printer_full_program() {
     let mut ctx = Context::new();
     let mod_idx = ctx.create_module("printer_test");
     let ty = ctx.make_tensor_type(
-        vec![Dimension::Constant(4)], DataType::FP32, MemoryLayout::Contiguous,
+        vec![Dimension::Constant(4)],
+        DataType::FP32,
+        MemoryLayout::Contiguous,
     );
     let region = ctx.create_region();
     let block = ctx.create_block();
@@ -398,15 +448,23 @@ fn test_printer_full_program() {
     let x = ctx.create_block_arg(block, ty);
 
     let (relu, _) = ctx.create_op(
-        "tensor.relu", "tensor", vec![x], vec![ty],
-        Attributes::new(), Location::unknown(),
+        "tensor.relu",
+        "tensor",
+        vec![x],
+        vec![ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, relu);
 
     let func_name = ctx.intern_string("test_fn");
     let func = lift_core::FunctionData {
-        name: func_name, params: vec![ty], returns: vec![ty],
-        body: Some(region), location: Location::unknown(), is_declaration: false,
+        name: func_name,
+        params: vec![ty],
+        returns: vec![ty],
+        body: Some(region),
+        location: Location::unknown(),
+        is_declaration: false,
     };
     ctx.add_function_to_module(mod_idx, func);
 
@@ -454,7 +512,14 @@ fn test_context_snapshot() {
 
     let ty = ctx.make_float_type(32);
     let block = ctx.create_block();
-    let _v = ctx.create_value(ty, None, DefSite::BlockArg { block, arg_index: 0 });
+    let _v = ctx.create_value(
+        ty,
+        None,
+        DefSite::BlockArg {
+            block,
+            arg_index: 0,
+        },
+    );
     let snap1 = ctx.snapshot();
     assert_eq!(snap1.num_values, 1);
     assert_eq!(snap1.num_blocks, 1);

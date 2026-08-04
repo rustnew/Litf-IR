@@ -5,9 +5,9 @@
 //! (for neural network interchange with PyTorch, TensorFlow, TensorRT, etc.).
 
 pub mod llvm;
-pub mod qasm_export;
 pub mod onnx;
+pub mod qasm_export;
 
 pub use llvm::LlvmExporter;
+pub use onnx::{OnnxExportError, OnnxExporter};
 pub use qasm_export::QasmExporter;
-pub use onnx::{OnnxExporter, OnnxExportError};

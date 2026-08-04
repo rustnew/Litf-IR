@@ -30,11 +30,13 @@ graph {
   }
 
   node {
-    input: "forward_0_r0"
+    input: "forward_input0"
+    input: "forward_input1"
     input: "forward_input2"
     output: "forward_1_r0"
     name: "forward_1"
-    op_type: "Add"
+    op_type: "FusedMatMul"
+    domain: "com.microsoft"
   }
 
   node {
@@ -56,11 +58,13 @@ graph {
   }
 
   node {
-    input: "forward_3_r0"
+    input: "forward_2_r0"
+    input: "forward_input3"
     input: "forward_input4"
     output: "forward_4_r0"
     name: "forward_4"
-    op_type: "Add"
+    op_type: "FusedMatMul"
+    domain: "com.microsoft"
   }
 
   node {
@@ -82,11 +86,13 @@ graph {
   }
 
   node {
-    input: "forward_6_r0"
+    input: "forward_5_r0"
+    input: "forward_input5"
     input: "forward_input6"
     output: "forward_7_r0"
     name: "forward_7"
-    op_type: "Add"
+    op_type: "FusedMatMul"
+    domain: "com.microsoft"
   }
 
   node {

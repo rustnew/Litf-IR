@@ -1,7 +1,7 @@
-use lift_core::context::Context;
 use lift_core::blocks::BlockKey;
-use lift_core::types::{CoreType, TypeData, TensorTypeInfo};
-use serde::{Serialize, Deserialize};
+use lift_core::context::Context;
+use lift_core::types::{CoreType, TensorTypeInfo, TypeData};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AnalysisReport {
@@ -30,17 +30,23 @@ pub fn analyze_module(ctx: &Context) -> AnalysisReport {
             "tensor" => {
                 report.num_tensor_ops += 1;
                 // Compute FLOPS for tensor ops
-                let input_infos: Vec<&TensorTypeInfo> = op.inputs.iter()
+                let input_infos: Vec<&TensorTypeInfo> = op
+                    .inputs
+                    .iter()
                     .filter_map(|&v| ctx.get_value(v))
                     .filter_map(|v| ctx.get_tensor_info(v.ty))
                     .collect();
 
                 if let Some(tensor_op) = lift_tensor::TensorOp::from_name(&op_name) {
-                    let input_refs: Vec<&TensorTypeInfo> = input_infos.iter().copied().collect();
-                    if let Some(flops) = lift_tensor::ShapeInference::compute_flops(&tensor_op, &input_refs) {
+                    let input_refs: Vec<&TensorTypeInfo> = input_infos.to_vec();
+                    if let Some(flops) =
+                        lift_tensor::ShapeInference::compute_flops(&tensor_op, &input_refs)
+                    {
                         report.total_flops += flops;
                     }
-                    if let Some(mem) = lift_tensor::ShapeInference::compute_memory_bytes(&tensor_op, &input_refs) {
+                    if let Some(mem) =
+                        lift_tensor::ShapeInference::compute_memory_bytes(&tensor_op, &input_refs)
+                    {
                         report.total_memory_bytes += mem;
                     }
                 }
@@ -62,7 +68,11 @@ pub fn analyze_module(ctx: &Context) -> AnalysisReport {
 fn estimate_peak_memory(ctx: &Context) -> u64 {
     let mut total: u64 = 0;
     for (_val_key, val) in &ctx.values {
-        if let CoreType::Opaque { data: TypeData::Tensor(info), .. } = ctx.resolve_type(val.ty) {
+        if let CoreType::Opaque {
+            data: TypeData::Tensor(info),
+            ..
+        } = ctx.resolve_type(val.ty)
+        {
             if let Some(bytes) = tensor_size_bytes(info) {
                 total += bytes as u64;
             }

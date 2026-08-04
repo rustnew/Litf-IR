@@ -4,12 +4,12 @@
 //! QAOA), gradient methods (parameter shift, adjoint differentiation, SPSA),
 //! data encoding strategies, GPU↔QPU transfers, and co-execution policies.
 
-pub mod encoding;
-pub mod ops;
-pub mod gradient;
 pub mod dialect;
+pub mod encoding;
+pub mod gradient;
+pub mod ops;
 
-pub use encoding::*;
-pub use ops::*;
-pub use gradient::*;
 pub use dialect::HybridDialect;
+pub use encoding::*;
+pub use gradient::*;
+pub use ops::*;

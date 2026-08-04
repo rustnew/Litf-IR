@@ -1,6 +1,6 @@
-use lift_sim::cost::CostModel;
 use lift_sim::analysis::AnalysisReport;
-use serde::{Serialize, Deserialize};
+use lift_sim::cost::CostModel;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RooflineResult {
@@ -25,7 +25,11 @@ pub fn predict_performance(report: &AnalysisReport, cost_model: &CostModel) -> R
         predicted_time_ms: predicted_ms,
         arithmetic_intensity: ai,
         is_compute_bound: compute_bound,
-        bottleneck: if compute_bound { "compute".into() } else { "memory".into() },
+        bottleneck: if compute_bound {
+            "compute".into()
+        } else {
+            "memory".into()
+        },
     }
 }
 
@@ -54,7 +58,8 @@ pub fn predict_quantum(
     let total_fidelity = gate_fid * decoherence_fid;
 
     // Shots needed: 1/precision^2 / fidelity
-    let num_shots = ((1.0 / (target_precision * target_precision)) / total_fidelity).ceil() as usize;
+    let num_shots =
+        ((1.0 / (target_precision * target_precision)) / total_fidelity).ceil() as usize;
     let total_time_ms = (num_shots as f64 * circuit_time) / 1000.0;
 
     QuantumPrediction {

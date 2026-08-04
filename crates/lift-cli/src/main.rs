@@ -3,9 +3,11 @@ use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(name = "lift")]
-#[command(version = "0.2.0")]
+#[command(version = "0.3.0")]
 #[command(about = "LIFT — Language for Intelligent Frameworks and Technologies")]
-#[command(long_about = "Unified IR for AI and Quantum Computing: Simulate → Predict → Optimise → Compile")]
+#[command(
+    long_about = "Unified IR for AI and Quantum Computing: Simulate → Predict → Optimise → Compile"
+)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -87,9 +89,17 @@ fn main() {
         Commands::Verify { file } => cmd_verify(&file),
         Commands::Analyse { file, format } => cmd_analyse(&file, &format),
         Commands::Print { file } => cmd_print(&file),
-        Commands::Optimise { file, config, output } => cmd_optimise(&file, config.as_deref(), output.as_deref()),
+        Commands::Optimise {
+            file,
+            config,
+            output,
+        } => cmd_optimise(&file, config.as_deref(), output.as_deref()),
         Commands::Predict { file, device } => cmd_predict(&file, &device),
-        Commands::Export { file, backend, output } => cmd_export(&file, &backend, output.as_deref()),
+        Commands::Export {
+            file,
+            backend,
+            output,
+        } => cmd_export(&file, &backend, output.as_deref()),
     };
 
     if let Err(e) = result {
@@ -109,7 +119,9 @@ fn load_and_parse(path: &std::path::Path) -> Result<lift_core::Context, String> 
     }
 
     let mut parser = lift_ast::Parser::new(tokens);
-    let program = parser.parse().map_err(|e| format!("Parse errors: {:?}", e))?;
+    let program = parser
+        .parse()
+        .map_err(|e| format!("Parse errors: {:?}", e))?;
 
     let mut ctx = lift_core::Context::new();
     let mut builder = lift_ast::IrBuilder::new();
@@ -121,7 +133,14 @@ fn load_and_parse(path: &std::path::Path) -> Result<lift_core::Context, String> 
 fn cmd_verify(path: &std::path::Path) -> Result<(), String> {
     let ctx = load_and_parse(path)?;
 
-    match lift_core::verifier::verify(&ctx) {
+    // Build the full dialect registry for semantic verification.
+    let mut registry = lift_core::DialectRegistry::new();
+    lift_core::dialect::register_builtin_dialects(&mut registry);
+    lift_tensor::dialect::register_tensor_dialect(&mut registry);
+    lift_quantum::dialect::register_quantum_dialect(&mut registry);
+    lift_hybrid::dialect::register_hybrid_dialect(&mut registry);
+
+    match lift_core::verifier::verify_with_dialects(&ctx, &registry) {
         Ok(()) => {
             println!("Verification passed: {}", path.display());
             println!("  Values: {}", ctx.values.len());
@@ -147,8 +166,8 @@ fn cmd_analyse(path: &std::path::Path, format: &str) -> Result<(), String> {
 
     match format {
         "json" => {
-            let json = serde_json::to_string_pretty(&report)
-                .map_err(|e| format!("JSON error: {}", e))?;
+            let json =
+                serde_json::to_string_pretty(&report).map_err(|e| format!("JSON error: {}", e))?;
             println!("{}", json);
         }
         _ => {
@@ -162,7 +181,10 @@ fn cmd_analyse(path: &std::path::Path, format: &str) -> Result<(), String> {
             println!();
             println!("Compute:");
             println!("  Total FLOPs: {}", format_flops(report.total_flops));
-            println!("  Total memory: {}", format_bytes(report.total_memory_bytes));
+            println!(
+                "  Total memory: {}",
+                format_bytes(report.total_memory_bytes)
+            );
             println!("  Peak memory: {}", format_bytes(report.peak_memory_bytes));
 
             if quantum.gate_count > 0 {
@@ -198,13 +220,18 @@ fn cmd_print(path: &std::path::Path) -> Result<(), String> {
     Ok(())
 }
 
-fn cmd_optimise(path: &std::path::Path, config_path: Option<&std::path::Path>, output_path: Option<&std::path::Path>) -> Result<(), String> {
+fn cmd_optimise(
+    path: &std::path::Path,
+    config_path: Option<&std::path::Path>,
+    output_path: Option<&std::path::Path>,
+) -> Result<(), String> {
     let mut ctx = load_and_parse(path)?;
 
     let config = if let Some(cp) = config_path {
-        let src = std::fs::read_to_string(cp)
-            .map_err(|e| format!("Failed to read config: {}", e))?;
-        lift_config::ConfigParser::new().parse(&src)
+        let src =
+            std::fs::read_to_string(cp).map_err(|e| format!("Failed to read config: {}", e))?;
+        lift_config::ConfigParser::new()
+            .parse(&src)
             .map_err(|e| format!("Config parse error: {}", e))?
     } else {
         lift_config::LithConfig::default()
@@ -212,11 +239,26 @@ fn cmd_optimise(path: &std::path::Path, config_path: Option<&std::path::Path>, o
 
     let mut pm = lift_core::PassManager::new();
 
+    // Resolve the effective pass pipeline (explicit passes, else by level).
+    let effective = config.optimisation.effective_passes();
+
+    tracing::info!(
+        "Optimisation level {:?}: running {} passes (default pipeline when no explicit passes)",
+        config.optimisation.level,
+        effective.len()
+    );
+
+    // Warn about unknown passes.
+    for unknown in config.optimisation.validate() {
+        tracing::warn!(
+            "Unknown optimisation pass (skipped): {} (known: {})",
+            unknown,
+            lift_config::OptimisationConfig::ALL_PASSES.join(", ")
+        );
+    }
+
     // Add passes based on config
-    for pass_name in &config.optimisation.passes {
-        if config.optimisation.disabled_passes.contains(pass_name) {
-            continue;
-        }
+    for pass_name in &effective {
         match pass_name.as_str() {
             "canonicalize" => pm.add_pass(Box::new(lift_opt::Canonicalize)),
             "constant-folding" => pm.add_pass(Box::new(lift_opt::ConstantFolding)),
@@ -229,6 +271,38 @@ fn cmd_optimise(path: &std::path::Path, config_path: Option<&std::path::Path>, o
             "quantisation-pass" => pm.add_pass(Box::new(lift_opt::QuantisationPass::default())),
             "noise-aware-schedule" => pm.add_pass(Box::new(lift_opt::NoiseAwareSchedule)),
             "layout-mapping" => pm.add_pass(Box::new(lift_opt::LayoutMapping)),
+            "real-routing" => {
+                let qc = config.quantum.as_ref();
+                let num_qubits = qc.map(|q| q.num_qubits).unwrap_or(8);
+                let topology = match qc.map(|q| q.topology.as_str()) {
+                    Some("grid") => lift_quantum::DeviceTopology::grid(4, 4),
+                    Some("heavy_hex") => lift_quantum::DeviceTopology::heavy_hex(num_qubits),
+                    Some("all_to_all") => lift_quantum::DeviceTopology::all_to_all(num_qubits),
+                    Some("tree") => lift_quantum::DeviceTopology::tree(num_qubits),
+                    _ => lift_quantum::DeviceTopology::linear(num_qubits),
+                };
+                pm.add_pass(Box::new(lift_opt::RealRouting::new(topology)))
+            }
+            "gate-decomposition" => {
+                let provider = config
+                    .quantum
+                    .as_ref()
+                    .and_then(|q| q.provider)
+                    .map(|p| match p {
+                        lift_config::QuantumProvider::Ibm => lift_quantum::Provider::IbmEagle,
+                        lift_config::QuantumProvider::IbmKyoto => lift_quantum::Provider::IbmKyoto,
+                        lift_config::QuantumProvider::Rigetti => lift_quantum::Provider::Rigetti,
+                        lift_config::QuantumProvider::IonQ => lift_quantum::Provider::IonQ,
+                        lift_config::QuantumProvider::Quantinuum => {
+                            lift_quantum::Provider::Quantinuum
+                        }
+                        lift_config::QuantumProvider::Simulator => {
+                            lift_quantum::Provider::Simulator
+                        }
+                    })
+                    .unwrap_or(lift_quantum::Provider::Simulator);
+                pm.add_pass(Box::new(lift_opt::GateDecomposition::new(provider)))
+            }
             _ => {
                 tracing::warn!("Unknown pass: {}", pass_name);
             }
@@ -253,8 +327,7 @@ fn cmd_optimise(path: &std::path::Path, config_path: Option<&std::path::Path>, o
 
     if let Some(out) = output_path {
         let ir = lift_core::printer::print_ir(&ctx);
-        std::fs::write(out, ir)
-            .map_err(|e| format!("Failed to write output: {}", e))?;
+        std::fs::write(out, ir).map_err(|e| format!("Failed to write output: {}", e))?;
         println!("Output written to: {}", out.display());
     }
 
@@ -279,13 +352,20 @@ fn cmd_predict(path: &std::path::Path, device: &str) -> Result<(), String> {
     println!("Compute time: {:.4} ms", prediction.compute_time_ms);
     println!("Memory time: {:.4} ms", prediction.memory_time_ms);
     println!("Predicted time: {:.4} ms", prediction.predicted_time_ms);
-    println!("Arithmetic intensity: {:.2} FLOP/byte", prediction.arithmetic_intensity);
+    println!(
+        "Arithmetic intensity: {:.2} FLOP/byte",
+        prediction.arithmetic_intensity
+    );
     println!("Bottleneck: {}", prediction.bottleneck);
 
     Ok(())
 }
 
-fn cmd_export(path: &std::path::Path, backend: &str, output_path: Option<&std::path::Path>) -> Result<(), String> {
+fn cmd_export(
+    path: &std::path::Path,
+    backend: &str,
+    output_path: Option<&std::path::Path>,
+) -> Result<(), String> {
     let ctx = load_and_parse(path)?;
 
     let output = match backend {
@@ -301,12 +381,16 @@ fn cmd_export(path: &std::path::Path, backend: &str, output_path: Option<&std::p
             let exporter = lift_export::OnnxExporter::new();
             exporter.export(&ctx).map_err(|e| format!("{}", e))?
         }
-        _ => return Err(format!("Unknown backend: {}. Use 'llvm', 'qasm', or 'onnx'", backend)),
+        _ => {
+            return Err(format!(
+                "Unknown backend: {}. Use 'llvm', 'qasm', or 'onnx'",
+                backend
+            ))
+        }
     };
 
     if let Some(out) = output_path {
-        std::fs::write(out, &output)
-            .map_err(|e| format!("Failed to write output: {}", e))?;
+        std::fs::write(out, &output).map_err(|e| format!("Failed to write output: {}", e))?;
         println!("Exported to: {}", out.display());
     } else {
         println!("{}", output);
@@ -316,16 +400,27 @@ fn cmd_export(path: &std::path::Path, backend: &str, output_path: Option<&std::p
 }
 
 fn format_flops(flops: u64) -> String {
-    if flops >= 1_000_000_000_000 { format!("{:.2} TFLOP", flops as f64 / 1e12) }
-    else if flops >= 1_000_000_000 { format!("{:.2} GFLOP", flops as f64 / 1e9) }
-    else if flops >= 1_000_000 { format!("{:.2} MFLOP", flops as f64 / 1e6) }
-    else if flops >= 1_000 { format!("{:.2} KFLOP", flops as f64 / 1e3) }
-    else { format!("{} FLOP", flops) }
+    if flops >= 1_000_000_000_000 {
+        format!("{:.2} TFLOP", flops as f64 / 1e12)
+    } else if flops >= 1_000_000_000 {
+        format!("{:.2} GFLOP", flops as f64 / 1e9)
+    } else if flops >= 1_000_000 {
+        format!("{:.2} MFLOP", flops as f64 / 1e6)
+    } else if flops >= 1_000 {
+        format!("{:.2} KFLOP", flops as f64 / 1e3)
+    } else {
+        format!("{} FLOP", flops)
+    }
 }
 
 fn format_bytes(bytes: u64) -> String {
-    if bytes >= 1_073_741_824 { format!("{:.2} GiB", bytes as f64 / 1_073_741_824.0) }
-    else if bytes >= 1_048_576 { format!("{:.2} MiB", bytes as f64 / 1_048_576.0) }
-    else if bytes >= 1_024 { format!("{:.2} KiB", bytes as f64 / 1_024.0) }
-    else { format!("{} B", bytes) }
+    if bytes >= 1_073_741_824 {
+        format!("{:.2} GiB", bytes as f64 / 1_073_741_824.0)
+    } else if bytes >= 1_048_576 {
+        format!("{:.2} MiB", bytes as f64 / 1_048_576.0)
+    } else if bytes >= 1_024 {
+        format!("{:.2} KiB", bytes as f64 / 1_024.0)
+    } else {
+        format!("{} B", bytes)
+    }
 }

@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use crate::context::Context;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PassResult {
@@ -112,7 +112,9 @@ mod tests {
     struct NoOpPass;
 
     impl Pass for NoOpPass {
-        fn name(&self) -> &str { "no-op" }
+        fn name(&self) -> &str {
+            "no-op"
+        }
         fn run(&self, _ctx: &mut Context, _cache: &mut AnalysisCache) -> PassResult {
             PassResult::Unchanged
         }

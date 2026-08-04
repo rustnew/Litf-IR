@@ -13,10 +13,17 @@ pub enum PyTorchImportError {
 pub struct PyTorchFxImporter;
 
 impl PyTorchFxImporter {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 
-    pub fn import_from_json(&self, ctx: &mut Context, json: &serde_json::Value) -> Result<(), PyTorchImportError> {
-        let nodes = json.get("nodes")
+    pub fn import_from_json(
+        &self,
+        ctx: &mut Context,
+        json: &serde_json::Value,
+    ) -> Result<(), PyTorchImportError> {
+        let nodes = json
+            .get("nodes")
             .and_then(|n| n.as_array())
             .ok_or_else(|| PyTorchImportError::General("Missing 'nodes' array".into()))?;
 
@@ -31,5 +38,7 @@ impl PyTorchFxImporter {
 }
 
 impl Default for PyTorchFxImporter {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

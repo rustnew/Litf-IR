@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 /// Quantum Error Correction code types.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -31,7 +31,9 @@ impl QecCode {
             Self::ShorCode => 9,
             Self::RepetitionCode { distance } => *distance,
             Self::LdpcCode { n, k } => {
-                if *k == 0 { return *n; }
+                if *k == 0 {
+                    return *n;
+                }
                 n / k
             }
         }
@@ -99,8 +101,7 @@ impl QecAnalysis {
 
         // Total logical error rate over the circuit
         let total_rounds = circuit_depth;
-        let logical_error_rate =
-            1.0 - (1.0 - logical_error_per_round).powi(total_rounds as i32);
+        let logical_error_rate = 1.0 - (1.0 - logical_error_per_round).powi(total_rounds as i32);
 
         let syndrome_depth = code.syndrome_circuit_depth() * total_rounds;
 
@@ -175,8 +176,8 @@ mod tests {
     #[test]
     fn test_qec_analysis_below_threshold() {
         let analysis = QecAnalysis::analyse(
-            10,   // 10 logical qubits
-            100,  // 100 depth
+            10,  // 10 logical qubits
+            100, // 100 depth
             QecCode::SurfaceCode { distance: 7 },
             0.001, // 0.1% physical error
         );
@@ -187,11 +188,7 @@ mod tests {
 
     #[test]
     fn test_qec_meets_target() {
-        let analysis = QecAnalysis::analyse(
-            5, 50,
-            QecCode::SurfaceCode { distance: 11 },
-            0.001,
-        );
+        let analysis = QecAnalysis::analyse(5, 50, QecCode::SurfaceCode { distance: 11 }, 0.001);
         // With d=11 and p=0.001, should be very low error
         assert!(analysis.meets_target(0.01));
     }

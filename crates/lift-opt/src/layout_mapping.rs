@@ -1,5 +1,5 @@
 use lift_core::context::Context;
-use lift_core::pass::{Pass, PassResult, AnalysisCache};
+use lift_core::pass::{AnalysisCache, Pass, PassResult};
 
 /// Layout mapping pass: inserts SWAP gates to map logical qubits
 /// to physical qubits based on device topology constraints.
@@ -8,7 +8,9 @@ use lift_core::pass::{Pass, PassResult, AnalysisCache};
 pub struct LayoutMapping;
 
 impl Pass for LayoutMapping {
-    fn name(&self) -> &str { "layout-mapping" }
+    fn name(&self) -> &str {
+        "layout-mapping"
+    }
 
     fn run(&self, ctx: &mut Context, _cache: &mut AnalysisCache) -> PassResult {
         let mut swaps_inserted = 0usize;
@@ -25,7 +27,9 @@ impl Pass for LayoutMapping {
             for &op_key in &op_list {
                 let needs_swap = if let Some(op) = ctx.ops.get(op_key) {
                     let name = ctx.strings.resolve(op.name);
-                    if !name.starts_with("quantum.") { continue; }
+                    if !name.starts_with("quantum.") {
+                        continue;
+                    }
 
                     // Check if this is a 2-qubit gate with non-adjacent qubits
                     let q0 = op.attrs.get_integer("qubit0");
@@ -46,8 +50,8 @@ impl Pass for LayoutMapping {
                 if needs_swap {
                     // Mark this op as needing SWAP insertion
                     if let Some(op) = ctx.ops.get_mut(op_key) {
-                        op.attrs.set("needs_swap",
-                            lift_core::attributes::Attribute::Bool(true));
+                        op.attrs
+                            .set("needs_swap", lift_core::attributes::Attribute::Bool(true));
                         swaps_inserted += 1;
                     }
                 }

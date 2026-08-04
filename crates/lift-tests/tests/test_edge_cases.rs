@@ -1,14 +1,14 @@
-use lift_core::types::*;
+use lift_core::attributes::{Attribute, Attributes};
 use lift_core::context::Context;
-use lift_core::attributes::{Attributes, Attribute};
 use lift_core::printer::print_ir;
+use lift_core::types::*;
+use lift_quantum::gates::QuantumGate;
+use lift_quantum::kraus::{ComplexMatrix, KrausChannel};
+use lift_quantum::qec::{QecAnalysis, QecCode};
+use lift_quantum::topology::DeviceTopology;
+use lift_sim::cost::{Budget, CostModel, EnergyModel, QuantumCostModel, ReactiveBudget};
 use lift_tensor::ops::TensorOp;
 use lift_tensor::shape::ShapeInference;
-use lift_quantum::gates::QuantumGate;
-use lift_quantum::topology::DeviceTopology;
-use lift_quantum::kraus::{ComplexMatrix, KrausChannel};
-use lift_quantum::qec::{QecCode, QecAnalysis};
-use lift_sim::cost::{CostModel, QuantumCostModel, Budget, EnergyModel, ReactiveBudget};
 
 fn mk(shape: Vec<usize>, dtype: DataType) -> TensorTypeInfo {
     TensorTypeInfo {
@@ -94,13 +94,32 @@ fn test_gate_from_name_garbage() {
 #[test]
 fn test_all_gates_have_names() {
     let gates = [
-        QuantumGate::H, QuantumGate::X, QuantumGate::Y, QuantumGate::Z,
-        QuantumGate::S, QuantumGate::Sdg, QuantumGate::T, QuantumGate::Tdg,
-        QuantumGate::SX, QuantumGate::RX, QuantumGate::RY, QuantumGate::RZ,
-        QuantumGate::CX, QuantumGate::CZ, QuantumGate::CY, QuantumGate::SWAP,
-        QuantumGate::ISWAP, QuantumGate::ECR, QuantumGate::ZZ,
-        QuantumGate::XX, QuantumGate::YY, QuantumGate::CCX, QuantumGate::CSWAP,
-        QuantumGate::Measure, QuantumGate::MeasureAll, QuantumGate::Reset,
+        QuantumGate::H,
+        QuantumGate::X,
+        QuantumGate::Y,
+        QuantumGate::Z,
+        QuantumGate::S,
+        QuantumGate::Sdg,
+        QuantumGate::T,
+        QuantumGate::Tdg,
+        QuantumGate::SX,
+        QuantumGate::RX,
+        QuantumGate::RY,
+        QuantumGate::RZ,
+        QuantumGate::CX,
+        QuantumGate::CZ,
+        QuantumGate::CY,
+        QuantumGate::SWAP,
+        QuantumGate::ISWAP,
+        QuantumGate::ECR,
+        QuantumGate::ZZ,
+        QuantumGate::XX,
+        QuantumGate::YY,
+        QuantumGate::CCX,
+        QuantumGate::CSWAP,
+        QuantumGate::Measure,
+        QuantumGate::MeasureAll,
+        QuantumGate::Reset,
         QuantumGate::Barrier,
     ];
     for g in &gates {
@@ -115,8 +134,13 @@ fn test_all_gates_have_names() {
 fn test_self_inverse_known() {
     // Only test gates we're confident are self-inverse
     let self_inv = [
-        QuantumGate::H, QuantumGate::X, QuantumGate::Y, QuantumGate::Z,
-        QuantumGate::CX, QuantumGate::CZ, QuantumGate::SWAP,
+        QuantumGate::H,
+        QuantumGate::X,
+        QuantumGate::Y,
+        QuantumGate::Z,
+        QuantumGate::CX,
+        QuantumGate::CZ,
+        QuantumGate::SWAP,
         QuantumGate::Rx180,
     ];
     for g in &self_inv {
@@ -127,9 +151,15 @@ fn test_self_inverse_known() {
 #[test]
 fn test_clifford_gates() {
     let cliffords = [
-        QuantumGate::H, QuantumGate::S, QuantumGate::Sdg,
-        QuantumGate::X, QuantumGate::Y, QuantumGate::Z,
-        QuantumGate::CX, QuantumGate::CZ, QuantumGate::SWAP,
+        QuantumGate::H,
+        QuantumGate::S,
+        QuantumGate::Sdg,
+        QuantumGate::X,
+        QuantumGate::Y,
+        QuantumGate::Z,
+        QuantumGate::CX,
+        QuantumGate::CZ,
+        QuantumGate::SWAP,
     ];
     for g in &cliffords {
         assert!(g.is_clifford(), "{:?} should be Clifford", g);
@@ -218,7 +248,7 @@ fn test_kraus_depolarizing_zero_error() {
 fn test_kraus_depolarizing_max_error() {
     let ch = KrausChannel::depolarizing(1.0, 1);
     let f = ch.average_gate_fidelity();
-    assert!(f >= 0.0 && f <= 1.0);
+    assert!((0.0..=1.0).contains(&f));
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -415,10 +445,10 @@ fn test_attributes_remove() {
 fn test_attributes_mixed_types() {
     let mut attrs = Attributes::new();
     attrs.set("i", Attribute::Integer(10));
-    attrs.set("f", Attribute::Float(3.14));
+    attrs.set("f", Attribute::Float(2.5));
     attrs.set("b", Attribute::Bool(true));
     assert_eq!(attrs.get_integer("i"), Some(10));
-    assert_eq!(attrs.get_float("f"), Some(3.14));
+    assert_eq!(attrs.get_float("f"), Some(2.5));
     assert_eq!(attrs.get_bool("b"), Some(true));
     assert_eq!(attrs.len(), 3);
 }

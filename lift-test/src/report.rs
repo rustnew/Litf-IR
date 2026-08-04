@@ -50,9 +50,18 @@ impl TestReport {
         println!("╔══════════════════════════════════════════════════════════════╗");
         println!("║  FINAL REPORT                                              ║");
         println!("╠══════════════════════════════════════════════════════════════╣");
-        println!("║  Passed: {:>3}                                               ║", self.passed);
-        println!("║  Failed: {:>3}                                               ║", self.failed);
-        println!("║  Total:  {:>3}                                               ║", self.total());
+        println!(
+            "║  Passed: {:>3}                                               ║",
+            self.passed
+        );
+        println!(
+            "║  Failed: {:>3}                                               ║",
+            self.failed
+        );
+        println!(
+            "║  Total:  {:>3}                                               ║",
+            self.total()
+        );
         println!("╚══════════════════════════════════════════════════════════════╝");
     }
 }

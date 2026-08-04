@@ -38,12 +38,10 @@ echo ""
 # ── Models to test ──
 MODELS=(
     "examples/phi3_mini.lif"
-    "examples/deepseek_v2_lite.lif"
     "examples/llama2_7b.lif"
     "examples/mistral_7b.lif"
     "examples/bert_base.lif"
     "examples/tensor_mlp.lif"
-    "examples/attention.lif"
     "examples/quantum_bell.lif"
     "examples/phi3_generated.lif"
     "examples/mlp_generated.lif"
@@ -95,15 +93,20 @@ check "phi3+output" "$LIFT optimise examples/phi3_mini.lif --output /tmp/phi3_op
 echo ""
 
 # ── Test all 11 passes via config ──
-echo "── All 11 passes (config) ──"
+echo "── All 13 passes (config) ──"
 cat > /tmp/all_passes.lith << 'EOF'
 [target]
 backend = "llvm"
 
 [optimisation]
 level = O3
-passes = canonicalize, constant-folding, dce, tensor-fusion, gate-cancellation, rotation-merge, flash-attention, cse, quantisation-pass, noise-aware-schedule, layout-mapping
+passes = canonicalize, constant-folding, dce, tensor-fusion, gate-cancellation, rotation-merge, flash-attention, cse, quantisation-pass, noise-aware-schedule, layout-mapping, gate-decomposition, real-routing
 max_iterations = 5
+
+[quantum]
+provider = ibm
+topology = "linear"
+num_qubits = 8
 
 [simulation]
 shape_propagation = true

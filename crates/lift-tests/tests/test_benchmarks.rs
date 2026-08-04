@@ -1,19 +1,25 @@
+use lift_ast::*;
+use lift_core::attributes::*;
 /// Benchmark & stress tests: known model FLOPs, memory footprints, scaling, edge cases
 use lift_core::context::Context;
-use lift_core::types::*;
-use lift_core::attributes::*;
 use lift_core::location::Location;
-use lift_ast::*;
+use lift_core::types::*;
 
 fn parse_and_build(src: &str) -> Context {
     let mut lexer = Lexer::new(src);
     let tokens = lexer.tokenize().to_vec();
-    assert!(lexer.errors().is_empty(), "lexer errors: {:?}", lexer.errors());
+    assert!(
+        lexer.errors().is_empty(),
+        "lexer errors: {:?}",
+        lexer.errors()
+    );
     let mut parser = Parser::new(tokens);
     let program = parser.parse().expect("parse failed");
     let mut ctx = Context::new();
     let mut builder = IrBuilder::new();
-    builder.build_program(&mut ctx, &program).expect("build failed");
+    builder
+        .build_program(&mut ctx, &program)
+        .expect("build failed");
     ctx
 }
 
@@ -37,13 +43,13 @@ fn test_resnet50_bottleneck_flops() {
     let x = mk(vec![1, 256, 56, 56], DataType::FP32);
     let w1 = mk(vec![64, 256, 1, 1], DataType::FP32);
     let f1 = ShapeInference::compute_flops(&TensorOp::Conv2D, &[&x, &w1]).unwrap();
-    assert_eq!(f1, 2 * 1 * 64 * 56 * 56 * 256 * 1 * 1);
+    assert_eq!(f1, (2 * 64 * 56 * 56 * 256));
 
     let h = mk(vec![1, 64, 56, 56], DataType::FP32);
     let w2 = mk(vec![64, 64, 3, 3], DataType::FP32);
     let f2 = ShapeInference::compute_flops(&TensorOp::Conv2D, &[&h, &w2]).unwrap();
     let out_h = 56 - 3 + 1;
-    assert_eq!(f2, 2 * 1 * 64 * out_h * out_h * 64 * 3 * 3);
+    assert_eq!(f2, 2 * 64 * out_h * out_h * 64 * 3 * 3);
 
     let total = f1 + f2;
     assert!(total > 100_000_000);
@@ -136,7 +142,7 @@ fn test_llama7b_memory_estimate() {
     assert!(gb > 10.0 && gb < 20.0, "LLaMA-7B FP16: {:.2} GB", gb);
 
     let a100 = lift_sim::cost::CostModel::a100();
-    assert!(a100.fits_in_memory(total as u64));
+    assert!(a100.fits_in_memory(total));
 }
 
 // ═══════════════════════════════════════════════════
@@ -189,11 +195,22 @@ fn test_arithmetic_intensity_comparison() {
 #[test]
 fn test_stress_1000_ops() {
     let mut ctx = Context::new();
-    let ty = ctx.make_tensor_type(vec![Dimension::Constant(64)], DataType::FP32, MemoryLayout::Contiguous);
+    let ty = ctx.make_tensor_type(
+        vec![Dimension::Constant(64)],
+        DataType::FP32,
+        MemoryLayout::Contiguous,
+    );
     let block = ctx.create_block();
     let mut val = ctx.create_block_arg(block, ty);
     for _ in 0..1000 {
-        let (op, res) = ctx.create_op("tensor.relu", "tensor", vec![val], vec![ty], Attributes::new(), Location::unknown());
+        let (op, res) = ctx.create_op(
+            "tensor.relu",
+            "tensor",
+            vec![val],
+            vec![ty],
+            Attributes::new(),
+            Location::unknown(),
+        );
         ctx.add_op_to_block(block, op);
         val = res[0];
     }
@@ -212,23 +229,39 @@ fn test_stress_deep_quantum() {
     let mut q = ctx.create_block_arg(block, q_ty);
     for i in 0..500 {
         let gate = if i % 2 == 0 { "quantum.h" } else { "quantum.t" };
-        let (op, res) = ctx.create_op(gate, "quantum", vec![q], vec![q_ty], Attributes::new(), Location::unknown());
+        let (op, res) = ctx.create_op(
+            gate,
+            "quantum",
+            vec![q],
+            vec![q_ty],
+            Attributes::new(),
+            Location::unknown(),
+        );
         ctx.add_op_to_block(block, op);
         q = res[0];
     }
     let qa = lift_sim::analyze_quantum_ops(&ctx);
     assert_eq!(qa.gate_count, 500);
-    assert!(qa.estimated_fidelity > 0.5 && qa.estimated_fidelity < 0.7,
-        "500-gate fidelity: {}", qa.estimated_fidelity);
+    assert!(
+        qa.estimated_fidelity > 0.5 && qa.estimated_fidelity < 0.7,
+        "500-gate fidelity: {}",
+        qa.estimated_fidelity
+    );
 }
 
 #[test]
 fn test_stress_string_interning_10k() {
     let mut ctx = Context::new();
     let mut ids = Vec::with_capacity(10000);
-    for i in 0..10000 { ids.push(ctx.intern_string(&format!("str_{}", i))); }
-    for i in 0..10000 { assert_eq!(ctx.resolve_string(ids[i]), format!("str_{}", i)); }
-    for i in 0..10000 { assert_eq!(ctx.intern_string(&format!("str_{}", i)), ids[i]); }
+    for i in 0..10000 {
+        ids.push(ctx.intern_string(&format!("str_{}", i)));
+    }
+    for (i, id) in ids.iter().enumerate() {
+        assert_eq!(ctx.resolve_string(*id), format!("str_{}", i));
+    }
+    for (i, id) in ids.iter().enumerate() {
+        assert_eq!(ctx.intern_string(&format!("str_{}", i)), *id);
+    }
 }
 
 // ═══════════════════════════════════════════════════
@@ -240,8 +273,10 @@ fn test_edge_1d_tensor() {
     let a = mk(vec![1], DataType::FP32);
     let b = mk(vec![1], DataType::FP32);
     let out = lift_tensor::shape::ShapeInference::infer_output_shape(
-        &lift_tensor::ops::TensorOp::Add, &[&a, &b],
-    ).unwrap();
+        &lift_tensor::ops::TensorOp::Add,
+        &[&a, &b],
+    )
+    .unwrap();
     assert_eq!(out[0].shape[0].static_value(), Some(1));
 }
 

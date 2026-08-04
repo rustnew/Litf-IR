@@ -15,9 +15,15 @@ pub enum QasmImportError {
 pub struct OpenQasm3Importer;
 
 impl OpenQasm3Importer {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 
-    pub fn import_from_source(&self, ctx: &mut Context, source: &str) -> Result<(), QasmImportError> {
+    pub fn import_from_source(
+        &self,
+        ctx: &mut Context,
+        source: &str,
+    ) -> Result<(), QasmImportError> {
         let lines: Vec<&str> = source.lines().collect();
 
         if lines.is_empty() {
@@ -41,5 +47,7 @@ impl OpenQasm3Importer {
 }
 
 impl Default for OpenQasm3Importer {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

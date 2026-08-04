@@ -17,21 +17,31 @@ fn make_tensor(dims: Vec<usize>, dtype: DataType) -> TensorTypeInfo {
 #[test]
 fn test_activation_ops_roundtrip() {
     let ops = [
-        TensorOp::LeakyReLU, TensorOp::ELU, TensorOp::Mish,
-        TensorOp::HardSwish, TensorOp::HardSigmoid,
+        TensorOp::LeakyReLU,
+        TensorOp::ELU,
+        TensorOp::Mish,
+        TensorOp::HardSwish,
+        TensorOp::HardSigmoid,
     ];
     for op in &ops {
         let name = op.name();
         let recovered = TensorOp::from_name(name);
-        assert_eq!(recovered.as_ref(), Some(op), "roundtrip failed for {:?}", op);
+        assert_eq!(
+            recovered.as_ref(),
+            Some(op),
+            "roundtrip failed for {:?}",
+            op
+        );
     }
 }
 
 #[test]
 fn test_norm_ops_roundtrip() {
     let ops = [
-        TensorOp::RMSNorm, TensorOp::BatchNorm,
-        TensorOp::GroupNorm, TensorOp::InstanceNorm,
+        TensorOp::RMSNorm,
+        TensorOp::BatchNorm,
+        TensorOp::GroupNorm,
+        TensorOp::InstanceNorm,
     ];
     for op in &ops {
         assert_eq!(TensorOp::from_name(op.name()).as_ref(), Some(op));
@@ -41,10 +51,14 @@ fn test_norm_ops_roundtrip() {
 #[test]
 fn test_attention_ops_roundtrip() {
     let ops = [
-        TensorOp::Attention, TensorOp::MultiHeadAttention,
-        TensorOp::MultiQueryAttention, TensorOp::GroupedQueryAttention,
-        TensorOp::FlashAttention, TensorOp::SlidingWindowAttention,
-        TensorOp::CrossAttention, TensorOp::PagedAttention,
+        TensorOp::Attention,
+        TensorOp::MultiHeadAttention,
+        TensorOp::MultiQueryAttention,
+        TensorOp::GroupedQueryAttention,
+        TensorOp::FlashAttention,
+        TensorOp::SlidingWindowAttention,
+        TensorOp::CrossAttention,
+        TensorOp::PagedAttention,
     ];
     for op in &ops {
         assert_eq!(TensorOp::from_name(op.name()).as_ref(), Some(op));
@@ -54,8 +68,10 @@ fn test_attention_ops_roundtrip() {
 #[test]
 fn test_conv_ops_roundtrip() {
     let ops = [
-        TensorOp::Conv1D, TensorOp::Conv3D,
-        TensorOp::ConvTranspose2D, TensorOp::DepthwiseConv2D,
+        TensorOp::Conv1D,
+        TensorOp::Conv3D,
+        TensorOp::ConvTranspose2D,
+        TensorOp::DepthwiseConv2D,
         TensorOp::DilatedConv2D,
     ];
     for op in &ops {
@@ -66,8 +82,10 @@ fn test_conv_ops_roundtrip() {
 #[test]
 fn test_pooling_ops_roundtrip() {
     let ops = [
-        TensorOp::MaxPool2D, TensorOp::AvgPool2D,
-        TensorOp::AdaptiveAvgPool2D, TensorOp::GlobalAvgPool,
+        TensorOp::MaxPool2D,
+        TensorOp::AvgPool2D,
+        TensorOp::AdaptiveAvgPool2D,
+        TensorOp::GlobalAvgPool,
     ];
     for op in &ops {
         assert_eq!(TensorOp::from_name(op.name()).as_ref(), Some(op));
@@ -85,10 +103,17 @@ fn test_recurrent_ops_roundtrip() {
 #[test]
 fn test_advanced_math_ops_roundtrip() {
     let ops = [
-        TensorOp::Einsum, TensorOp::FFT, TensorOp::IFFT,
-        TensorOp::SVD, TensorOp::Eig, TensorOp::Solve,
-        TensorOp::TopK, TensorOp::Sort, TensorOp::Cumsum,
-        TensorOp::Where, TensorOp::Clamp,
+        TensorOp::Einsum,
+        TensorOp::FFT,
+        TensorOp::IFFT,
+        TensorOp::SVD,
+        TensorOp::Eig,
+        TensorOp::Solve,
+        TensorOp::TopK,
+        TensorOp::Sort,
+        TensorOp::Cumsum,
+        TensorOp::Where,
+        TensorOp::Clamp,
     ];
     for op in &ops {
         assert_eq!(TensorOp::from_name(op.name()).as_ref(), Some(op));
@@ -98,9 +123,12 @@ fn test_advanced_math_ops_roundtrip() {
 #[test]
 fn test_quantisation_ops_roundtrip() {
     let ops = [
-        TensorOp::Quantize, TensorOp::Dequantize,
-        TensorOp::QuantizeInt4, TensorOp::DequantizeInt4,
-        TensorOp::QuantizeFp8, TensorOp::DequantizeFp8,
+        TensorOp::Quantize,
+        TensorOp::Dequantize,
+        TensorOp::QuantizeInt4,
+        TensorOp::DequantizeInt4,
+        TensorOp::QuantizeFp8,
+        TensorOp::DequantizeFp8,
     ];
     for op in &ops {
         assert_eq!(TensorOp::from_name(op.name()).as_ref(), Some(op));
@@ -118,7 +146,8 @@ fn test_sparse_ops_roundtrip() {
 #[test]
 fn test_diffusion_ops_roundtrip() {
     let ops = [
-        TensorOp::UNetDownBlock, TensorOp::UNetUpBlock,
+        TensorOp::UNetDownBlock,
+        TensorOp::UNetUpBlock,
         TensorOp::TimestepEmbedding,
     ];
     for op in &ops {
@@ -137,9 +166,14 @@ fn test_gnn_ops_roundtrip() {
 #[test]
 fn test_gradient_ops_roundtrip() {
     let ops = [
-        TensorOp::GradMatMul, TensorOp::GradReLU, TensorOp::GradSoftmax,
-        TensorOp::GradLayerNorm, TensorOp::GradAttention,
-        TensorOp::GradConv2D, TensorOp::GradLinear, TensorOp::GradGeLU,
+        TensorOp::GradMatMul,
+        TensorOp::GradReLU,
+        TensorOp::GradSoftmax,
+        TensorOp::GradLayerNorm,
+        TensorOp::GradAttention,
+        TensorOp::GradConv2D,
+        TensorOp::GradLinear,
+        TensorOp::GradGeLU,
     ];
     for op in &ops {
         assert_eq!(TensorOp::from_name(op.name()).as_ref(), Some(op));
@@ -149,8 +183,10 @@ fn test_gradient_ops_roundtrip() {
 #[test]
 fn test_parallel_ops_roundtrip() {
     let ops = [
-        TensorOp::ParallelSplit, TensorOp::ParallelAllReduce,
-        TensorOp::PipelineSend, TensorOp::PipelineReceive,
+        TensorOp::ParallelSplit,
+        TensorOp::ParallelAllReduce,
+        TensorOp::PipelineSend,
+        TensorOp::PipelineReceive,
     ];
     for op in &ops {
         assert_eq!(TensorOp::from_name(op.name()).as_ref(), Some(op));
@@ -160,9 +196,12 @@ fn test_parallel_ops_roundtrip() {
 #[test]
 fn test_fused_ops_roundtrip() {
     let ops = [
-        TensorOp::FusedMatMulBiasReLU, TensorOp::FusedMatMulBias,
-        TensorOp::FusedLinearGeLU, TensorOp::FusedAttentionLayerNorm,
-        TensorOp::FusedLinearSiLU, TensorOp::FusedConvBatchNormReLU,
+        TensorOp::FusedMatMulBiasReLU,
+        TensorOp::FusedMatMulBias,
+        TensorOp::FusedLinearGeLU,
+        TensorOp::FusedAttentionLayerNorm,
+        TensorOp::FusedLinearSiLU,
+        TensorOp::FusedConvBatchNormReLU,
     ];
     for op in &ops {
         assert_eq!(TensorOp::from_name(op.name()).as_ref(), Some(op));
@@ -172,8 +211,13 @@ fn test_fused_ops_roundtrip() {
 #[test]
 fn test_shape_ops_roundtrip() {
     let ops = [
-        TensorOp::Squeeze, TensorOp::Unsqueeze, TensorOp::Permute,
-        TensorOp::Expand, TensorOp::Slice, TensorOp::Pad, TensorOp::Tile,
+        TensorOp::Squeeze,
+        TensorOp::Unsqueeze,
+        TensorOp::Permute,
+        TensorOp::Expand,
+        TensorOp::Slice,
+        TensorOp::Pad,
+        TensorOp::Tile,
     ];
     for op in &ops {
         assert_eq!(TensorOp::from_name(op.name()).as_ref(), Some(op));
@@ -183,8 +227,11 @@ fn test_shape_ops_roundtrip() {
 #[test]
 fn test_creation_ops_roundtrip() {
     let ops = [
-        TensorOp::Constant, TensorOp::Zeros, TensorOp::Ones,
-        TensorOp::Arange, TensorOp::Full,
+        TensorOp::Constant,
+        TensorOp::Zeros,
+        TensorOp::Ones,
+        TensorOp::Arange,
+        TensorOp::Full,
     ];
     for op in &ops {
         assert_eq!(TensorOp::from_name(op.name()).as_ref(), Some(op));
@@ -202,7 +249,8 @@ fn test_moe_ops_roundtrip() {
 #[test]
 fn test_memory_ops_roundtrip() {
     let ops = [
-        TensorOp::Checkpoint, TensorOp::Offload,
+        TensorOp::Checkpoint,
+        TensorOp::Offload,
         TensorOp::GradAccumulate,
     ];
     for op in &ops {
@@ -217,9 +265,15 @@ fn test_memory_ops_roundtrip() {
 #[test]
 fn test_is_activation() {
     let activations = [
-        TensorOp::ReLU, TensorOp::GeLU, TensorOp::SiLU,
-        TensorOp::Sigmoid, TensorOp::Tanh, TensorOp::LeakyReLU,
-        TensorOp::ELU, TensorOp::Mish, TensorOp::HardSwish,
+        TensorOp::ReLU,
+        TensorOp::GeLU,
+        TensorOp::SiLU,
+        TensorOp::Sigmoid,
+        TensorOp::Tanh,
+        TensorOp::LeakyReLU,
+        TensorOp::ELU,
+        TensorOp::Mish,
+        TensorOp::HardSwish,
         TensorOp::HardSigmoid,
     ];
     for op in &activations {
@@ -232,8 +286,10 @@ fn test_is_activation() {
 #[test]
 fn test_is_attention() {
     let attn_ops = [
-        TensorOp::Attention, TensorOp::MultiHeadAttention,
-        TensorOp::FlashAttention, TensorOp::CrossAttention,
+        TensorOp::Attention,
+        TensorOp::MultiHeadAttention,
+        TensorOp::FlashAttention,
+        TensorOp::CrossAttention,
     ];
     for op in &attn_ops {
         assert!(op.is_attention(), "{:?} should be attention", op);
@@ -244,8 +300,11 @@ fn test_is_attention() {
 #[test]
 fn test_is_convolution() {
     let conv_ops = [
-        TensorOp::Conv2D, TensorOp::Conv1D, TensorOp::Conv3D,
-        TensorOp::ConvTranspose2D, TensorOp::DepthwiseConv2D,
+        TensorOp::Conv2D,
+        TensorOp::Conv1D,
+        TensorOp::Conv3D,
+        TensorOp::ConvTranspose2D,
+        TensorOp::DepthwiseConv2D,
         TensorOp::DilatedConv2D,
     ];
     for op in &conv_ops {
@@ -257,8 +316,10 @@ fn test_is_convolution() {
 #[test]
 fn test_is_normalisation() {
     let norm_ops = [
-        TensorOp::LayerNorm, TensorOp::RMSNorm,
-        TensorOp::BatchNorm, TensorOp::GroupNorm,
+        TensorOp::LayerNorm,
+        TensorOp::RMSNorm,
+        TensorOp::BatchNorm,
+        TensorOp::GroupNorm,
         TensorOp::InstanceNorm,
     ];
     for op in &norm_ops {
@@ -270,9 +331,12 @@ fn test_is_normalisation() {
 #[test]
 fn test_is_fused() {
     let fused = [
-        TensorOp::FusedMatMulBiasReLU, TensorOp::FusedMatMulBias,
-        TensorOp::FusedLinearGeLU, TensorOp::FusedAttentionLayerNorm,
-        TensorOp::FusedLinearSiLU, TensorOp::FusedConvBatchNormReLU,
+        TensorOp::FusedMatMulBiasReLU,
+        TensorOp::FusedMatMulBias,
+        TensorOp::FusedLinearGeLU,
+        TensorOp::FusedAttentionLayerNorm,
+        TensorOp::FusedLinearSiLU,
+        TensorOp::FusedConvBatchNormReLU,
     ];
     for op in &fused {
         assert!(op.is_fused(), "{:?} should be fused", op);
@@ -283,10 +347,14 @@ fn test_is_fused() {
 #[test]
 fn test_is_gradient() {
     let grads = [
-        TensorOp::GradMatMul, TensorOp::GradReLU,
-        TensorOp::GradSoftmax, TensorOp::GradLayerNorm,
-        TensorOp::GradAttention, TensorOp::GradConv2D,
-        TensorOp::GradLinear, TensorOp::GradGeLU,
+        TensorOp::GradMatMul,
+        TensorOp::GradReLU,
+        TensorOp::GradSoftmax,
+        TensorOp::GradLayerNorm,
+        TensorOp::GradAttention,
+        TensorOp::GradConv2D,
+        TensorOp::GradLinear,
+        TensorOp::GradGeLU,
     ];
     for op in &grads {
         assert!(op.is_gradient(), "{:?} should be gradient", op);
@@ -297,8 +365,12 @@ fn test_is_gradient() {
 #[test]
 fn test_is_zero_flop() {
     let zero_flop = [
-        TensorOp::Reshape, TensorOp::Transpose, TensorOp::Squeeze,
-        TensorOp::Unsqueeze, TensorOp::Permute, TensorOp::Expand,
+        TensorOp::Reshape,
+        TensorOp::Transpose,
+        TensorOp::Squeeze,
+        TensorOp::Unsqueeze,
+        TensorOp::Permute,
+        TensorOp::Expand,
         TensorOp::Slice,
     ];
     for op in &zero_flop {
@@ -368,7 +440,8 @@ fn test_shape_conv1d() {
 fn test_shape_max_pool2d() {
     let input = make_tensor(vec![1, 64, 32, 32], DataType::FP32);
     let kernel = make_tensor(vec![2, 2], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::MaxPool2D, &[&input, &kernel]).unwrap();
+    let result =
+        ShapeInference::infer_output_shape(&TensorOp::MaxPool2D, &[&input, &kernel]).unwrap();
     assert_eq!(result[0].shape[0].static_value(), Some(1));
     assert_eq!(result[0].shape[1].static_value(), Some(64));
     // Output depends on impl; just check rank is preserved
@@ -399,7 +472,8 @@ fn test_shape_flash_attention() {
     let q = make_tensor(vec![2, 8, 512, 64], DataType::FP16);
     let k = make_tensor(vec![2, 8, 512, 64], DataType::FP16);
     let v = make_tensor(vec![2, 8, 512, 64], DataType::FP16);
-    let result = ShapeInference::infer_output_shape(&TensorOp::FlashAttention, &[&q, &k, &v]).unwrap();
+    let result =
+        ShapeInference::infer_output_shape(&TensorOp::FlashAttention, &[&q, &k, &v]).unwrap();
     assert_eq!(result[0].shape, q.shape);
     assert_eq!(result[0].dtype, DataType::FP16);
 }
@@ -417,7 +491,8 @@ fn test_shape_sparse_matmul() {
 fn test_shape_depthwise_conv2d() {
     let input = make_tensor(vec![1, 32, 28, 28], DataType::FP32);
     let kernel = make_tensor(vec![32, 1, 3, 3], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::DepthwiseConv2D, &[&input, &kernel]).unwrap();
+    let result =
+        ShapeInference::infer_output_shape(&TensorOp::DepthwiseConv2D, &[&input, &kernel]).unwrap();
     assert_eq!(result[0].shape[0].static_value(), Some(1));
     assert_eq!(result[0].shape[1].static_value(), Some(32));
     assert_eq!(result[0].shape[2].static_value(), Some(26)); // 28-3+1

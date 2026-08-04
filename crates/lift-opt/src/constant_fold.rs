@@ -1,12 +1,14 @@
-use lift_core::context::Context;
-use lift_core::pass::{Pass, PassResult, AnalysisCache};
 use lift_core::attributes::Attribute;
+use lift_core::context::Context;
+use lift_core::pass::{AnalysisCache, Pass, PassResult};
 
 #[derive(Debug)]
 pub struct ConstantFolding;
 
 impl Pass for ConstantFolding {
-    fn name(&self) -> &str { "constant-folding" }
+    fn name(&self) -> &str {
+        "constant-folding"
+    }
 
     fn run(&self, ctx: &mut Context, _cache: &mut AnalysisCache) -> PassResult {
         let mut folded = 0usize;
@@ -41,14 +43,18 @@ impl Pass for ConstantFolding {
             }
 
             // Get constant values
-            let const_values: Vec<Option<&Attribute>> = op.inputs.iter().map(|&input| {
-                let val = ctx.get_value(input)?;
-                let def_op = match &val.def {
-                    lift_core::values::DefSite::OpResult { op, .. } => ctx.get_op(*op),
-                    _ => None,
-                }?;
-                def_op.attrs.get("value")
-            }).collect();
+            let const_values: Vec<Option<&Attribute>> = op
+                .inputs
+                .iter()
+                .map(|&input| {
+                    let val = ctx.get_value(input)?;
+                    let def_op = match &val.def {
+                        lift_core::values::DefSite::OpResult { op, .. } => ctx.get_op(*op),
+                        _ => None,
+                    }?;
+                    def_op.attrs.get("value")
+                })
+                .collect();
 
             // Try to fold based on operation
             let folded_value = match op_name.as_str() {
@@ -64,13 +70,11 @@ impl Pass for ConstantFolding {
                     fold_binary_int(&const_values, |a, b| a * b)
                         .or_else(|| fold_binary_float(&const_values, |a, b| a * b))
                 }
-                "tensor.neg" if const_values.len() == 1 => {
-                    match const_values[0] {
-                        Some(Attribute::Integer(v)) => Some(Attribute::Integer(-v)),
-                        Some(Attribute::Float(v)) => Some(Attribute::Float(-v)),
-                        _ => None,
-                    }
-                }
+                "tensor.neg" if const_values.len() == 1 => match const_values[0] {
+                    Some(Attribute::Integer(v)) => Some(Attribute::Integer(-v)),
+                    Some(Attribute::Float(v)) => Some(Attribute::Float(-v)),
+                    _ => None,
+                },
                 _ => None,
             };
 
@@ -101,7 +105,10 @@ impl Pass for ConstantFolding {
     }
 }
 
-fn fold_binary_int(values: &[Option<&Attribute>], f: impl Fn(i64, i64) -> i64) -> Option<Attribute> {
+fn fold_binary_int(
+    values: &[Option<&Attribute>],
+    f: impl Fn(i64, i64) -> i64,
+) -> Option<Attribute> {
     match (values.first()?, values.get(1)?) {
         (Some(Attribute::Integer(a)), Some(Attribute::Integer(b))) => {
             Some(Attribute::Integer(f(*a, *b)))
@@ -110,11 +117,12 @@ fn fold_binary_int(values: &[Option<&Attribute>], f: impl Fn(i64, i64) -> i64) -
     }
 }
 
-fn fold_binary_float(values: &[Option<&Attribute>], f: impl Fn(f64, f64) -> f64) -> Option<Attribute> {
+fn fold_binary_float(
+    values: &[Option<&Attribute>],
+    f: impl Fn(f64, f64) -> f64,
+) -> Option<Attribute> {
     match (values.first()?, values.get(1)?) {
-        (Some(Attribute::Float(a)), Some(Attribute::Float(b))) => {
-            Some(Attribute::Float(f(*a, *b)))
-        }
+        (Some(Attribute::Float(a)), Some(Attribute::Float(b))) => Some(Attribute::Float(f(*a, *b))),
         _ => None,
     }
 }

@@ -10,15 +10,34 @@ use lift_quantum::topology::DeviceTopology;
 #[test]
 fn test_every_gate_name_roundtrip() {
     let gates = vec![
-        QuantumGate::H, QuantumGate::X, QuantumGate::Y, QuantumGate::Z,
-        QuantumGate::S, QuantumGate::Sdg, QuantumGate::T, QuantumGate::Tdg,
-        QuantumGate::SX, QuantumGate::RX, QuantumGate::RY, QuantumGate::RZ,
-        QuantumGate::U3, QuantumGate::CX, QuantumGate::CZ, QuantumGate::CY,
-        QuantumGate::SWAP, QuantumGate::ISWAP, QuantumGate::ECR,
-        QuantumGate::ZZ, QuantumGate::XX, QuantumGate::YY,
-        QuantumGate::CCX, QuantumGate::CSWAP,
-        QuantumGate::Measure, QuantumGate::MeasureAll,
-        QuantumGate::Reset, QuantumGate::Barrier,
+        QuantumGate::H,
+        QuantumGate::X,
+        QuantumGate::Y,
+        QuantumGate::Z,
+        QuantumGate::S,
+        QuantumGate::Sdg,
+        QuantumGate::T,
+        QuantumGate::Tdg,
+        QuantumGate::SX,
+        QuantumGate::RX,
+        QuantumGate::RY,
+        QuantumGate::RZ,
+        QuantumGate::U3,
+        QuantumGate::CX,
+        QuantumGate::CZ,
+        QuantumGate::CY,
+        QuantumGate::SWAP,
+        QuantumGate::ISWAP,
+        QuantumGate::ECR,
+        QuantumGate::ZZ,
+        QuantumGate::XX,
+        QuantumGate::YY,
+        QuantumGate::CCX,
+        QuantumGate::CSWAP,
+        QuantumGate::Measure,
+        QuantumGate::MeasureAll,
+        QuantumGate::Reset,
+        QuantumGate::Barrier,
     ];
     for gate in &gates {
         let name = gate.op_name();
@@ -34,18 +53,35 @@ fn test_every_gate_name_roundtrip() {
 
 #[test]
 fn test_single_qubit_gates() {
-    for g in &[QuantumGate::H, QuantumGate::X, QuantumGate::Y, QuantumGate::Z,
-               QuantumGate::S, QuantumGate::T, QuantumGate::SX,
-               QuantumGate::RX, QuantumGate::RY, QuantumGate::RZ] {
+    for g in &[
+        QuantumGate::H,
+        QuantumGate::X,
+        QuantumGate::Y,
+        QuantumGate::Z,
+        QuantumGate::S,
+        QuantumGate::T,
+        QuantumGate::SX,
+        QuantumGate::RX,
+        QuantumGate::RY,
+        QuantumGate::RZ,
+    ] {
         assert_eq!(g.num_qubits(), 1, "{:?} must be 1-qubit", g);
     }
 }
 
 #[test]
 fn test_two_qubit_gates() {
-    for g in &[QuantumGate::CX, QuantumGate::CZ, QuantumGate::CY,
-               QuantumGate::SWAP, QuantumGate::ISWAP, QuantumGate::ECR,
-               QuantumGate::ZZ, QuantumGate::XX, QuantumGate::YY] {
+    for g in &[
+        QuantumGate::CX,
+        QuantumGate::CZ,
+        QuantumGate::CY,
+        QuantumGate::SWAP,
+        QuantumGate::ISWAP,
+        QuantumGate::ECR,
+        QuantumGate::ZZ,
+        QuantumGate::XX,
+        QuantumGate::YY,
+    ] {
         assert_eq!(g.num_qubits(), 2, "{:?} must be 2-qubit", g);
     }
 }
@@ -199,8 +235,12 @@ fn test_benchmark_qft_8_gate_count() {
     assert_eq!(h_gates + cr_gates, 36);
 
     let mut cn = CircuitNoise::new();
-    for _ in 0..h_gates { cn.add_gate(&GateNoise::with_depolarizing(0.999, 0.02), false); }
-    for _ in 0..cr_gates { cn.add_gate(&GateNoise::with_depolarizing(0.99, 0.3), true); }
+    for _ in 0..h_gates {
+        cn.add_gate(&GateNoise::with_depolarizing(0.999, 0.02), false);
+    }
+    for _ in 0..cr_gates {
+        cn.add_gate(&GateNoise::with_depolarizing(0.99, 0.3), true);
+    }
     assert_eq!(cn.gate_count, 36);
     let expected = 0.999f64.powi(8) * 0.99f64.powi(28);
     assert!((cn.total_fidelity - expected).abs() < 1e-4);
@@ -212,8 +252,12 @@ fn test_benchmark_vqe_4qubit() {
     let layers = 2;
     let mut cn = CircuitNoise::new();
     for _ in 0..layers {
-        for _ in 0..qubits { cn.add_gate(&GateNoise::with_depolarizing(0.999, 0.02), false); }
-        for _ in 0..(qubits-1) { cn.add_gate(&GateNoise::with_depolarizing(0.99, 0.3), true); }
+        for _ in 0..qubits {
+            cn.add_gate(&GateNoise::with_depolarizing(0.999, 0.02), false);
+        }
+        for _ in 0..(qubits - 1) {
+            cn.add_gate(&GateNoise::with_depolarizing(0.99, 0.3), true);
+        }
     }
     assert_eq!(cn.gate_count, layers * (qubits + qubits - 1));
     assert!(cn.total_fidelity > 0.92);
@@ -225,8 +269,12 @@ fn test_fidelity_scaling() {
     let mut prev_fid = 1.0;
     for (n, cx) in &sizes {
         let mut cn = CircuitNoise::new();
-        for _ in 0..*n { cn.add_gate(&GateNoise::with_depolarizing(0.999, 0.02), false); }
-        for _ in 0..*cx { cn.add_gate(&GateNoise::with_depolarizing(0.99, 0.3), true); }
+        for _ in 0..*n {
+            cn.add_gate(&GateNoise::with_depolarizing(0.999, 0.02), false);
+        }
+        for _ in 0..*cx {
+            cn.add_gate(&GateNoise::with_depolarizing(0.99, 0.3), true);
+        }
         assert!(cn.total_fidelity <= prev_fid);
         prev_fid = cn.total_fidelity;
     }

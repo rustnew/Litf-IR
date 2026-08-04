@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 /// A complex number represented as (real, imaginary).
 pub type Complex = (f64, f64);
@@ -13,7 +13,11 @@ pub struct ComplexMatrix {
 
 impl ComplexMatrix {
     pub fn new(rows: usize, cols: usize) -> Self {
-        Self { rows, cols, data: vec![(0.0, 0.0); rows * cols] }
+        Self {
+            rows,
+            cols,
+            data: vec![(0.0, 0.0); rows * cols],
+        }
     }
 
     pub fn identity(n: usize) -> Self {
@@ -48,7 +52,9 @@ impl ComplexMatrix {
 
     /// Matrix multiply: self * other.
     pub fn mul(&self, other: &Self) -> Option<Self> {
-        if self.cols != other.rows { return None; }
+        if self.cols != other.rows {
+            return None;
+        }
         let mut result = Self::new(self.rows, other.cols);
         for i in 0..self.rows {
             for j in 0..other.cols {
@@ -67,7 +73,9 @@ impl ComplexMatrix {
 
     /// Trace of a square matrix.
     pub fn trace(&self) -> Option<Complex> {
-        if self.rows != self.cols { return None; }
+        if self.rows != self.cols {
+            return None;
+        }
         let mut sum = (0.0, 0.0);
         for i in 0..self.rows {
             let (re, im) = self.get(i, i);
@@ -90,17 +98,24 @@ impl KrausChannel {
     /// Create a new Kraus channel from a set of operators.
     /// Returns None if the operators are empty or have inconsistent dimensions.
     pub fn new(operators: Vec<ComplexMatrix>) -> Option<Self> {
-        if operators.is_empty() { return None; }
+        if operators.is_empty() {
+            return None;
+        }
         let dim = operators[0].rows;
         if operators.iter().any(|op| op.rows != dim || op.cols != dim) {
             return None;
         }
-        Some(Self { operators, dimension: dim })
+        Some(Self {
+            operators,
+            dimension: dim,
+        })
     }
 
     /// Compose two channels: apply `self` first, then `other`.
     pub fn compose(&self, other: &KrausChannel) -> Option<KrausChannel> {
-        if self.dimension != other.dimension { return None; }
+        if self.dimension != other.dimension {
+            return None;
+        }
         let mut new_ops = Vec::with_capacity(self.operators.len() * other.operators.len());
         for ki in &other.operators {
             for kj in &self.operators {
@@ -132,7 +147,7 @@ impl KrausChannel {
     /// Depolarising channel: ρ → (1-p)*ρ + (p/d)*I
     pub fn depolarizing(p: f64, n_qubits: u32) -> Self {
         let d = 1usize << n_qubits;
-        let sqrt_main = ((1.0 - p) as f64).sqrt();
+        let sqrt_main = (1.0 - p).sqrt();
         let mut main = ComplexMatrix::identity(d);
         for i in 0..d {
             main.set(i, i, (sqrt_main, 0.0));
@@ -158,7 +173,10 @@ impl KrausChannel {
             sz.set(1, 1, (-sqrt_dep, 0.0));
             ops.push(sz);
         }
-        Self { operators: ops, dimension: d }
+        Self {
+            operators: ops,
+            dimension: d,
+        }
     }
 
     /// Amplitude damping channel (T1 process): γ = 1 - e^(-t/T1)
@@ -170,7 +188,10 @@ impl KrausChannel {
         let mut k1 = ComplexMatrix::new(2, 2);
         k1.set(0, 1, (gamma.sqrt(), 0.0));
 
-        Self { operators: vec![k0, k1], dimension: 2 }
+        Self {
+            operators: vec![k0, k1],
+            dimension: 2,
+        }
     }
 
     /// Phase damping channel (T2 dephasing): λ = 1 - e^(-t/T_φ)
@@ -182,14 +203,19 @@ impl KrausChannel {
         let mut k1 = ComplexMatrix::new(2, 2);
         k1.set(1, 1, (lambda.sqrt(), 0.0));
 
-        Self { operators: vec![k0, k1], dimension: 2 }
+        Self {
+            operators: vec![k0, k1],
+            dimension: 2,
+        }
     }
 
     /// Pauli channel: ρ → (1-px-py-pz)*ρ + px*X*ρ*X + py*Y*ρ*Y + pz*Z*ρ*Z
     pub fn pauli(px: f64, py: f64, pz: f64) -> Self {
         let p_id = 1.0 - px - py - pz;
         let mut k_id = ComplexMatrix::identity(2);
-        for i in 0..2 { k_id.set(i, i, (p_id.sqrt(), 0.0)); }
+        for i in 0..2 {
+            k_id.set(i, i, (p_id.sqrt(), 0.0));
+        }
 
         let sqpx = px.sqrt();
         let mut kx = ComplexMatrix::new(2, 2);
@@ -206,7 +232,10 @@ impl KrausChannel {
         kz.set(0, 0, (sqpz, 0.0));
         kz.set(1, 1, (-sqpz, 0.0));
 
-        Self { operators: vec![k_id, kx, ky, kz], dimension: 2 }
+        Self {
+            operators: vec![k_id, kx, ky, kz],
+            dimension: 2,
+        }
     }
 }
 

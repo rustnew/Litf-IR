@@ -32,16 +32,22 @@ graph {
   node {
     input: "block_0_r0"
     input: "block_input3"
+    input: "block_input4"
     output: "block_1_r0"
     name: "block_1"
     op_type: "BatchNormalization"
   }
 
+  # WARNING: unmapped op tensor.fused_conv_batchnorm_relu — emitted as custom
   node {
-    input: "block_1_r0"
+    input: "block_input0"
+    input: "block_input1"
+    input: "block_input3"
+    input: "block_input4"
     output: "block_2_r0"
     name: "block_2"
-    op_type: "Relu"
+    op_type: "tensor.fused_conv_batchnorm_relu"
+    domain: "ai.lift"
   }
 
   node {
@@ -54,7 +60,8 @@ graph {
 
   node {
     input: "block_3_r0"
-    input: "block_input4"
+    input: "block_input5"
+    input: "block_input6"
     output: "block_4_r0"
     name: "block_4"
     op_type: "BatchNormalization"
@@ -132,6 +139,28 @@ graph {
   }
   input {
     name: "block_input4"
+    type {
+      tensor_type {
+        elem_type: 1
+        shape {
+          dim { dim_value: 64 }
+        }
+      }
+    }
+  }
+  input {
+    name: "block_input5"
+    type {
+      tensor_type {
+        elem_type: 1
+        shape {
+          dim { dim_value: 64 }
+        }
+      }
+    }
+  }
+  input {
+    name: "block_input6"
     type {
       tensor_type {
         elem_type: 1

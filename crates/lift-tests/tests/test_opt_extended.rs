@@ -1,11 +1,10 @@
-use lift_opt::{
-    RotationMerge, FlashAttentionPass, CommonSubexprElimination,
-    QuantisationPass, NoiseAwareSchedule, LayoutMapping,
-};
-use lift_opt::quantisation_pass::{QuantTarget, QuantMode};
-use lift_core::pass::{Pass, PassResult, AnalysisCache};
 use lift_core::context::Context;
-use lift_core::attributes::Attribute;
+use lift_core::pass::{AnalysisCache, Pass, PassResult};
+use lift_opt::quantisation_pass::{QuantMode, QuantTarget};
+use lift_opt::{
+    CommonSubexprElimination, FlashAttentionPass, LayoutMapping, NoiseAwareSchedule,
+    QuantisationPass, RotationMerge,
+};
 
 // ═══════════════════════════════════════════════════════════
 // RotationMerge pass tests
@@ -52,7 +51,9 @@ fn test_flash_attention_default_threshold() {
 
 #[test]
 fn test_flash_attention_custom_threshold() {
-    let pass = FlashAttentionPass { seq_len_threshold: 1024 };
+    let pass = FlashAttentionPass {
+        seq_len_threshold: 1024,
+    };
     assert_eq!(pass.seq_len_threshold, 1024);
 }
 

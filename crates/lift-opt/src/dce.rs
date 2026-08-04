@@ -1,12 +1,14 @@
 use lift_core::context::Context;
-use lift_core::pass::{Pass, PassResult, AnalysisCache};
+use lift_core::pass::{AnalysisCache, Pass, PassResult};
 use std::collections::HashSet;
 
 #[derive(Debug)]
 pub struct DeadCodeElimination;
 
 impl Pass for DeadCodeElimination {
-    fn name(&self) -> &str { "dce" }
+    fn name(&self) -> &str {
+        "dce"
+    }
 
     fn run(&self, ctx: &mut Context, _cache: &mut AnalysisCache) -> PassResult {
         let mut used_values: HashSet<lift_core::values::ValueKey> = HashSet::new();
@@ -80,17 +82,23 @@ mod tests {
 
         // This op's result is never used -> dead
         let (dead_op, _dead_results) = ctx.create_op(
-            "tensor.relu", "tensor",
-            vec![arg], vec![f32_ty],
-            Attributes::new(), Location::unknown(),
+            "tensor.relu",
+            "tensor",
+            vec![arg],
+            vec![f32_ty],
+            Attributes::new(),
+            Location::unknown(),
         );
         ctx.add_op_to_block(block, dead_op);
 
         // Return the original arg
         let (ret_op, _) = ctx.create_op(
-            "core.return", "core",
-            vec![arg], vec![],
-            Attributes::new(), Location::unknown(),
+            "core.return",
+            "core",
+            vec![arg],
+            vec![],
+            Attributes::new(),
+            Location::unknown(),
         );
         ctx.add_op_to_block(block, ret_op);
 

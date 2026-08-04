@@ -1,16 +1,22 @@
+use lift_ast::*;
 /// Integration tests: full pipeline parse → verify → analyse → optimise → predict → export
 use lift_core::context::Context;
-use lift_ast::*;
 
 fn parse_and_build(src: &str) -> Context {
     let mut lexer = Lexer::new(src);
     let tokens = lexer.tokenize().to_vec();
-    assert!(lexer.errors().is_empty(), "lexer errors: {:?}", lexer.errors());
+    assert!(
+        lexer.errors().is_empty(),
+        "lexer errors: {:?}",
+        lexer.errors()
+    );
     let mut parser = Parser::new(tokens);
     let program = parser.parse().expect("parse failed");
     let mut ctx = Context::new();
     let mut builder = IrBuilder::new();
-    builder.build_program(&mut ctx, &program).expect("build failed");
+    builder
+        .build_program(&mut ctx, &program)
+        .expect("build failed");
     ctx
 }
 
@@ -44,7 +50,11 @@ module @mlp {
     assert_eq!(report.num_ops, 7);
     assert_eq!(report.num_tensor_ops, 6);
     assert_eq!(report.num_quantum_ops, 0);
-    assert!(report.total_flops > 0, "MLP must have nonzero FLOPs: {}", report.total_flops);
+    assert!(
+        report.total_flops > 0,
+        "MLP must have nonzero FLOPs: {}",
+        report.total_flops
+    );
     assert!(report.total_memory_bytes > 0);
     // matmul1: 2*1*784*256 = 401408, matmul2: 2*1*256*10 = 5120
     assert!(report.total_flops >= 401408 + 5120);
@@ -140,8 +150,11 @@ module @ghz {
     assert_eq!(qa.one_qubit_gates, 1);
     assert_eq!(qa.two_qubit_gates, 3);
     assert_eq!(qa.num_qubits_used, 4);
-    assert!(qa.estimated_fidelity > 0.96 && qa.estimated_fidelity < 0.98,
-        "4-qubit GHZ fidelity: {}", qa.estimated_fidelity);
+    assert!(
+        qa.estimated_fidelity > 0.96 && qa.estimated_fidelity < 0.98,
+        "4-qubit GHZ fidelity: {}",
+        qa.estimated_fidelity
+    );
 }
 
 // ═══════════════════════════════════════════════════
@@ -221,7 +234,11 @@ fn test_cost_model_a100_vs_h100() {
     assert!(h100_time < a100_time);
 
     let speedup = a100.compute_time_ms(flops) / h100.compute_time_ms(flops);
-    assert!(speedup > 2.5 && speedup < 4.0, "H100 speedup: {:.2}x", speedup);
+    assert!(
+        speedup > 2.5 && speedup < 4.0,
+        "H100 speedup: {:.2}x",
+        speedup
+    );
 }
 
 #[test]

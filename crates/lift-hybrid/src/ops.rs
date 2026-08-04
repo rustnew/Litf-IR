@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 /// Ansatz type for variational quantum circuits.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -122,17 +122,22 @@ impl HybridOp {
     /// Returns `true` if this is a gradient computation operation.
     #[inline]
     pub fn is_gradient(&self) -> bool {
-        matches!(self,
-            Self::ParameterShift | Self::FiniteDifference | Self::SPSA |
-            Self::AdjointDifferentiation | Self::StochasticParameterShift |
-            Self::JointGradient
+        matches!(
+            self,
+            Self::ParameterShift
+                | Self::FiniteDifference
+                | Self::SPSA
+                | Self::AdjointDifferentiation
+                | Self::StochasticParameterShift
+                | Self::JointGradient
         )
     }
 
     /// Returns `true` if this is a variational algorithm operation.
     #[inline]
     pub fn is_variational(&self) -> bool {
-        matches!(self,
+        matches!(
+            self,
             Self::VqcLayer | Self::VqeAnsatz | Self::QaoaLayer | Self::QuantumKernel
         )
     }

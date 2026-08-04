@@ -1,9 +1,10 @@
+use crate::blocks::BlockKey;
+use crate::context::Context;
+use crate::dialect::DialectRegistry;
+use crate::operations::OpKey;
+use crate::values::ValueKey;
 use std::collections::HashSet;
 use thiserror::Error;
-use crate::context::Context;
-use crate::values::ValueKey;
-use crate::operations::OpKey;
-use crate::blocks::BlockKey;
 
 #[derive(Debug, Error)]
 pub enum VerifyError {
@@ -46,6 +47,9 @@ pub enum VerifyError {
 
     #[error("Invalid operation: {0}")]
     InvalidOperation(String),
+
+    #[error("Semantic error in operation {op:?}: {message}")]
+    SemanticError { op: OpKey, message: String },
 }
 
 pub struct Verifier<'a> {
@@ -77,6 +81,48 @@ impl<'a> Verifier<'a> {
         }
     }
 
+    /// Runs SSA, well-formedness, linearity, and semantic (dialect) checks.
+    pub fn verify_all_with_dialects(
+        &mut self,
+        registry: &DialectRegistry,
+    ) -> Result<(), Vec<VerifyError>> {
+        self.verify_ssa();
+        self.verify_well_formedness();
+        self.verify_linearity();
+        self.verify_semantics(registry);
+
+        if self.errors.is_empty() {
+            Ok(())
+        } else {
+            Err(std::mem::take(&mut self.errors))
+        }
+    }
+
+    /// Validates each operation against its dialect's signature: the number of
+    /// inputs/results and, where the dialect provides it, type compatibility.
+    fn verify_semantics(&mut self, registry: &DialectRegistry) {
+        for (op_key, op) in &self.ctx.ops {
+            let dialect_name = self.ctx.strings.resolve(op.dialect);
+            let op_name = self.ctx.strings.resolve(op.name);
+
+            let dialect = match registry.get(dialect_name) {
+                Some(d) => d,
+                None => {
+                    // Unknown dialect: skip semantic checks (core ops are
+                    // validated by the core dialect when registered).
+                    continue;
+                }
+            };
+
+            if let Err(msg) = dialect.verify_op(op_name, op.inputs.len(), op.results.len()) {
+                self.errors.push(VerifyError::SemanticError {
+                    op: op_key,
+                    message: msg,
+                });
+            }
+        }
+    }
+
     fn verify_ssa(&mut self) {
         let mut all_defined: HashSet<ValueKey> = HashSet::new();
 
@@ -94,7 +140,8 @@ impl<'a> Verifier<'a> {
         for (_op_key, op) in &self.ctx.ops {
             for &result_key in &op.results {
                 if !all_defined.insert(result_key) {
-                    self.errors.push(VerifyError::MultipleDefinition(result_key));
+                    self.errors
+                        .push(VerifyError::MultipleDefinition(result_key));
                 }
             }
         }
@@ -116,23 +163,26 @@ impl<'a> Verifier<'a> {
         for (op_key, op) in &self.ctx.ops {
             for &input in &op.inputs {
                 if !self.ctx.values.contains_key(input) {
-                    self.errors.push(VerifyError::DanglingReference(
-                        format!("Operation {:?} references non-existent value {:?}", op_key, input),
-                    ));
+                    self.errors.push(VerifyError::DanglingReference(format!(
+                        "Operation {:?} references non-existent value {:?}",
+                        op_key, input
+                    )));
                 }
             }
             for &result in &op.results {
                 if !self.ctx.values.contains_key(result) {
-                    self.errors.push(VerifyError::DanglingReference(
-                        format!("Operation {:?} references non-existent result {:?}", op_key, result),
-                    ));
+                    self.errors.push(VerifyError::DanglingReference(format!(
+                        "Operation {:?} references non-existent result {:?}",
+                        op_key, result
+                    )));
                 }
             }
             for &region in &op.regions {
                 if !self.ctx.regions.contains_key(region) {
-                    self.errors.push(VerifyError::DanglingReference(
-                        format!("Operation {:?} references non-existent region {:?}", op_key, region),
-                    ));
+                    self.errors.push(VerifyError::DanglingReference(format!(
+                        "Operation {:?} references non-existent region {:?}",
+                        op_key, region
+                    )));
                 }
             }
         }
@@ -141,9 +191,10 @@ impl<'a> Verifier<'a> {
         for (block_key, block) in &self.ctx.blocks {
             for &op in &block.ops {
                 if !self.ctx.ops.contains_key(op) {
-                    self.errors.push(VerifyError::DanglingReference(
-                        format!("Block {:?} references non-existent operation {:?}", block_key, op),
-                    ));
+                    self.errors.push(VerifyError::DanglingReference(format!(
+                        "Block {:?} references non-existent operation {:?}",
+                        block_key, op
+                    )));
                 }
             }
         }
@@ -152,9 +203,10 @@ impl<'a> Verifier<'a> {
         for (region_key, region) in &self.ctx.regions {
             for &block in &region.blocks {
                 if !self.ctx.blocks.contains_key(block) {
-                    self.errors.push(VerifyError::DanglingReference(
-                        format!("Region {:?} references non-existent block {:?}", region_key, block),
-                    ));
+                    self.errors.push(VerifyError::DanglingReference(format!(
+                        "Region {:?} references non-existent block {:?}",
+                        region_key, block
+                    )));
                 }
             }
         }
@@ -177,10 +229,8 @@ impl<'a> Verifier<'a> {
 
             for &input in &op.inputs {
                 if let Some(val) = self.ctx.values.get(input) {
-                    if self.ctx.is_qubit_type(val.ty) {
-                        if !consumed.insert(input) {
-                            self.errors.push(VerifyError::LinearityViolation(input));
-                        }
+                    if self.ctx.is_qubit_type(val.ty) && !consumed.insert(input) {
+                        self.errors.push(VerifyError::LinearityViolation(input));
                     }
                 }
             }
@@ -203,6 +253,15 @@ impl<'a> Verifier<'a> {
 pub fn verify(ctx: &Context) -> Result<(), Vec<VerifyError>> {
     let mut verifier = Verifier::new(ctx);
     verifier.verify_all()
+}
+
+/// Verifies a context including dialect-level semantic checks.
+pub fn verify_with_dialects(
+    ctx: &Context,
+    registry: &DialectRegistry,
+) -> Result<(), Vec<VerifyError>> {
+    let mut verifier = Verifier::new(ctx);
+    verifier.verify_all_with_dialects(registry)
 }
 
 #[cfg(test)]
@@ -269,6 +328,60 @@ mod tests {
         let result = verify(&ctx);
         assert!(result.is_err());
         let errors = result.unwrap_err();
-        assert!(errors.iter().any(|e| matches!(e, VerifyError::LinearityViolation(_))));
+        assert!(errors
+            .iter()
+            .any(|e| matches!(e, VerifyError::LinearityViolation(_))));
+    }
+
+    #[test]
+    fn test_semantic_verification_detects_wrong_input_count() {
+        use crate::dialect::Dialect;
+
+        #[derive(Debug)]
+        struct FakeTensorDialect;
+        impl Dialect for FakeTensorDialect {
+            fn name(&self) -> &str {
+                "tensor"
+            }
+            fn verify_op(
+                &self,
+                op_name: &str,
+                num_inputs: usize,
+                _num_results: usize,
+            ) -> Result<(), String> {
+                if op_name == "tensor.matmul" && num_inputs != 2 {
+                    return Err(format!("matmul expects 2 inputs, got {}", num_inputs));
+                }
+                Ok(())
+            }
+        }
+
+        let mut registry = DialectRegistry::new();
+        registry.register(Box::new(FakeTensorDialect));
+
+        let mut ctx = Context::new();
+        let f32_ty = ctx.make_float_type(32);
+        let block = ctx.create_block();
+        let a = ctx.create_block_arg(block, f32_ty);
+        let b = ctx.create_block_arg(block, f32_ty);
+        let c = ctx.create_block_arg(block, f32_ty);
+
+        // matmul with 3 inputs -> should fail semantic check
+        let (op, _) = ctx.create_op(
+            "tensor.matmul",
+            "tensor",
+            vec![a, b, c],
+            vec![f32_ty],
+            crate::attributes::Attributes::new(),
+            crate::location::Location::unknown(),
+        );
+        ctx.add_op_to_block(block, op);
+
+        let result = verify_with_dialects(&ctx, &registry);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors
+            .iter()
+            .any(|e| matches!(e, VerifyError::SemanticError { .. })));
     }
 }

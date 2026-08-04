@@ -1,17 +1,29 @@
-use serde::{Serialize, Deserialize};
 use crate::interning::{StringId, TypeInternId};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TypeId(pub TypeInternId);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum CoreType {
-    Integer { bits: u32, signed: bool },
-    Float { bits: u32 },
+    Integer {
+        bits: u32,
+        signed: bool,
+    },
+    Float {
+        bits: u32,
+    },
     Boolean,
     Tuple(Vec<TypeId>),
-    Function { params: Vec<TypeId>, returns: Vec<TypeId> },
-    Opaque { dialect: StringId, name: StringId, data: TypeData },
+    Function {
+        params: Vec<TypeId>,
+        returns: Vec<TypeId>,
+    },
+    Opaque {
+        dialect: StringId,
+        name: StringId,
+        data: TypeData,
+    },
     Void,
     Index,
 }
@@ -112,17 +124,32 @@ impl DataType {
     }
 
     pub fn byte_size(&self) -> usize {
-        (self.bit_width() as usize + 7) / 8
+        (self.bit_width() as usize).div_ceil(8)
     }
 
     pub fn is_float(&self) -> bool {
-        matches!(self, DataType::FP64 | DataType::FP32 | DataType::FP16 |
-                 DataType::BF16 | DataType::FP8E4M3 | DataType::FP8E5M2)
+        matches!(
+            self,
+            DataType::FP64
+                | DataType::FP32
+                | DataType::FP16
+                | DataType::BF16
+                | DataType::FP8E4M3
+                | DataType::FP8E5M2
+        )
     }
 
     pub fn is_integer(&self) -> bool {
-        matches!(self, DataType::INT64 | DataType::INT32 | DataType::INT16 |
-                 DataType::INT8 | DataType::INT4 | DataType::INT2 | DataType::UINT8)
+        matches!(
+            self,
+            DataType::INT64
+                | DataType::INT32
+                | DataType::INT16
+                | DataType::INT8
+                | DataType::INT4
+                | DataType::INT2
+                | DataType::UINT8
+        )
     }
 }
 
@@ -156,7 +183,9 @@ impl std::fmt::Display for CoreType {
             CoreType::Tuple(elems) => {
                 write!(f, "tuple<")?;
                 for (i, _) in elems.iter().enumerate() {
-                    if i > 0 { write!(f, ", ")?; }
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
                     write!(f, "type_{}", i)?;
                 }
                 write!(f, ">")
@@ -164,41 +193,45 @@ impl std::fmt::Display for CoreType {
             CoreType::Function { params, returns } => {
                 write!(f, "(")?;
                 for (i, _) in params.iter().enumerate() {
-                    if i > 0 { write!(f, ", ")?; }
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
                     write!(f, "type")?;
                 }
                 write!(f, ") -> (")?;
                 for (i, _) in returns.iter().enumerate() {
-                    if i > 0 { write!(f, ", ")?; }
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
                     write!(f, "type")?;
                 }
                 write!(f, ")")
             }
-            CoreType::Opaque { data, .. } => {
-                match data {
-                    TypeData::Tensor(info) => {
-                        write!(f, "tensor<")?;
-                        for (i, dim) in info.shape.iter().enumerate() {
-                            if i > 0 { write!(f, "x")?; }
-                            match dim {
-                                Dimension::Constant(n) => write!(f, "{}", n)?,
-                                Dimension::Symbolic(s) => write!(f, "{}", s)?,
-                                Dimension::Product(_) => write!(f, "?")?,
-                            }
+            CoreType::Opaque { data, .. } => match data {
+                TypeData::Tensor(info) => {
+                    write!(f, "tensor<")?;
+                    for (i, dim) in info.shape.iter().enumerate() {
+                        if i > 0 {
+                            write!(f, "x")?;
                         }
-                        write!(f, "x{}>", format_dtype(info.dtype))
+                        match dim {
+                            Dimension::Constant(n) => write!(f, "{}", n)?,
+                            Dimension::Symbolic(s) => write!(f, "{}", s)?,
+                            Dimension::Product(_) => write!(f, "?")?,
+                        }
                     }
-                    TypeData::Qubit(_) => write!(f, "qubit"),
-                    TypeData::ClassicalBit => write!(f, "bit"),
-                    TypeData::Hamiltonian { num_qubits } => {
-                        write!(f, "hamiltonian<{}>", num_qubits)
-                    }
-                    TypeData::QuantumState { dimension, repr } => {
-                        write!(f, "qstate<{}, {:?}>", dimension, repr)
-                    }
-                    TypeData::None => write!(f, "opaque"),
+                    write!(f, "x{}>", format_dtype(info.dtype))
                 }
-            }
+                TypeData::Qubit(_) => write!(f, "qubit"),
+                TypeData::ClassicalBit => write!(f, "bit"),
+                TypeData::Hamiltonian { num_qubits } => {
+                    write!(f, "hamiltonian<{}>", num_qubits)
+                }
+                TypeData::QuantumState { dimension, repr } => {
+                    write!(f, "qstate<{}, {:?}>", dimension, repr)
+                }
+                TypeData::None => write!(f, "opaque"),
+            },
         }
     }
 }

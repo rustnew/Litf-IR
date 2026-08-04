@@ -1,7 +1,7 @@
-use serde::{Serialize, Deserialize};
-use crate::interning::StringId;
 use crate::functions::FunctionData;
+use crate::interning::StringId;
 use crate::location::Location;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModuleData {

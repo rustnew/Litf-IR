@@ -46,23 +46,31 @@ declare ptr @lift_rt_generic_op(ptr, ptr, ptr, i64, i64)
 
 ; === Module: resnet_block ===
 
-define ptr @block(ptr %arg0, ptr %arg1, ptr %arg2, ptr %arg3, ptr %arg4) {
+define ptr @block(ptr %arg0, ptr %arg1, ptr %arg2, ptr %arg3, ptr %arg4, ptr %arg5, ptr %arg6) {
 entry:
   ; tensor.conv2d (2 inputs -> 1 outputs)
+  ;   input type: <200704 x float>
   %r0 = call ptr @lift_rt_conv2d(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
-  ; tensor.batchnorm (2 inputs -> 1 outputs)
-  %r1 = call ptr @lift_rt_batchnorm(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
-  ; tensor.relu (1 inputs -> 1 outputs)
-  %r2 = call ptr @lift_rt_relu(ptr %arg0, ptr null, ptr null, i64 1, i64 1)
+  ; tensor.batchnorm (3 inputs -> 1 outputs)
+  ;   input type: <200704 x float>
+  %r1 = call ptr @lift_rt_batchnorm(ptr %arg0, ptr %arg1, ptr null, i64 3, i64 1)
+  ; tensor.fused_conv_batchnorm_relu (4 inputs -> 1 outputs)
+  ;   input type: <200704 x float>
+  %r2 = call ptr @lift_rt_generic_op(ptr %arg0, ptr %arg1, ptr null, i64 4, i64 1)
   ; tensor.conv2d (2 inputs -> 1 outputs)
+  ;   input type: <200704 x float>
   %r3 = call ptr @lift_rt_conv2d(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
-  ; tensor.batchnorm (2 inputs -> 1 outputs)
-  %r4 = call ptr @lift_rt_batchnorm(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
+  ; tensor.batchnorm (3 inputs -> 1 outputs)
+  ;   input type: <200704 x float>
+  %r4 = call ptr @lift_rt_batchnorm(ptr %arg0, ptr %arg1, ptr null, i64 3, i64 1)
   ; tensor.add (2 inputs -> 1 outputs)
+  ;   input type: <200704 x float>
   %r5 = call ptr @lift_rt_add(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
   ; tensor.relu (1 inputs -> 1 outputs)
+  ;   input type: <200704 x float>
   %r6 = call ptr @lift_rt_relu(ptr %arg0, ptr null, ptr null, i64 1, i64 1)
   ; core.return (1 inputs -> 0 outputs)
+  ;   input type: <200704 x float>
   %r7 = call ptr @lift_rt_generic_op(ptr %arg0, ptr null, ptr null, i64 1, i64 0)
   ret ptr %r7
 }

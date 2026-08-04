@@ -49,14 +49,19 @@ declare ptr @lift_rt_generic_op(ptr, ptr, ptr, i64, i64)
 define ptr @ansatz(ptr %arg0, ptr %arg1) {
 entry:
   ; quantum.ry (1 inputs -> 1 outputs)
+  ;   input type: ptr
   %r0 = call ptr @lift_rt_generic_op(ptr %arg0, ptr null, ptr null, i64 1, i64 1)
   ; quantum.ry (1 inputs -> 1 outputs)
+  ;   input type: ptr
   %r1 = call ptr @lift_rt_generic_op(ptr %arg0, ptr null, ptr null, i64 1, i64 1)
   ; quantum.cx (2 inputs -> 1 outputs)
+  ;   input type: ptr
   %r2 = call ptr @lift_rt_generic_op(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
   ; quantum.rz (1 inputs -> 1 outputs)
+  ;   input type: ptr
   %r3 = call ptr @lift_rt_generic_op(ptr %arg0, ptr null, ptr null, i64 1, i64 1)
   ; core.return (1 inputs -> 0 outputs)
+  ;   input type: ptr
   %r4 = call ptr @lift_rt_generic_op(ptr %arg0, ptr null, ptr null, i64 1, i64 0)
   ret ptr %r4
 }

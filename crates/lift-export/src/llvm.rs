@@ -1,7 +1,7 @@
 use lift_core::context::Context;
 use lift_core::types::{CoreType, TypeData};
-use thiserror::Error;
 use std::fmt::Write;
+use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum LlvmExportError {
@@ -15,12 +15,17 @@ pub enum LlvmExportError {
 pub struct LlvmExporter;
 
 impl LlvmExporter {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 
     fn llvm_type_for_value(&self, ctx: &Context, val_key: lift_core::values::ValueKey) -> String {
         if let Some(val) = ctx.get_value(val_key) {
             match ctx.resolve_type(val.ty) {
-                CoreType::Opaque { data: TypeData::Tensor(info), .. } => {
+                CoreType::Opaque {
+                    data: TypeData::Tensor(info),
+                    ..
+                } => {
                     let mut elems = 1usize;
                     for dim in &info.shape {
                         if let Some(s) = dim.static_value() {
@@ -102,20 +107,46 @@ impl LlvmExporter {
         // Declare runtime functions
         let _ = writeln!(output, "; === Runtime function declarations ===");
         let rt_funcs = [
-            "lift_rt_matmul", "lift_rt_add", "lift_rt_sub", "lift_rt_mul", "lift_rt_div",
-            "lift_rt_relu", "lift_rt_gelu", "lift_rt_silu", "lift_rt_softmax",
-            "lift_rt_sigmoid", "lift_rt_tanh", "lift_rt_layernorm", "lift_rt_rmsnorm",
-            "lift_rt_batchnorm", "lift_rt_conv2d", "lift_rt_conv1d",
-            "lift_rt_maxpool2d", "lift_rt_avgpool2d", "lift_rt_global_avgpool",
-            "lift_rt_attention", "lift_rt_multi_head_attention",
-            "lift_rt_grouped_query_attention", "lift_rt_flash_attention",
-            "lift_rt_cross_attention", "lift_rt_sliding_window_attention",
-            "lift_rt_paged_attention", "lift_rt_embedding", "lift_rt_linear",
-            "lift_rt_reshape", "lift_rt_transpose", "lift_rt_concat",
-            "lift_rt_moe_dispatch", "lift_rt_moe_combine",
-            "lift_rt_fused_matmul_bias_relu", "lift_rt_fused_matmul_bias",
-            "lift_rt_fused_linear_gelu", "lift_rt_fused_linear_silu",
-            "lift_rt_quantize", "lift_rt_dequantize", "lift_rt_generic_op",
+            "lift_rt_matmul",
+            "lift_rt_add",
+            "lift_rt_sub",
+            "lift_rt_mul",
+            "lift_rt_div",
+            "lift_rt_relu",
+            "lift_rt_gelu",
+            "lift_rt_silu",
+            "lift_rt_softmax",
+            "lift_rt_sigmoid",
+            "lift_rt_tanh",
+            "lift_rt_layernorm",
+            "lift_rt_rmsnorm",
+            "lift_rt_batchnorm",
+            "lift_rt_conv2d",
+            "lift_rt_conv1d",
+            "lift_rt_maxpool2d",
+            "lift_rt_avgpool2d",
+            "lift_rt_global_avgpool",
+            "lift_rt_attention",
+            "lift_rt_multi_head_attention",
+            "lift_rt_grouped_query_attention",
+            "lift_rt_flash_attention",
+            "lift_rt_cross_attention",
+            "lift_rt_sliding_window_attention",
+            "lift_rt_paged_attention",
+            "lift_rt_embedding",
+            "lift_rt_linear",
+            "lift_rt_reshape",
+            "lift_rt_transpose",
+            "lift_rt_concat",
+            "lift_rt_moe_dispatch",
+            "lift_rt_moe_combine",
+            "lift_rt_fused_matmul_bias_relu",
+            "lift_rt_fused_matmul_bias",
+            "lift_rt_fused_linear_gelu",
+            "lift_rt_fused_linear_silu",
+            "lift_rt_quantize",
+            "lift_rt_dequantize",
+            "lift_rt_generic_op",
         ];
         for f in &rt_funcs {
             let _ = writeln!(output, "declare ptr @{}(ptr, ptr, ptr, i64, i64)", f);
@@ -132,7 +163,9 @@ impl LlvmExporter {
                 let _ = write!(output, "define ptr @{}(", fname);
 
                 for (i, _param) in func.params.iter().enumerate() {
-                    if i > 0 { let _ = write!(output, ", "); }
+                    if i > 0 {
+                        let _ = write!(output, ", ");
+                    }
                     let _ = write!(output, "ptr %arg{}", i);
                 }
 
@@ -165,9 +198,18 @@ impl LlvmExporter {
                                         let num_in = op.inputs.len() as i64;
                                         let num_out = op.results.len() as i64;
 
-                                        let _ = writeln!(output,
+                                        let _ = writeln!(
+                                            output,
                                             "  ; {} ({} inputs -> {} outputs)",
-                                            op_name, num_in, num_out);
+                                            op_name, num_in, num_out
+                                        );
+                                        // Annotate the LLVM type of the first
+                                        // input/result (informational; the
+                                        // runtime calls take pointers).
+                                        if let Some(&first_in) = op.inputs.first() {
+                                            let ty = self.llvm_type_for_value(ctx, first_in);
+                                            let _ = writeln!(output, "  ;   input type: {}", ty);
+                                        }
                                         let _ = writeln!(output,
                                             "  %r{} = call ptr @{}(ptr {}, ptr {}, ptr null, i64 {}, i64 {})",
                                             result_counter, rt_func, in0, in1, num_in, num_out);
@@ -194,5 +236,7 @@ impl LlvmExporter {
 }
 
 impl Default for LlvmExporter {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

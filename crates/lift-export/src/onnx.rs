@@ -13,9 +13,9 @@
 // ============================================================================
 
 use lift_core::context::Context;
-use lift_core::types::{CoreType, TypeData, DataType, Dimension};
-use thiserror::Error;
+use lift_core::types::{CoreType, DataType, Dimension, TypeData};
 use std::fmt::Write;
+use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum OnnxExportError {
@@ -270,7 +270,11 @@ impl OnnxExporter {
                                                 let out_name = format!("{}_output{}", fname, ri);
                                                 if let Some(src_name) = val_names.get(&inp) {
                                                     // Alias
-                                                    let _ = writeln!(out, "  # output {} -> {}", out_name, src_name);
+                                                    let _ = writeln!(
+                                                        out,
+                                                        "  # output {} -> {}",
+                                                        out_name, src_name
+                                                    );
                                                 }
                                             }
                                             continue;
@@ -289,16 +293,21 @@ impl OnnxExporter {
                                         let node_name = format!("{}_{}", fname, node_counter);
 
                                         // Input names
-                                        let input_names: Vec<String> = op.inputs.iter()
+                                        let input_names: Vec<String> = op
+                                            .inputs
+                                            .iter()
                                             .map(|&v| {
-                                                val_names.get(&v)
+                                                val_names
+                                                    .get(&v)
                                                     .cloned()
                                                     .unwrap_or_else(|| format!("v_{:?}", v))
                                             })
                                             .collect();
 
                                         // Result names
-                                        let result_names: Vec<String> = op.results.iter()
+                                        let result_names: Vec<String> = op
+                                            .results
+                                            .iter()
                                             .enumerate()
                                             .map(|(i, &v)| {
                                                 let name = format!("{}_r{}", node_name, i);
@@ -307,7 +316,7 @@ impl OnnxExporter {
                                                 // Collect intermediate value type info
                                                 if let Some(val) = ctx.get_value(v) {
                                                     value_info_entries.push(
-                                                        self.format_value_info(&name, ctx, val.ty)
+                                                        self.format_value_info(&name, ctx, val.ty),
                                                     );
                                                 }
 
@@ -378,8 +387,15 @@ impl OnnxExporter {
         let _ = writeln!(out, "  \"producerName\": \"{}\",", self.producer);
         let _ = writeln!(out, "  \"producerVersion\": \"0.3.0\",");
         let _ = writeln!(out, "  \"opsetImport\": [");
-        let _ = writeln!(out, "    {{ \"domain\": \"\", \"version\": {} }},", self.opset_version);
-        let _ = writeln!(out, "    {{ \"domain\": \"com.microsoft\", \"version\": 1 }}");
+        let _ = writeln!(
+            out,
+            "    {{ \"domain\": \"\", \"version\": {} }},",
+            self.opset_version
+        );
+        let _ = writeln!(
+            out,
+            "    {{ \"domain\": \"com.microsoft\", \"version\": 1 }}"
+        );
         let _ = writeln!(out, "  ],");
 
         for module in &ctx.modules {
@@ -408,18 +424,29 @@ impl OnnxExporter {
                                 for &op_key in &block.ops {
                                     if let Some(op) = ctx.get_op(op_key) {
                                         let op_name = ctx.strings.resolve(op.name).to_string();
-                                        if op_name == "core.return" { continue; }
+                                        if op_name == "core.return" {
+                                            continue;
+                                        }
 
                                         let (onnx_op, domain) = lift_op_to_onnx(&op_name)
                                             .unwrap_or((&op_name, "ai.lift"));
 
                                         let node_name = format!("{}_{}", fname, node_counter);
 
-                                        let input_names: Vec<String> = op.inputs.iter()
-                                            .map(|&v| val_names.get(&v).cloned().unwrap_or_else(|| format!("v_{:?}", v)))
+                                        let input_names: Vec<String> = op
+                                            .inputs
+                                            .iter()
+                                            .map(|&v| {
+                                                val_names
+                                                    .get(&v)
+                                                    .cloned()
+                                                    .unwrap_or_else(|| format!("v_{:?}", v))
+                                            })
                                             .collect();
 
-                                        let result_names: Vec<String> = op.results.iter()
+                                        let result_names: Vec<String> = op
+                                            .results
+                                            .iter()
                                             .enumerate()
                                             .map(|(i, &v)| {
                                                 let name = format!("{}_r{}", node_name, i);
@@ -433,12 +460,27 @@ impl OnnxExporter {
                                         let _ = write!(node_json, " \"name\": \"{}\",", node_name);
                                         let _ = write!(node_json, " \"opType\": \"{}\",", onnx_op);
                                         if !domain.is_empty() {
-                                            let _ = write!(node_json, " \"domain\": \"{}\",", domain);
+                                            let _ =
+                                                write!(node_json, " \"domain\": \"{}\",", domain);
                                         }
-                                        let inputs_json: Vec<String> = input_names.iter().map(|n| format!("\"{}\"", n)).collect();
-                                        let outputs_json: Vec<String> = result_names.iter().map(|n| format!("\"{}\"", n)).collect();
-                                        let _ = write!(node_json, " \"input\": [{}],", inputs_json.join(", "));
-                                        let _ = write!(node_json, " \"output\": [{}]", outputs_json.join(", "));
+                                        let inputs_json: Vec<String> = input_names
+                                            .iter()
+                                            .map(|n| format!("\"{}\"", n))
+                                            .collect();
+                                        let outputs_json: Vec<String> = result_names
+                                            .iter()
+                                            .map(|n| format!("\"{}\"", n))
+                                            .collect();
+                                        let _ = write!(
+                                            node_json,
+                                            " \"input\": [{}],",
+                                            inputs_json.join(", ")
+                                        );
+                                        let _ = write!(
+                                            node_json,
+                                            " \"output\": [{}]",
+                                            outputs_json.join(", ")
+                                        );
                                         let _ = write!(node_json, " }}");
                                         nodes.push(node_json);
 
@@ -487,7 +529,12 @@ impl OnnxExporter {
         Ok(out)
     }
 
-    fn format_value_info(&self, name: &str, ctx: &Context, type_key: lift_core::types::TypeId) -> String {
+    fn format_value_info(
+        &self,
+        name: &str,
+        ctx: &Context,
+        type_key: lift_core::types::TypeId,
+    ) -> String {
         let mut info = String::new();
         let _ = writeln!(info, "  input {{");
         let _ = writeln!(info, "    name: \"{}\"", name);
@@ -495,7 +542,10 @@ impl OnnxExporter {
         let _ = writeln!(info, "      tensor_type {{");
 
         match ctx.resolve_type(type_key) {
-            CoreType::Opaque { data: TypeData::Tensor(tensor_info), .. } => {
+            CoreType::Opaque {
+                data: TypeData::Tensor(tensor_info),
+                ..
+            } => {
                 let onnx_dt = lift_dtype_to_onnx(&tensor_info.dtype);
                 let _ = writeln!(info, "        elem_type: {}", onnx_dt as i32);
                 let _ = writeln!(info, "        shape {{");
@@ -522,23 +572,41 @@ impl OnnxExporter {
         info
     }
 
-    fn format_json_value_info(&self, name: &str, ctx: &Context, type_key: lift_core::types::TypeId) -> String {
+    fn format_json_value_info(
+        &self,
+        name: &str,
+        ctx: &Context,
+        type_key: lift_core::types::TypeId,
+    ) -> String {
         let mut info = String::new();
         let _ = write!(info, "      {{ \"name\": \"{}\"", name);
 
         match ctx.resolve_type(type_key) {
-            CoreType::Opaque { data: TypeData::Tensor(tensor_info), .. } => {
+            CoreType::Opaque {
+                data: TypeData::Tensor(tensor_info),
+                ..
+            } => {
                 let onnx_dt = lift_dtype_to_onnx(&tensor_info.dtype);
-                let dims: Vec<String> = tensor_info.shape.iter().map(|d| {
-                    match d {
+                let dims: Vec<String> = tensor_info
+                    .shape
+                    .iter()
+                    .map(|d| match d {
                         Dimension::Constant(s) => s.to_string(),
                         _ => "\"?\"".to_string(),
-                    }
-                }).collect();
-                let _ = write!(info, ", \"type\": {{ \"tensorType\": {{ \"elemType\": {}, \"shape\": [{}] }} }}", onnx_dt as i32, dims.join(", "));
+                    })
+                    .collect();
+                let _ = write!(
+                    info,
+                    ", \"type\": {{ \"tensorType\": {{ \"elemType\": {}, \"shape\": [{}] }} }}",
+                    onnx_dt as i32,
+                    dims.join(", ")
+                );
             }
             _ => {
-                let _ = write!(info, ", \"type\": {{ \"tensorType\": {{ \"elemType\": 1 }} }}");
+                let _ = write!(
+                    info,
+                    ", \"type\": {{ \"tensorType\": {{ \"elemType\": 1 }} }}"
+                );
             }
         }
 
@@ -548,7 +616,9 @@ impl OnnxExporter {
 }
 
 impl Default for OnnxExporter {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]
@@ -579,8 +649,14 @@ mod tests {
     fn test_lift_op_mapping() {
         assert_eq!(lift_op_to_onnx("tensor.matmul"), Some(("MatMul", "")));
         assert_eq!(lift_op_to_onnx("tensor.relu"), Some(("Relu", "")));
-        assert_eq!(lift_op_to_onnx("tensor.layernorm"), Some(("LayerNormalization", "")));
-        assert_eq!(lift_op_to_onnx("tensor.grouped_query_attention"), Some(("GroupQueryAttention", "com.microsoft")));
+        assert_eq!(
+            lift_op_to_onnx("tensor.layernorm"),
+            Some(("LayerNormalization", ""))
+        );
+        assert_eq!(
+            lift_op_to_onnx("tensor.grouped_query_attention"),
+            Some(("GroupQueryAttention", "com.microsoft"))
+        );
         assert!(lift_op_to_onnx("unknown.op").is_none());
     }
 
@@ -588,11 +664,22 @@ mod tests {
     fn test_onnx_with_context() {
         let model = lift_core::model_builder::ModelBuilder::new("test_onnx")
             .function("forward")
-                .param("x", lift_core::model_builder::tensor(&[1, 784], DataType::FP32))
-                .param("w", lift_core::model_builder::tensor_2d(784, 10, DataType::FP32))
-                .op("tensor.matmul", &["x", "w"], "out", lift_core::model_builder::tensor(&[1, 10], DataType::FP32))
-                .returns("out")
-                .done();
+            .param(
+                "x",
+                lift_core::model_builder::tensor(&[1, 784], DataType::FP32),
+            )
+            .param(
+                "w",
+                lift_core::model_builder::tensor_2d(784, 10, DataType::FP32),
+            )
+            .op(
+                "tensor.matmul",
+                &["x", "w"],
+                "out",
+                lift_core::model_builder::tensor(&[1, 10], DataType::FP32),
+            )
+            .returns("out")
+            .done();
 
         let ctx = model.build_context();
         let exporter = OnnxExporter::new();

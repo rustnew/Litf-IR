@@ -1,9 +1,9 @@
+use crate::attributes::Attribute;
+use crate::blocks::BlockKey;
 use crate::context::Context;
 use crate::operations::OpKey;
-use crate::blocks::BlockKey;
 use crate::regions::RegionKey;
 use crate::values::ValueKey;
-use crate::attributes::Attribute;
 use std::fmt::Write;
 
 pub struct Printer<'a> {
@@ -59,7 +59,9 @@ impl<'a> Printer<'a> {
         let mut sig = format!("func @{}(", name);
 
         for (i, &param_ty) in func.params.iter().enumerate() {
-            if i > 0 { sig.push_str(", "); }
+            if i > 0 {
+                sig.push_str(", ");
+            }
             let pname = self.fresh_value_name();
             let _ = write!(sig, "%{}: {}", pname, self.format_type(param_ty));
         }
@@ -70,7 +72,9 @@ impl<'a> Printer<'a> {
         } else {
             sig.push('(');
             for (i, &ret_ty) in func.returns.iter().enumerate() {
-                if i > 0 { sig.push_str(", "); }
+                if i > 0 {
+                    sig.push_str(", ");
+                }
                 let _ = write!(sig, "{}", self.format_type(ret_ty));
             }
             sig.push(')');
@@ -103,7 +107,9 @@ impl<'a> Printer<'a> {
             if !block.args.is_empty() {
                 let mut args = String::new();
                 for (i, &arg) in block.args.iter().enumerate() {
-                    if i > 0 { args.push_str(", "); }
+                    if i > 0 {
+                        args.push_str(", ");
+                    }
                     let vname = self.get_value_name(arg);
                     if let Some(val) = self.ctx.get_value(arg) {
                         let _ = write!(args, "%{}: {}", vname, self.format_type(val.ty));
@@ -130,7 +136,9 @@ impl<'a> Printer<'a> {
             // Result values
             if !op.results.is_empty() {
                 for (i, &result) in op.results.iter().enumerate() {
-                    if i > 0 { line.push_str(", "); }
+                    if i > 0 {
+                        line.push_str(", ");
+                    }
                     let vname = self.get_value_name(result);
                     let _ = write!(line, "%{}", vname);
                 }
@@ -143,7 +151,9 @@ impl<'a> Printer<'a> {
             // Inputs
             line.push('(');
             for (i, &input) in op.inputs.iter().enumerate() {
-                if i > 0 { line.push_str(", "); }
+                if i > 0 {
+                    line.push_str(", ");
+                }
                 let vname = self.get_value_name(input);
                 let _ = write!(line, "%{}", vname);
             }
@@ -153,7 +163,9 @@ impl<'a> Printer<'a> {
             if !op.attrs.is_empty() {
                 line.push_str(" {");
                 for (i, (key, val)) in op.attrs.iter().enumerate() {
-                    if i > 0 { line.push_str(", "); }
+                    if i > 0 {
+                        line.push_str(", ");
+                    }
                     let _ = write!(line, "{} = {}", key, self.format_attr(val));
                 }
                 line.push('}');
@@ -162,7 +174,9 @@ impl<'a> Printer<'a> {
             // Type signature
             line.push_str(" : (");
             for (i, &input) in op.inputs.iter().enumerate() {
-                if i > 0 { line.push_str(", "); }
+                if i > 0 {
+                    line.push_str(", ");
+                }
                 if let Some(val) = self.ctx.get_value(input) {
                     let _ = write!(line, "{}", self.format_type(val.ty));
                 }
@@ -178,7 +192,9 @@ impl<'a> Printer<'a> {
             } else {
                 line.push('(');
                 for (i, &result) in op.results.iter().enumerate() {
-                    if i > 0 { line.push_str(", "); }
+                    if i > 0 {
+                        line.push_str(", ");
+                    }
                     if let Some(val) = self.ctx.get_value(result) {
                         let _ = write!(line, "{}", self.format_type(val.ty));
                     }
@@ -219,7 +235,8 @@ impl<'a> Printer<'a> {
                 format!("[{}]", inner.join(", "))
             }
             Attribute::Dict(map) => {
-                let inner: Vec<String> = map.iter()
+                let inner: Vec<String> = map
+                    .iter()
                     .map(|(k, v)| format!("{}: {}", k, self.format_attr(v)))
                     .collect();
                 format!("{{{}}}", inner.join(", "))

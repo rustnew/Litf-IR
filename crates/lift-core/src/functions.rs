@@ -1,8 +1,8 @@
-use serde::{Serialize, Deserialize};
 use crate::interning::StringId;
-use crate::types::TypeId;
-use crate::regions::RegionKey;
 use crate::location::Location;
+use crate::regions::RegionKey;
+use crate::types::TypeId;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FunctionData {

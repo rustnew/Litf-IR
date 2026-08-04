@@ -4,8 +4,8 @@
 //! estimating execution time, arithmetic intensity, and bottleneck
 //! identification on GPU targets (A100, H100).
 
-pub mod roofline;
 pub mod budget;
+pub mod roofline;
 
-pub use roofline::*;
 pub use budget::*;
+pub use roofline::*;

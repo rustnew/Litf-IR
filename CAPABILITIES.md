@@ -29,15 +29,15 @@ LIFT est un compilateur IR unifié pour IA classique + calcul quantique, écrit 
 | `lift-tensor` | 110 opérations IA, inférence de forme, calcul FLOPs |
 | `lift-quantum` | 50+ portes quantiques, bruit, Kraus, QEC, topologie |
 | `lift-hybrid` | 21 opérations classique↔quantique |
-| `lift-opt` | 11 passes d'optimisation |
+| `lift-opt` | 13 passes d'optimisation |
 | `lift-sim` | Analyse statique, modèles de coût GPU/QPU, énergie |
 | `lift-predict` | Prédiction roofline, prédiction quantique |
-| `lift-config` | Parseur fichiers `.lith` |
+| `lift-config` | Parseur fichiers `.lith`, pipeline par niveau O0-O3, provider quantique |
 | `lift-import` | Import ONNX, PyTorch FX, OpenQASM (squelettes) |
 | `lift-export` | Export LLVM IR, ONNX (opset 21), OpenQASM 3.0 |
 | `lift-cli` | CLI : verify, analyse, print, optimise, predict, export |
 | `lift-codegen` | Génération programmatique de modèles, export multi-format |
-| `lift-tests` | 505 tests, 0 échecs |
+| `lift-tests` | 535 tests, 0 échecs |
 
 ---
 
@@ -59,33 +59,42 @@ Convertit l'AST en IR interne dans le `Context` : valeurs SSA, opérations, bloc
 ### Étape 4 — Context IR (COMPLET)
 Structure centrale avec SlotMaps pour values, ops, blocks, regions, types + StringInterner. Types : Integer (i1-i64), Float (f16-f64, fp8), Boolean, Void, Tuple, Function, Opaque (tensor, qubit, bit, hamiltonian).
 
-### Étape 5 — Vérification (COMPLET, 3 passes)
+### Étape 5 — Vérification (COMPLET, 4 passes)
 - **SSA** : chaque valeur définie une seule fois, chaque usage après définition
 - **Bonne formation** : aucune référence pendante (ops ↔ valeurs ↔ blocs ↔ régions)
 - **Linéarité** : chaque qubit consommé exactement une fois (no-cloning)
+- **Sémantique** : arité des entrées de chaque opération vérifiée contre les signatures des dialectes (core + tensor + quantum + hybrid), via `verify_semantics()` / `verify_with_dialects()`
 
-12 types d'erreurs : UndefinedValue, MultipleDefinition, DominanceViolation, TypeMismatch, LinearityViolation, QubitLeaked, BranchLinearityMismatch, DanglingReference, MissingTerminator, OrphanedOperation, OrphanedBlock, InvalidOperation.
+13 types d'erreurs : UndefinedValue, MultipleDefinition, DominanceViolation, TypeMismatch, LinearityViolation, QubitLeaked, BranchLinearityMismatch, DanglingReference, MissingTerminator, OrphanedOperation, OrphanedBlock, InvalidOperation, SemanticError.
 
 ### Étape 6 — Analyse statique (COMPLET)
 Produit : total_flops, total_memory_bytes, peak_memory, num_ops par dialecte, op_breakdown. Quantique : qubits, portes 1Q/2Q/3Q, mesures, circuit_depth, estimated_fidelity, bruit accumulé.
 
-### Étape 7 — Optimisation (11 passes)
+### Étape 7 — Optimisation (13 passes)
 
 | Passe | Type | Action concrète |
 |-------|------|-----------------|
 | `canonicalize` | Tensor | Normalise les patterns |
 | `constant-folding` | Tensor | Évalue les constantes à la compilation |
 | `dce` | Général | Supprime les ops dont les résultats sont inutilisés |
-| `tensor-fusion` | Tensor | Fusionne matmul+add+relu → fused_matmul_bias_relu |
+| `tensor-fusion` | Tensor | Fusionne matmul+add+relu → fused_matmul_bias_relu, linear+gelu → fused_linear_gelu, linear+silu → fused_linear_silu, conv2d+bn+relu (2 phases : ternaires puis binaires) |
 | `cse` | Général | Élimine les sous-expressions communes |
 | `flash-attention` | Tensor | Remplace attention → flash attention |
 | `quantisation-pass` | Tensor | Annote pour quantisation INT8/INT4 |
-| `gate-cancellation` | Quantum | Annule H·H=I, X·X=I, S·Sdg=I, T·Tdg=I |
-| `rotation-merge` | Quantum | Fusionne Rz(a)·Rz(b) → Rz(a+b) |
+| `gate-cancellation` | Quantum | Annule H·H=I, X·X=I, S·Sdg=I, T·Tdg=I — y compris paires **non consécutives** (séparées par des portes commutantes sur d'autres qubits, chaîne SSA vérifiée) |
+| `rotation-merge` | Quantum | Fusionne Rz(a)·Rz(b) → Rz(a+b) — idem, paires non consécutives |
 | `noise-aware-schedule` | Quantum | Réordonne les portes pour minimiser décohérence |
 | `layout-mapping` | Quantum | Annote les portes 2-qubit nécessitant SWAPs |
+| `gate-decomposition` | Quantum | Décompose H/T/Tdg/S/Sdg/Y/RX vers les jeux natifs du provider (IBM, Rigetti, IonQ, Quantinuum), piloté par `[quantum] provider` |
+| `real-routing` | Quantum | Insère de **vrais `quantum.swap`** (BFS plus court chemin) pour satisfaire la connectivité de la topologie ; suivi placement logique↔physique |
 
-**ATTENTION** : seules 5 passes sont connectées au CLI (canonicalize, constant-folding, dce, tensor-fusion, gate-cancellation). Les 6 autres existent en code mais pas dans le match de cmd_optimise.
+**Pipelines par niveau** (`[optimisation] level = O0|O1|O2|O3`) :
+- `O0` : aucune passe
+- `O1` : canonicalize, constant-folding, dce
+- `O2` : O1 + cse, tensor-fusion
+- `O3` : les 13 passes, incluant gate-decomposition et real-routing
+
+`passes` explicites priorisent le niveau ; `disabled_passes` retire des passes ; les passes inconnues déclenchent un warning (`OptimisationConfig::validate()`). Toutes les passes sont accessibles depuis le CLI.
 
 ### Étape 8 — Prédiction (COMPLET)
 - **Roofline GPU** : compute_time_ms, memory_time_ms, bottleneck. Modèles A100 (312 TFLOPS) et H100 (989 TFLOPS).
@@ -125,9 +134,9 @@ Binaire `lift-codegen` : définit des modèles depuis Rust via `ModelBuilder`, g
 
 EnergyModel A100/H100 : énergie joules/kWh, CO2 grammes, énergie quantique (cryogénie). **Non connecté au CLI.**
 
-## 3.7 Tests — 505 tests, 0 échecs
+## 3.7 Tests — 535 tests, 0 échecs
 
-Types, opérations, formes, FLOPs, mémoire, portes, bruit, topologie, QEC, Kraus, benchmarks (GPT-2, LLaMA-7B, ResNet-50, BERT-base).
+Types, opérations, formes, FLOPs, mémoire, portes, bruit, topologie, QEC, Kraus, benchmarks (GPT-2, LLaMA-7B, ResNet-50, BERT-base), pipeline O0-O3, vérification sémantique, fusions génériques, décomposition de portes, cancellation/merge non consécutifs, routage réel SWAP. Validation de bout en bout : `examples/validate_all.sh` (105 checks, incluant les 13 passes).
 
 ---
 
@@ -213,7 +222,6 @@ Pas de chargement de données (datasets), pas de data loaders, pas de preprocess
 | Export squelette | Le code généré (LLVM/QASM) n'est pas exécutable en l'état |
 | Import squelette | Impossible d'importer un vrai modèle ONNX/PyTorch |
 | Pas de simulation QC | Fidélité estimée par formule, pas par simulation réelle |
-| CLI incomplet | 6/11 passes non accessibles en ligne de commande |
 | Énergie non connectée | Le modèle d'énergie existe mais n'est pas dans le CLI |
 
 ## 6.2 Limites du modèle de coût
@@ -224,18 +232,18 @@ Pas de chargement de données (datasets), pas de data loaders, pas de preprocess
 
 ## 6.3 Limites du vérificateur
 
-- Pas de vérification de types d'opérations (nombre/type d'entrées)
+- Pas de vérification de types d'opérations (type des entrées vs signature)
 - Pas de vérification de compatibilité de dimensions (forme des tensors)
 - Pas de vérification de dominance complète (CFG)
 - La vérification de linéarité ne gère pas les branches conditionnelles de façon exhaustive
+- La vérification sémantique vérifie l'arité mais pas les dimensions tensorielles
 
 ## 6.4 Limites de l'optimiseur
 
-- `tensor-fusion` ne reconnaît qu'un seul pattern (matmul+add+relu)
-- `gate-cancellation` ne détecte que les paires **consécutives** (pas les paires séparées par des portes sur d'autres qubits)
-- `rotation-merge` ne fonctionne que sur les rotations **consécutives** sur le même qubit
+- `tensor-fusion` reconnaît 5 patterns (matmul+bias+relu, matmul+bias, linear+gelu/silu, conv+bn+relu) mais pas les fusions attention+softmax ou layernorm
+- `gate-cancellation`/`rotation-merge` détectent les paires non consécutives via chaîne SSA, mais pas les patterns croisés (ex. H·Rz)
 - `noise-aware-schedule` utilise un tri par temps de porte, pas un vrai algorithme d'ordonnancement contraint
-- `layout-mapping` annote seulement, ne fait pas le routage réel
+- `real-routing` insère des SWAP (BFS) avec placement initial identité ; pas de ré-placement dynamique type SABRE, pas de correction d'orientation des SWAP pour la directionnalité
 
 ---
 
@@ -288,7 +296,7 @@ L'objectif de LIFT est : **"Simulate → Predict → Optimise → Compile"**. Vo
 |----------|------|---------------|
 | **Simulate** | 40% | Analyse statique OK, mais pas de simulation d'exécution réelle (pas de vecteur d'état quantique, pas d'interpréteur tensor) |
 | **Predict** | 70% | Roofline GPU OK, prédiction quantique OK, mais modèle trop simplifié (pas de cache, pas de multi-GPU, pas de scheduling) |
-| **Optimise** | 50% | 11 passes existent, mais patterns limités, 6 passes non connectées, pas de graphe de réécriture général |
+| **Optimise** | 70% | 13 passes connectées, pipeline O0-O3, vérification sémantique, fusions génériques, décomposition de portes, routage réel SWAP ; manque le graphe de réécriture général et les fusions attention/layernorm |
 | **Compile** | 10% | Export LLVM/QASM squelettes, pas de code exécutable réel |
 
 ## 8.1 Pour atteindre Simulate (100%)

@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
 use lift_core::types::{DataType, Dimension, MemoryLayout};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum TensorType {
@@ -44,14 +44,20 @@ impl TensorType {
             TensorType::Tensor { shape, .. } => {
                 let mut count = 1usize;
                 for dim in shape {
-                    match dim.static_value() {
-                        Some(v) => count = count.checked_mul(v)?,
-                        None => return None,
+                    {
+                        let v = dim.static_value()?;
+                        count = count.checked_mul(v)?
                     }
                 }
                 Some(count)
             }
-            TensorType::AttentionTensor { batch, seq_len, num_heads, head_dim, .. } => {
+            TensorType::AttentionTensor {
+                batch,
+                seq_len,
+                num_heads,
+                head_dim,
+                ..
+            } => {
                 let b = batch.static_value()?;
                 let s = seq_len.static_value()?;
                 Some(b * s * num_heads * head_dim)

@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum GradientMethod {
@@ -35,7 +35,10 @@ pub struct JointGradientConfig {
 
 impl JointGradientConfig {
     pub fn total_evaluations(&self) -> usize {
-        self.classical_method.circuit_evaluations(self.num_classical_params)
-            + self.quantum_method.circuit_evaluations(self.num_quantum_params)
+        self.classical_method
+            .circuit_evaluations(self.num_classical_params)
+            + self
+                .quantum_method
+                .circuit_evaluations(self.num_quantum_params)
     }
 }

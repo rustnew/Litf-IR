@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 pub trait Dialect: std::fmt::Debug {
     fn name(&self) -> &str;
-    fn verify_op(&self, op_name: &str, num_inputs: usize, num_results: usize) -> Result<(), String>;
+    fn verify_op(&self, op_name: &str, num_inputs: usize, num_results: usize)
+        -> Result<(), String>;
 }
 
 #[derive(Debug, Default)]
@@ -35,9 +36,16 @@ impl DialectRegistry {
 pub struct CoreDialect;
 
 impl Dialect for CoreDialect {
-    fn name(&self) -> &str { "core" }
+    fn name(&self) -> &str {
+        "core"
+    }
 
-    fn verify_op(&self, op_name: &str, _num_inputs: usize, _num_results: usize) -> Result<(), String> {
+    fn verify_op(
+        &self,
+        op_name: &str,
+        _num_inputs: usize,
+        _num_results: usize,
+    ) -> Result<(), String> {
         match op_name {
             "core.constant" | "core.return" | "core.call" | "core.br" | "core.cond_br" => Ok(()),
             _ => Err(format!("Unknown core operation: {}", op_name)),

@@ -58,7 +58,7 @@ pub enum TokenKind {
     Comma,
     Colon,
     Semicolon,
-    Arrow,       // ->
+    Arrow, // ->
     Equal,
     Dot,
     Star,

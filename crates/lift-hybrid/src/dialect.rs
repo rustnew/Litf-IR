@@ -1,13 +1,20 @@
-use lift_core::dialect::Dialect;
 use crate::ops::HybridOp;
+use lift_core::dialect::Dialect;
 
 #[derive(Debug)]
 pub struct HybridDialect;
 
 impl Dialect for HybridDialect {
-    fn name(&self) -> &str { "hybrid" }
+    fn name(&self) -> &str {
+        "hybrid"
+    }
 
-    fn verify_op(&self, op_name: &str, _num_inputs: usize, _num_results: usize) -> Result<(), String> {
+    fn verify_op(
+        &self,
+        op_name: &str,
+        _num_inputs: usize,
+        _num_results: usize,
+    ) -> Result<(), String> {
         let full_name = if op_name.starts_with("hybrid.") {
             op_name.to_string()
         } else {

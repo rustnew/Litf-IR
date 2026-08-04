@@ -1,5 +1,5 @@
 use lift_core::context::Context;
-use lift_core::pass::{Pass, PassResult, AnalysisCache};
+use lift_core::pass::{AnalysisCache, Pass, PassResult};
 use lift_quantum::gates::QuantumGate;
 use std::collections::HashSet;
 
@@ -9,7 +9,9 @@ use std::collections::HashSet;
 pub struct RotationMerge;
 
 impl Pass for RotationMerge {
-    fn name(&self) -> &str { "rotation-merge" }
+    fn name(&self) -> &str {
+        "rotation-merge"
+    }
 
     fn run(&self, ctx: &mut Context, _cache: &mut AnalysisCache) -> PassResult {
         let mut merged = 0usize;
@@ -27,12 +29,20 @@ impl Pass for RotationMerge {
 
             // Pass 1: Remove identity rotations (angle ≈ 0 or ≈ 2π)
             for &op_key in &op_list {
-                if ops_to_remove.contains(&op_key) { continue; }
+                if ops_to_remove.contains(&op_key) {
+                    continue;
+                }
 
                 let is_identity_rotation = {
-                    let op = match ctx.ops.get(op_key) { Some(o) => o, None => continue };
+                    let op = match ctx.ops.get(op_key) {
+                        Some(o) => o,
+                        None => continue,
+                    };
                     let name = ctx.strings.resolve(op.name).to_string();
-                    let gate = match QuantumGate::from_name(&name) { Some(g) => g, None => continue };
+                    let gate = match QuantumGate::from_name(&name) {
+                        Some(g) => g,
+                        None => continue,
+                    };
 
                     if !matches!(gate, QuantumGate::RX | QuantumGate::RY | QuantumGate::RZ) {
                         false
@@ -45,17 +55,24 @@ impl Pass for RotationMerge {
 
                 if is_identity_rotation {
                     // Rewire: users of the output should use the input directly
-                    let op = match ctx.ops.get(op_key) { Some(o) => o, None => continue };
+                    let op = match ctx.ops.get(op_key) {
+                        Some(o) => o,
+                        None => continue,
+                    };
                     if !op.inputs.is_empty() && !op.results.is_empty() {
                         let original_input = op.inputs[0];
                         let output = op.results[0];
 
                         let all_ops: Vec<_> = ctx.ops.keys().collect();
                         for ok in all_ops {
-                            if ok == op_key { continue; }
+                            if ok == op_key {
+                                continue;
+                            }
                             if let Some(other) = ctx.ops.get_mut(ok) {
                                 for inp in &mut other.inputs {
-                                    if *inp == output { *inp = original_input; }
+                                    if *inp == output {
+                                        *inp = original_input;
+                                    }
                                 }
                             }
                         }
@@ -65,74 +82,110 @@ impl Pass for RotationMerge {
                 }
             }
 
-            // Pass 2: Merge consecutive same-axis rotations
+            // Pass 2: Merge same-axis rotations (consecutive or with only
+            // gates on other qubits in between — those commute).
             let op_list: Vec<_> = match ctx.blocks.get(block_key) {
                 Some(b) => b.ops.clone(),
                 None => continue,
             };
 
-            for i in 0..op_list.len().saturating_sub(1) {
+            for i in 0..op_list.len() {
                 let op1_key = op_list[i];
-                let op2_key = op_list[i + 1];
 
-                if ops_to_remove.contains(&op1_key) || ops_to_remove.contains(&op2_key) {
+                if ops_to_remove.contains(&op1_key) {
                     continue;
                 }
 
-                let merge_info = {
-                    let op1 = match ctx.ops.get(op1_key) { Some(o) => o, None => continue };
-                    let op2 = match ctx.ops.get(op2_key) { Some(o) => o, None => continue };
-
-                    let name1 = ctx.strings.resolve(op1.name).to_string();
-                    let name2 = ctx.strings.resolve(op2.name).to_string();
-
-                    if name1 != name2 { continue; }
-
-                    let gate = match QuantumGate::from_name(&name1) { Some(g) => g, None => continue };
-                    if !matches!(gate, QuantumGate::RX | QuantumGate::RY | QuantumGate::RZ) {
+                for &op2_key in op_list.iter().skip(i + 1) {
+                    if ops_to_remove.contains(&op2_key) {
                         continue;
                     }
 
-                    // Check SSA chain: op2 uses op1's result
-                    let same_qubit = if !op1.results.is_empty() && !op2.inputs.is_empty() {
-                        op1.results.iter().any(|r| op2.inputs.contains(r))
-                    } else {
-                        false
+                    let merge_info = {
+                        let op1 = match ctx.ops.get(op1_key) {
+                            Some(o) => o,
+                            None => continue,
+                        };
+                        let op2 = match ctx.ops.get(op2_key) {
+                            Some(o) => o,
+                            None => continue,
+                        };
+
+                        let name1 = ctx.strings.resolve(op1.name).to_string();
+                        let name2 = ctx.strings.resolve(op2.name).to_string();
+
+                        if name1 != name2 {
+                            continue;
+                        }
+
+                        let gate = match QuantumGate::from_name(&name1) {
+                            Some(g) => g,
+                            None => continue,
+                        };
+                        if !matches!(gate, QuantumGate::RX | QuantumGate::RY | QuantumGate::RZ) {
+                            continue;
+                        }
+
+                        // Check SSA chain: op2 uses op1's result directly, so
+                        // any ops in between act on other qubits (commute).
+                        let same_qubit = if !op1.results.is_empty() && !op2.inputs.is_empty() {
+                            op1.results.iter().any(|r| op2.inputs.contains(r))
+                        } else {
+                            false
+                        };
+
+                        if !same_qubit {
+                            continue;
+                        }
+
+                        let a1 = op1.attrs.get_float("angle").unwrap_or(0.0);
+                        let a2 = op2.attrs.get_float("angle").unwrap_or(0.0);
+                        Some(a1 + a2)
                     };
 
-                    if !same_qubit { continue; }
+                    if let Some(merged_angle) = merge_info {
+                        // Update op1 with merged angle
+                        if let Some(op1) = ctx.ops.get_mut(op1_key) {
+                            op1.attrs.set(
+                                "angle",
+                                lift_core::attributes::Attribute::Float(merged_angle),
+                            );
+                        }
 
-                    let a1 = op1.attrs.get_float("angle").unwrap_or(0.0);
-                    let a2 = op2.attrs.get_float("angle").unwrap_or(0.0);
-                    Some(a1 + a2)
-                };
+                        // Rewire op2's result users to use op1's result
+                        let (op1_result, op2_result) = {
+                            let op1 = match ctx.ops.get(op1_key) {
+                                Some(o) => o,
+                                None => continue,
+                            };
+                            let op2 = match ctx.ops.get(op2_key) {
+                                Some(o) => o,
+                                None => continue,
+                            };
+                            if op1.results.is_empty() || op2.results.is_empty() {
+                                continue;
+                            }
+                            (op1.results[0], op2.results[0])
+                        };
 
-                if let Some(merged_angle) = merge_info {
-                    // Update op1 with merged angle
-                    if let Some(op1) = ctx.ops.get_mut(op1_key) {
-                        op1.attrs.set("angle", lift_core::attributes::Attribute::Float(merged_angle));
-                    }
-
-                    // Rewire op2's result users to use op1's result
-                    let (op1_result, op2_result) = {
-                        let op1 = match ctx.ops.get(op1_key) { Some(o) => o, None => continue };
-                        let op2 = match ctx.ops.get(op2_key) { Some(o) => o, None => continue };
-                        if op1.results.is_empty() || op2.results.is_empty() { continue; }
-                        (op1.results[0], op2.results[0])
-                    };
-
-                    let all_ops: Vec<_> = ctx.ops.keys().collect();
-                    for ok in all_ops {
-                        if ok == op1_key || ok == op2_key { continue; }
-                        if let Some(other) = ctx.ops.get_mut(ok) {
-                            for inp in &mut other.inputs {
-                                if *inp == op2_result { *inp = op1_result; }
+                        let all_ops: Vec<_> = ctx.ops.keys().collect();
+                        for ok in all_ops {
+                            if ok == op1_key || ok == op2_key {
+                                continue;
+                            }
+                            if let Some(other) = ctx.ops.get_mut(ok) {
+                                for inp in &mut other.inputs {
+                                    if *inp == op2_result {
+                                        *inp = op1_result;
+                                    }
+                                }
                             }
                         }
-                    }
 
-                    ops_to_remove.insert(op2_key);
-                    merged += 1;
+                        ops_to_remove.insert(op2_key);
+                        merged += 1;
+                        break;
+                    }
                 }
             }
 
@@ -168,5 +221,115 @@ impl Pass for RotationMerge {
 
     fn invalidates(&self) -> Vec<&str> {
         vec!["analysis", "quantum_analysis"]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use lift_core::attributes::{Attribute, Attributes};
+    use lift_core::location::Location;
+
+    fn rz_op(
+        ctx: &mut Context,
+        block: lift_core::blocks::BlockKey,
+        input: lift_core::values::ValueKey,
+        angle: f64,
+    ) -> (lift_core::operations::OpKey, lift_core::values::ValueKey) {
+        let qubit = ctx.make_qubit_type();
+        let mut attrs = Attributes::new();
+        attrs.set("angle", Attribute::Float(angle));
+        let (op, res) = ctx.create_op(
+            "quantum.rz",
+            "quantum",
+            vec![input],
+            vec![qubit],
+            attrs,
+            Location::unknown(),
+        );
+        ctx.add_op_to_block(block, op);
+        (op, res[0])
+    }
+
+    /// Rz(0.2) -> q1, X(q2), Rz(0.3) -> q3, consumer.
+    /// The two Rz gates are non-consecutive (X on another qubit commutes), so
+    /// they should merge into a single Rz(0.5).
+    #[test]
+    fn test_non_consecutive_rotation_merge() {
+        let mut ctx = Context::new();
+        let qubit = ctx.make_qubit_type();
+        let block = ctx.create_block();
+        let q0 = ctx.create_block_arg(block, qubit);
+        let q2 = ctx.create_block_arg(block, qubit);
+
+        let (_, q1) = rz_op(&mut ctx, block, q0, 0.2);
+
+        let (x, _) = ctx.create_op(
+            "quantum.x",
+            "quantum",
+            vec![q2],
+            vec![qubit],
+            Attributes::new(),
+            Location::unknown(),
+        );
+        ctx.add_op_to_block(block, x);
+
+        let (_, q3) = rz_op(&mut ctx, block, q1, 0.3);
+
+        let (cx, _) = ctx.create_op(
+            "quantum.cx",
+            "quantum",
+            vec![q3, q2],
+            vec![qubit, qubit],
+            Attributes::new(),
+            Location::unknown(),
+        );
+        ctx.add_op_to_block(block, cx);
+
+        let result = RotationMerge.run(&mut ctx, &mut AnalysisCache::new());
+        assert!(result.changed());
+
+        let rz_ops: Vec<_> = ctx
+            .ops
+            .values()
+            .filter(|op| ctx.strings.resolve(op.name) == "quantum.rz")
+            .collect();
+        assert_eq!(rz_ops.len(), 1);
+        let angle = rz_ops[0].attrs.get_float("angle").unwrap();
+        assert!((angle - 0.5).abs() < 1e-9, "expected 0.5, got {}", angle);
+    }
+
+    /// Rz(0.2) -> q1, X(q1) -> q2 (same qubit!), Rz(0.3) -> q3 must NOT merge
+    /// because the X in between breaks the commutation.
+    #[test]
+    fn test_no_merge_when_intermediate_same_qubit() {
+        let mut ctx = Context::new();
+        let qubit = ctx.make_qubit_type();
+        let block = ctx.create_block();
+        let q0 = ctx.create_block_arg(block, qubit);
+
+        let (_, q1) = rz_op(&mut ctx, block, q0, 0.2);
+
+        let (x, x_res) = ctx.create_op(
+            "quantum.x",
+            "quantum",
+            vec![q1],
+            vec![qubit],
+            Attributes::new(),
+            Location::unknown(),
+        );
+        ctx.add_op_to_block(block, x);
+
+        let (_, _q3) = rz_op(&mut ctx, block, x_res[0], 0.3);
+
+        let result = RotationMerge.run(&mut ctx, &mut AnalysisCache::new());
+        assert_eq!(result, PassResult::Unchanged);
+
+        let rz_count = ctx
+            .ops
+            .values()
+            .filter(|op| ctx.strings.resolve(op.name) == "quantum.rz")
+            .count();
+        assert_eq!(rz_count, 2);
     }
 }

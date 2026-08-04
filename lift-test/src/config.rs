@@ -7,9 +7,9 @@
 //
 // ============================================================================
 
-use lift_config::ConfigParser;
+use crate::report::{print_step, TestReport};
 use lift_config::types::LithConfig;
-use crate::report::{TestReport, print_step};
+use lift_config::ConfigParser;
 
 /// Parse a `.lith` configuration file from an INI string.
 pub fn parse_lith_config(source: &str, report: &mut TestReport) -> Option<LithConfig> {
@@ -22,7 +22,10 @@ pub fn parse_lith_config(source: &str, report: &mut TestReport) -> Option<LithCo
             println!("    Opt level: {:?}", config.optimisation.level);
             println!("    Passes: {:?}", config.optimisation.passes);
             if let Some(ref q) = config.quantum {
-                println!("    Quantum: {} qubits, topology={}", q.num_qubits, q.topology);
+                println!(
+                    "    Quantum: {} qubits, topology={}",
+                    q.num_qubits, q.topology
+                );
             }
             Some(config)
         }
@@ -40,12 +43,26 @@ pub fn validate_default_config(report: &mut TestReport) {
     let config = LithConfig::default();
 
     report.check("default backend is llvm", config.target.backend == "llvm");
-    report.check("default passes include canonicalize",
-        config.optimisation.passes.contains(&"canonicalize".to_string()));
-    report.check("FLOP counting enabled by default", config.simulation.enable_flop_counting);
+    report.check(
+        "default passes include canonicalize",
+        config
+            .optimisation
+            .effective_passes()
+            .contains(&"canonicalize".to_string()),
+    );
+    report.check(
+        "default level O2 runs 5 passes",
+        config.optimisation.effective_passes().len() == 5,
+    );
+    report.check(
+        "FLOP counting enabled by default",
+        config.simulation.enable_flop_counting,
+    );
 
     let qconfig = LithConfig::default().with_quantum("heavy_hex", 127);
-    let q_ok = qconfig.quantum.as_ref()
+    let q_ok = qconfig
+        .quantum
+        .as_ref()
         .map(|q| q.num_qubits == 127 && q.topology == "heavy_hex")
         .unwrap_or(false);
     report.check("with_quantum builder works", q_ok);

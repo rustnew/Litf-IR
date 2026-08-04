@@ -49,24 +49,34 @@ declare ptr @lift_rt_generic_op(ptr, ptr, ptr, i64, i64)
 define ptr @forward(ptr %arg0, ptr %arg1, ptr %arg2, ptr %arg3, ptr %arg4, ptr %arg5, ptr %arg6) {
 entry:
   ; tensor.matmul (2 inputs -> 1 outputs)
+  ;   input type: <784 x float>
   %r0 = call ptr @lift_rt_matmul(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
-  ; tensor.add (2 inputs -> 1 outputs)
-  %r1 = call ptr @lift_rt_add(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
+  ; tensor.fused_matmul_bias (3 inputs -> 1 outputs)
+  ;   input type: <784 x float>
+  %r1 = call ptr @lift_rt_fused_matmul_bias(ptr %arg0, ptr %arg1, ptr null, i64 3, i64 1)
   ; tensor.fused_matmul_bias_relu (3 inputs -> 1 outputs)
+  ;   input type: <784 x float>
   %r2 = call ptr @lift_rt_fused_matmul_bias_relu(ptr %arg0, ptr %arg1, ptr null, i64 3, i64 1)
   ; tensor.matmul (2 inputs -> 1 outputs)
+  ;   input type: <512 x float>
   %r3 = call ptr @lift_rt_matmul(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
-  ; tensor.add (2 inputs -> 1 outputs)
-  %r4 = call ptr @lift_rt_add(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
+  ; tensor.fused_matmul_bias (3 inputs -> 1 outputs)
+  ;   input type: <512 x float>
+  %r4 = call ptr @lift_rt_fused_matmul_bias(ptr %arg0, ptr %arg1, ptr null, i64 3, i64 1)
   ; tensor.fused_matmul_bias_relu (3 inputs -> 1 outputs)
+  ;   input type: <512 x float>
   %r5 = call ptr @lift_rt_fused_matmul_bias_relu(ptr %arg0, ptr %arg1, ptr null, i64 3, i64 1)
   ; tensor.matmul (2 inputs -> 1 outputs)
+  ;   input type: <256 x float>
   %r6 = call ptr @lift_rt_matmul(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
-  ; tensor.add (2 inputs -> 1 outputs)
-  %r7 = call ptr @lift_rt_add(ptr %arg0, ptr %arg1, ptr null, i64 2, i64 1)
+  ; tensor.fused_matmul_bias (3 inputs -> 1 outputs)
+  ;   input type: <256 x float>
+  %r7 = call ptr @lift_rt_fused_matmul_bias(ptr %arg0, ptr %arg1, ptr null, i64 3, i64 1)
   ; tensor.softmax (1 inputs -> 1 outputs)
+  ;   input type: <10 x float>
   %r8 = call ptr @lift_rt_softmax(ptr %arg0, ptr null, ptr null, i64 1, i64 1)
   ; core.return (1 inputs -> 0 outputs)
+  ;   input type: <10 x float>
   %r9 = call ptr @lift_rt_generic_op(ptr %arg0, ptr null, ptr null, i64 1, i64 0)
   ret ptr %r9
 }

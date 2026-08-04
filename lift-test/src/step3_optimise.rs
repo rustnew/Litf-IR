@@ -109,11 +109,7 @@ pub fn optimise_vqc(ctx: &mut Context, report: &mut TestReport) {
 // ────────────────────────────────────────────────────────────────────────────
 
 /// Run all Step 3 optimisation passes on both contexts.
-pub fn run(
-    cnn_ctx: &mut Context,
-    vqc_ctx: &mut Context,
-    report: &mut TestReport,
-) {
+pub fn run(cnn_ctx: &mut Context, vqc_ctx: &mut Context, report: &mut TestReport) {
     optimise_cnn(cnn_ctx, report);
     optimise_vqc(vqc_ctx, report);
 }

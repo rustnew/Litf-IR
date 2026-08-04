@@ -48,7 +48,10 @@ pub fn predict_gpu(report_data: &AnalysisReport, report: &mut TestReport) {
     println!("      Compute time:  {:.6} ms", pred_a100.compute_time_ms);
     println!("      Memory time:   {:.6} ms", pred_a100.memory_time_ms);
     println!("      Predicted:     {:.6} ms", pred_a100.predicted_time_ms);
-    println!("      Arith intens:  {:.2} FLOP/byte", pred_a100.arithmetic_intensity);
+    println!(
+        "      Arith intens:  {:.2} FLOP/byte",
+        pred_a100.arithmetic_intensity
+    );
     println!("      Bottleneck:    {}", pred_a100.bottleneck);
 
     println!("    H100 prediction:");
@@ -60,8 +63,14 @@ pub fn predict_gpu(report_data: &AnalysisReport, report: &mut TestReport) {
         );
     }
 
-    report.check("A100 predicted time >= 0", pred_a100.predicted_time_ms >= 0.0);
-    report.check("H100 predicted time >= 0", pred_h100.predicted_time_ms >= 0.0);
+    report.check(
+        "A100 predicted time >= 0",
+        pred_a100.predicted_time_ms >= 0.0,
+    );
+    report.check(
+        "H100 predicted time >= 0",
+        pred_h100.predicted_time_ms >= 0.0,
+    );
     report.check(
         "Bottleneck is 'compute' or 'memory'",
         pred_a100.bottleneck == "compute" || pred_a100.bottleneck == "memory",
@@ -93,7 +102,10 @@ pub fn predict_quantum(analysis: &QuantumAnalysis, report: &mut TestReport) {
     println!("    Superconducting (IBM-like):");
     println!("      Fidelity:  {:.6}", pred_sc.estimated_fidelity);
     println!("      Circuit:   {:.4} us", pred_sc.circuit_time_us);
-    println!("      Shots:     {} (for 1% precision)", pred_sc.num_shots_for_precision);
+    println!(
+        "      Shots:     {} (for 1% precision)",
+        pred_sc.num_shots_for_precision
+    );
     println!("      Total:     {:.4} ms", pred_sc.total_execution_time_ms);
 
     println!("    Trapped-ion (IonQ-like):");
@@ -122,11 +134,7 @@ pub fn predict_quantum(analysis: &QuantumAnalysis, report: &mut TestReport) {
 // ────────────────────────────────────────────────────────────────────────────
 
 /// Run all Step 4 prediction tests.
-pub fn run(
-    cnn_report: &AnalysisReport,
-    vqc_analysis: &QuantumAnalysis,
-    report: &mut TestReport,
-) {
+pub fn run(cnn_report: &AnalysisReport, vqc_analysis: &QuantumAnalysis, report: &mut TestReport) {
     predict_gpu(cnn_report, report);
     predict_quantum(vqc_analysis, report);
 }

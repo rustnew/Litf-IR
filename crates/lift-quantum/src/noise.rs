@@ -1,15 +1,31 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum NoiseModel {
     Ideal,
-    Depolarizing { p: f64 },
-    AmplitudeDamping { gamma: f64 },
-    PhaseDamping { gamma: f64 },
-    BitFlip { p: f64 },
-    PhaseFlip { p: f64 },
-    ThermalRelaxation { t1_us: f64, t2_us: f64, gate_time_us: f64 },
-    Kraus { operators: Vec<Vec<(f64, f64)>> },
+    Depolarizing {
+        p: f64,
+    },
+    AmplitudeDamping {
+        gamma: f64,
+    },
+    PhaseDamping {
+        gamma: f64,
+    },
+    BitFlip {
+        p: f64,
+    },
+    PhaseFlip {
+        p: f64,
+    },
+    ThermalRelaxation {
+        t1_us: f64,
+        t2_us: f64,
+        gate_time_us: f64,
+    },
+    Kraus {
+        operators: Vec<Vec<(f64, f64)>>,
+    },
     Composed(Vec<NoiseModel>),
 }
 
@@ -22,15 +38,17 @@ impl NoiseModel {
             NoiseModel::PhaseDamping { gamma } => 1.0 - gamma / 2.0,
             NoiseModel::BitFlip { p } => 1.0 - p,
             NoiseModel::PhaseFlip { p } => 1.0 - p,
-            NoiseModel::ThermalRelaxation { t1_us, t2_us, gate_time_us } => {
+            NoiseModel::ThermalRelaxation {
+                t1_us,
+                t2_us,
+                gate_time_us,
+            } => {
                 let p1 = (-gate_time_us / t1_us).exp();
                 let p2 = (-gate_time_us / t2_us).exp();
                 (1.0 + p1 + 2.0 * p2) / 4.0
             }
             NoiseModel::Kraus { .. } => 0.99, // approximate
-            NoiseModel::Composed(models) => {
-                models.iter().map(|m| m.fidelity()).product()
-            }
+            NoiseModel::Composed(models) => models.iter().map(|m| m.fidelity()).product(),
         }
     }
 
@@ -51,7 +69,11 @@ pub struct GateNoise {
 
 impl GateNoise {
     pub fn ideal() -> Self {
-        Self { gate_fidelity: 1.0, gate_time_us: 0.0, noise: NoiseModel::Ideal }
+        Self {
+            gate_fidelity: 1.0,
+            gate_time_us: 0.0,
+            noise: NoiseModel::Ideal,
+        }
     }
 
     pub fn with_depolarizing(fidelity: f64, gate_time: f64) -> Self {
@@ -87,7 +109,9 @@ impl CircuitNoise {
         self.total_fidelity *= noise.gate_fidelity;
         self.gate_count += 1;
         self.total_time_us += noise.gate_time_us;
-        if is_two_qubit { self.two_qubit_count += 1; }
+        if is_two_qubit {
+            self.two_qubit_count += 1;
+        }
     }
 
     pub fn meets_threshold(&self, min_fidelity: f64) -> bool {
@@ -96,5 +120,7 @@ impl CircuitNoise {
 }
 
 impl Default for CircuitNoise {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

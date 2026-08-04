@@ -1,5 +1,5 @@
 use lift_core::context::Context;
-use lift_core::pass::{Pass, PassResult, AnalysisCache};
+use lift_core::pass::{AnalysisCache, Pass, PassResult};
 use std::collections::HashMap;
 
 /// Common Subexpression Elimination (CSE): detects identical operations
@@ -17,7 +17,9 @@ struct OpFingerprint {
 }
 
 impl Pass for CommonSubexprElimination {
-    fn name(&self) -> &str { "common-subexpr-elimination" }
+    fn name(&self) -> &str {
+        "common-subexpr-elimination"
+    }
 
     fn run(&self, ctx: &mut Context, _cache: &mut AnalysisCache) -> PassResult {
         let mut eliminated = 0usize;
@@ -39,14 +41,20 @@ impl Pass for CommonSubexprElimination {
                     Some(op) => {
                         // Skip ops with side effects (measurement, store, etc.)
                         let name_str = ctx.strings.resolve(op.name).to_string();
-                        if name_str.contains("measure") || name_str.contains("store") ||
-                           name_str.contains("send") || name_str.contains("receive") ||
-                           name_str.contains("barrier") || name_str.contains("reset") {
+                        if name_str.contains("measure")
+                            || name_str.contains("store")
+                            || name_str.contains("send")
+                            || name_str.contains("receive")
+                            || name_str.contains("barrier")
+                            || name_str.contains("reset")
+                        {
                             continue;
                         }
 
                         // Skip ops with no results (nothing to deduplicate)
-                        if op.results.is_empty() { continue; }
+                        if op.results.is_empty() {
+                            continue;
+                        }
 
                         let attrs_str = format!("{:?}", op.attrs);
                         OpFingerprint {
@@ -65,12 +73,16 @@ impl Pass for CommonSubexprElimination {
                         None => continue,
                     };
 
-                    if dup_results.len() != existing_results.len() { continue; }
+                    if dup_results.len() != existing_results.len() {
+                        continue;
+                    }
 
                     // Rewire all users of dup_results to use existing_results
                     let all_ops: Vec<_> = ctx.ops.keys().collect();
                     for &ok in &all_ops {
-                        if ok == op_key { continue; }
+                        if ok == op_key {
+                            continue;
+                        }
                         if let Some(other) = ctx.ops.get_mut(ok) {
                             for inp in &mut other.inputs {
                                 for (idx, dup_r) in dup_results.iter().enumerate() {

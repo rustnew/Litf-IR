@@ -18,27 +18,27 @@ members = [
 ]
 
 [workspace.package]
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 rust-version = "1.80"
 license = "MIT"
 authors = ["LIFT Framework Contributors"]
-repository = "https://github.com/rustnew/Lift"
+repository = "https://github.com/lift-lang/lift"
 description = "LIFT — Language for Intelligent Frameworks and Technologies: Unified IR for AI and Quantum Computing"
 
 [workspace.dependencies]
 # Internal crates
-lift-core = { path = "crates/lift-core", version = "0.3.0" }
-lift-ast = { path = "crates/lift-ast", version = "0.3.0" }
-lift-tensor = { path = "crates/lift-tensor", version = "0.3.0" }
-lift-quantum = { path = "crates/lift-quantum", version = "0.3.0" }
-lift-hybrid = { path = "crates/lift-hybrid", version = "0.3.0" }
-lift-sim = { path = "crates/lift-sim", version = "0.3.0" }
-lift-predict = { path = "crates/lift-predict", version = "0.3.0" }
-lift-opt = { path = "crates/lift-opt", version = "0.3.0" }
-lift-import = { path = "crates/lift-import", version = "0.3.0" }
-lift-export = { path = "crates/lift-export", version = "0.3.0" }
-lift-config = { path = "crates/lift-config", version = "0.3.0" }
+lift-core = { path = "crates/lift-core", version = "0.4.0" }
+lift-ast = { path = "crates/lift-ast", version = "0.4.0" }
+lift-tensor = { path = "crates/lift-tensor", version = "0.4.0" }
+lift-quantum = { path = "crates/lift-quantum", version = "0.4.0" }
+lift-hybrid = { path = "crates/lift-hybrid", version = "0.4.0" }
+lift-sim = { path = "crates/lift-sim", version = "0.4.0" }
+lift-predict = { path = "crates/lift-predict", version = "0.4.0" }
+lift-opt = { path = "crates/lift-opt", version = "0.4.0" }
+lift-import = { path = "crates/lift-import", version = "0.4.0" }
+lift-export = { path = "crates/lift-export", version = "0.4.0" }
+lift-config = { path = "crates/lift-config", version = "0.4.0" }
 
 # External dependencies
 slotmap = { version = "1.0", features = ["serde"] }

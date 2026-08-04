@@ -1,12 +1,14 @@
-use lift_core::context::Context;
-use lift_core::pass::{Pass, PassResult, AnalysisCache};
 use lift_core::attributes::Attribute;
+use lift_core::context::Context;
+use lift_core::pass::{AnalysisCache, Pass, PassResult};
 
 #[derive(Debug)]
 pub struct Canonicalize;
 
 impl Pass for Canonicalize {
-    fn name(&self) -> &str { "canonicalize" }
+    fn name(&self) -> &str {
+        "canonicalize"
+    }
 
     fn run(&self, ctx: &mut Context, _cache: &mut AnalysisCache) -> PassResult {
         let mut changed = false;
@@ -55,18 +57,16 @@ impl Pass for Canonicalize {
                     }
                 }
                 // reshape(reshape(x)) -> reshape(x)
-                "tensor.reshape" => {
-                    if op.inputs.len() == 1 {
-                        if let Some(val) = ctx.get_value(op.inputs[0]) {
-                            if let lift_core::values::DefSite::OpResult { op: prev_op, .. } = &val.def {
-                                if let Some(prev) = ctx.get_op(*prev_op) {
-                                    let prev_name = ctx.strings.resolve(prev.name);
-                                    if prev_name == "tensor.reshape" && !prev.inputs.is_empty() {
-                                        let original_input = prev.inputs[0];
-                                        if let Some(op_mut) = ctx.ops.get_mut(op_key) {
-                                            op_mut.inputs = vec![original_input];
-                                            changed = true;
-                                        }
+                "tensor.reshape" if op.inputs.len() == 1 => {
+                    if let Some(val) = ctx.get_value(op.inputs[0]) {
+                        if let lift_core::values::DefSite::OpResult { op: prev_op, .. } = &val.def {
+                            if let Some(prev) = ctx.get_op(*prev_op) {
+                                let prev_name = ctx.strings.resolve(prev.name);
+                                if prev_name == "tensor.reshape" && !prev.inputs.is_empty() {
+                                    let original_input = prev.inputs[0];
+                                    if let Some(op_mut) = ctx.ops.get_mut(op_key) {
+                                        op_mut.inputs = vec![original_input];
+                                        changed = true;
                                     }
                                 }
                             }

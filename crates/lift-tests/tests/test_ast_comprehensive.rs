@@ -42,7 +42,8 @@ fn test_lex_all_punctuation() {
 
 #[test]
 fn test_lex_keywords() {
-    let mut lexer = Lexer::new("module func return if else true false tensor qubit bit hamiltonian void index");
+    let mut lexer =
+        Lexer::new("module func return if else true false tensor qubit bit hamiltonian void index");
     let tokens = lexer.tokenize().to_vec();
     assert!(matches!(tokens[0].kind, TokenKind::Module));
     assert!(matches!(tokens[1].kind, TokenKind::Func));
@@ -61,12 +62,12 @@ fn test_lex_keywords() {
 
 #[test]
 fn test_lex_numbers() {
-    let mut lexer = Lexer::new("0 42 -1 3.14 -0.5 2.5e-3");
+    let mut lexer = Lexer::new("0 42 -1 2.5 -0.5 2.5e-3");
     let tokens = lexer.tokenize().to_vec();
     assert!(matches!(tokens[0].kind, TokenKind::Integer(0)));
     assert!(matches!(tokens[1].kind, TokenKind::Integer(42)));
     assert!(matches!(tokens[2].kind, TokenKind::Integer(-1)));
-    assert!(matches!(tokens[3].kind, TokenKind::Float(v) if (v - 3.14).abs() < 1e-10));
+    assert!(matches!(tokens[3].kind, TokenKind::Float(v) if (v - 2.5).abs() < 1e-10));
     assert!(matches!(tokens[4].kind, TokenKind::Float(v) if (v + 0.5).abs() < 1e-10));
     assert!(matches!(tokens[5].kind, TokenKind::Float(v) if (v - 2.5e-3).abs() < 1e-10));
 }
@@ -141,10 +142,13 @@ fn test_lex_compact_tensor_type() {
 fn test_lex_high_dimensional_tensor() {
     let mut lexer = Lexer::new("tensor<2x3x4x5x6xf32>");
     let tokens = lexer.tokenize().to_vec();
-    let ints: Vec<i64> = tokens.iter().filter_map(|t| match &t.kind {
-        TokenKind::Integer(n) => Some(*n),
-        _ => None,
-    }).collect();
+    let ints: Vec<i64> = tokens
+        .iter()
+        .filter_map(|t| match &t.kind {
+            TokenKind::Integer(n) => Some(*n),
+            _ => None,
+        })
+        .collect();
     assert_eq!(ints, vec![2, 3, 4, 5, 6]);
 }
 
@@ -155,7 +159,11 @@ fn test_lex_high_dimensional_tensor() {
 fn parse_program(src: &str) -> Program {
     let mut lexer = Lexer::new(src);
     let tokens = lexer.tokenize().to_vec();
-    assert!(lexer.errors().is_empty(), "lexer errors: {:?}", lexer.errors());
+    assert!(
+        lexer.errors().is_empty(),
+        "lexer errors: {:?}",
+        lexer.errors()
+    );
     let mut parser = Parser::new(tokens);
     parser.parse().expect("parse failed")
 }
@@ -170,13 +178,15 @@ fn test_parse_minimal_module() {
 
 #[test]
 fn test_parse_func_with_body() {
-    let prog = parse_program(r#"
+    let prog = parse_program(
+        r#"
 module @m {
     func @f(%x: tensor<4xf32>) -> tensor<4xf32> {
         return %x
     }
 }
-"#);
+"#,
+    );
     assert_eq!(prog.modules[0].functions.len(), 1);
     assert_eq!(prog.modules[0].functions[0].name, "f");
     assert_eq!(prog.modules[0].functions[0].params.len(), 1);
@@ -184,18 +194,21 @@ module @m {
 
 #[test]
 fn test_parse_multiple_functions() {
-    let prog = parse_program(r#"
+    let prog = parse_program(
+        r#"
 module @m {
     func @f1(%x: tensor<4xf32>) -> tensor<4xf32> { return %x }
     func @f2(%a: qubit) -> qubit { return %a }
 }
-"#);
+"#,
+    );
     assert_eq!(prog.modules[0].functions.len(), 2);
 }
 
 #[test]
 fn test_parse_tensor_operations() {
-    let prog = parse_program(r#"
+    let prog = parse_program(
+        r#"
 #dialect tensor
 module @t {
     func @forward(%x: tensor<2x3xf32>, %y: tensor<2x3xf32>) -> tensor<2x3xf32> {
@@ -203,7 +216,8 @@ module @t {
         return %z
     }
 }
-"#);
+"#,
+    );
     let func = &prog.modules[0].functions[0];
     assert_eq!(func.params.len(), 2);
     assert!(!func.body.is_empty());
@@ -211,7 +225,8 @@ module @t {
 
 #[test]
 fn test_parse_quantum_operations() {
-    let prog = parse_program(r#"
+    let prog = parse_program(
+        r#"
 #dialect quantum
 module @q {
     func @ghz(%q0: qubit, %q1: qubit, %q2: qubit) -> (qubit, qubit, qubit) {
@@ -221,7 +236,8 @@ module @q {
         return %q4, %q6, %q7
     }
 }
-"#);
+"#,
+    );
     let func = &prog.modules[0].functions[0];
     assert_eq!(func.params.len(), 3);
     assert_eq!(func.returns.len(), 3);
@@ -229,37 +245,43 @@ module @q {
 
 #[test]
 fn test_parse_multiple_return_types() {
-    let prog = parse_program(r#"
+    let prog = parse_program(
+        r#"
 module @m {
     func @split(%x: tensor<8xf32>) -> (tensor<4xf32>, tensor<4xf32>) {
         return %x, %x
     }
 }
-"#);
+"#,
+    );
     assert_eq!(prog.modules[0].functions[0].returns.len(), 2);
 }
 
 #[test]
 fn test_parse_various_dtypes() {
-    let prog = parse_program(r#"
+    let prog = parse_program(
+        r#"
 module @m {
     func @dtypes(%a: tensor<4xf16>, %b: tensor<4xbf16>, %c: tensor<4xi8>, %d: tensor<4xf64>) -> tensor<4xf32> {
         return %a
     }
 }
-"#);
+"#,
+    );
     assert_eq!(prog.modules[0].functions[0].params.len(), 4);
 }
 
 #[test]
 fn test_parse_large_shapes() {
-    let prog = parse_program(r#"
+    let prog = parse_program(
+        r#"
 module @m {
     func @big(%x: tensor<1x1024x4096xf32>) -> tensor<1x1024x4096xf32> {
         return %x
     }
 }
-"#);
+"#,
+    );
     assert_eq!(prog.modules[0].functions[0].params.len(), 1);
 }
 
@@ -270,18 +292,25 @@ module @m {
 fn parse_and_build(src: &str) -> lift_core::Context {
     let mut lexer = Lexer::new(src);
     let tokens = lexer.tokenize().to_vec();
-    assert!(lexer.errors().is_empty(), "lexer errors: {:?}", lexer.errors());
+    assert!(
+        lexer.errors().is_empty(),
+        "lexer errors: {:?}",
+        lexer.errors()
+    );
     let mut parser = Parser::new(tokens);
     let program = parser.parse().expect("parse failed");
     let mut ctx = lift_core::Context::new();
     let mut builder = IrBuilder::new();
-    builder.build_program(&mut ctx, &program).expect("build failed");
+    builder
+        .build_program(&mut ctx, &program)
+        .expect("build failed");
     ctx
 }
 
 #[test]
 fn test_build_and_verify_mlp() {
-    let ctx = parse_and_build(r#"
+    let ctx = parse_and_build(
+        r#"
 #dialect tensor
 module @mlp {
     func @forward(%x: tensor<1x784xf32>, %w: tensor<784x256xf32>, %b: tensor<256xf32>) -> tensor<1x256xf32> {
@@ -291,7 +320,8 @@ module @mlp {
         return %h3
     }
 }
-"#);
+"#,
+    );
     assert!(lift_core::verifier::verify(&ctx).is_ok());
     assert_eq!(ctx.modules.len(), 1);
     assert_eq!(ctx.ops.len(), 4);
@@ -299,7 +329,8 @@ module @mlp {
 
 #[test]
 fn test_build_and_verify_quantum() {
-    let ctx = parse_and_build(r#"
+    let ctx = parse_and_build(
+        r#"
 #dialect quantum
 module @bell {
     func @create(%q0: qubit, %q1: qubit) -> (qubit, qubit) {
@@ -308,14 +339,16 @@ module @bell {
         return %q3, %q4
     }
 }
-"#);
+"#,
+    );
     assert!(lift_core::verifier::verify(&ctx).is_ok());
     assert_eq!(ctx.ops.len(), 3);
 }
 
 #[test]
 fn test_build_print_roundtrip() {
-    let ctx = parse_and_build(r#"
+    let ctx = parse_and_build(
+        r#"
 #dialect tensor
 module @test {
     func @relu(%x: tensor<4xf32>) -> tensor<4xf32> {
@@ -323,7 +356,8 @@ module @test {
         return %y
     }
 }
-"#);
+"#,
+    );
     let printed = lift_core::printer::print_ir(&ctx);
     assert!(printed.contains("module @test"));
     assert!(printed.contains("tensor.relu"));

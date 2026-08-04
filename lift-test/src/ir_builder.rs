@@ -131,53 +131,85 @@ pub fn build_cnn_context() -> Context {
 
     // ── Layer 1: conv2d → relu → maxpool2d ──
     let (op1, res1) = ctx.create_op(
-        "tensor.conv2d", "tensor", vec![img, w1], vec![conv1_ty],
-        Attributes::new(), Location::unknown(),
+        "tensor.conv2d",
+        "tensor",
+        vec![img, w1],
+        vec![conv1_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op1);
 
     let (op2, res2) = ctx.create_op(
-        "tensor.relu", "tensor", vec![res1[0]], vec![conv1_ty],
-        Attributes::new(), Location::unknown(),
+        "tensor.relu",
+        "tensor",
+        vec![res1[0]],
+        vec![conv1_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op2);
 
     let (op3, res3) = ctx.create_op(
-        "tensor.maxpool2d", "tensor", vec![res2[0]], vec![pool1_ty],
-        Attributes::new(), Location::unknown(),
+        "tensor.maxpool2d",
+        "tensor",
+        vec![res2[0]],
+        vec![pool1_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op3);
 
     // ── Layer 2: conv2d → relu ──
     let (op4, res4) = ctx.create_op(
-        "tensor.conv2d", "tensor", vec![res3[0], w2], vec![conv2_ty],
-        Attributes::new(), Location::unknown(),
+        "tensor.conv2d",
+        "tensor",
+        vec![res3[0], w2],
+        vec![conv2_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op4);
 
     let (op5, res5) = ctx.create_op(
-        "tensor.relu", "tensor", vec![res4[0]], vec![conv2_ty],
-        Attributes::new(), Location::unknown(),
+        "tensor.relu",
+        "tensor",
+        vec![res4[0]],
+        vec![conv2_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op5);
 
     // ── Global average pooling ──
     let (op6, res6) = ctx.create_op(
-        "tensor.global_avgpool", "tensor", vec![res5[0]], vec![gap_ty],
-        Attributes::new(), Location::unknown(),
+        "tensor.global_avgpool",
+        "tensor",
+        vec![res5[0]],
+        vec![gap_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op6);
 
     // ── Fully-connected: matmul + bias ──
     let (op7, res7) = ctx.create_op(
-        "tensor.matmul", "tensor", vec![res6[0], wfc], vec![out_ty],
-        Attributes::new(), Location::unknown(),
+        "tensor.matmul",
+        "tensor",
+        vec![res6[0], wfc],
+        vec![out_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op7);
 
     let (op8, _) = ctx.create_op(
-        "tensor.add", "tensor", vec![res7[0], bfc], vec![out_ty],
-        Attributes::new(), Location::unknown(),
+        "tensor.add",
+        "tensor",
+        vec![res7[0], bfc],
+        vec![out_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op8);
 
@@ -209,64 +241,104 @@ pub fn build_vqc_context() -> Context {
 
     // ── Layer 1: RY angle encoding ──
     let (op0, ry0) = ctx.create_op(
-        "quantum.ry", "quantum", vec![q0], vec![qubit_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.ry",
+        "quantum",
+        vec![q0],
+        vec![qubit_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op0);
 
     let (op1, ry1) = ctx.create_op(
-        "quantum.ry", "quantum", vec![q1], vec![qubit_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.ry",
+        "quantum",
+        vec![q1],
+        vec![qubit_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op1);
 
     let (op2, ry2) = ctx.create_op(
-        "quantum.ry", "quantum", vec![q2], vec![qubit_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.ry",
+        "quantum",
+        vec![q2],
+        vec![qubit_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op2);
 
     let (op3, ry3) = ctx.create_op(
-        "quantum.ry", "quantum", vec![q3], vec![qubit_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.ry",
+        "quantum",
+        vec![q3],
+        vec![qubit_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op3);
 
     // ── Layer 2: CX entanglement ──
     let (op4, cx01) = ctx.create_op(
-        "quantum.cx", "quantum", vec![ry0[0], ry1[0]], vec![qubit_ty, qubit_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.cx",
+        "quantum",
+        vec![ry0[0], ry1[0]],
+        vec![qubit_ty, qubit_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op4);
 
     let (op5, cx23) = ctx.create_op(
-        "quantum.cx", "quantum", vec![ry2[0], ry3[0]], vec![qubit_ty, qubit_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.cx",
+        "quantum",
+        vec![ry2[0], ry3[0]],
+        vec![qubit_ty, qubit_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op5);
 
     // ── Layer 3: RZ parametrised rotations ──
     let (op6, _) = ctx.create_op(
-        "quantum.rz", "quantum", vec![cx01[0]], vec![qubit_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.rz",
+        "quantum",
+        vec![cx01[0]],
+        vec![qubit_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op6);
 
     let (op7, _) = ctx.create_op(
-        "quantum.rz", "quantum", vec![cx01[1]], vec![qubit_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.rz",
+        "quantum",
+        vec![cx01[1]],
+        vec![qubit_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op7);
 
     let (op8, _) = ctx.create_op(
-        "quantum.rz", "quantum", vec![cx23[0]], vec![qubit_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.rz",
+        "quantum",
+        vec![cx23[0]],
+        vec![qubit_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op8);
 
     let (op9, _) = ctx.create_op(
-        "quantum.rz", "quantum", vec![cx23[1]], vec![qubit_ty],
-        Attributes::new(), Location::unknown(),
+        "quantum.rz",
+        "quantum",
+        vec![cx23[1]],
+        vec![qubit_ty],
+        Attributes::new(),
+        Location::unknown(),
     );
     ctx.add_op_to_block(block, op9);
 
@@ -281,13 +353,21 @@ pub fn build_vqc_context() -> Context {
 pub fn run(report: &mut TestReport) -> (Context, Context) {
     let cnn = build_cnn_context();
     report.check("Build CNN encoder IR (8 tensor ops)", cnn.ops.len() == 8);
-    println!("    CNN: {} ops, {} values, {} blocks",
-        cnn.ops.len(), cnn.values.len(), cnn.blocks.len());
+    println!(
+        "    CNN: {} ops, {} values, {} blocks",
+        cnn.ops.len(),
+        cnn.values.len(),
+        cnn.blocks.len()
+    );
 
     let vqc = build_vqc_context();
     report.check("Build VQC circuit IR (10 quantum ops)", vqc.ops.len() == 10);
-    println!("    VQC: {} ops, {} values, {} blocks",
-        vqc.ops.len(), vqc.values.len(), vqc.blocks.len());
+    println!(
+        "    VQC: {} ops, {} values, {} blocks",
+        vqc.ops.len(),
+        vqc.values.len(),
+        vqc.blocks.len()
+    );
 
     (cnn, vqc)
 }
