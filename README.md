@@ -75,7 +75,7 @@ LIFT is a modular compiler framework that provides a single SSA-based intermedia
 ### Build
 
 ```bash
-git clone https://github.com/lift-lang/lift.git
+git clone https://github.com/rustnew/Litf-IR.git
 cd Lift
 cargo build --release
 ```

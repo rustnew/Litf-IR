@@ -23,7 +23,7 @@ edition = "2021"
 rust-version = "1.80"
 license = "MIT"
 authors = ["LIFT Framework Contributors"]
-repository = "https://github.com/lift-lang/lift"
+repository = "https://github.com/rustnew/Litf-IR"
 description = "LIFT — Language for Intelligent Frameworks and Technologies: Unified IR for AI and Quantum Computing"
 
 [workspace.dependencies]
