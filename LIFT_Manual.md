@@ -51,8 +51,8 @@ LIFT provides a **single SSA-based intermediate representation** spanning three 
 
 | Dialect | Domain | Operations |
 |---------|--------|------------|
-| **tensor** | AI/ML | 107 ops: arithmetic, attention, convolution, normalisation, quantisation, GNN, diffusion |
-| **quantum** | Quantum computing | 46+ gates: Pauli, Clifford, parametric, multi-qubit; noise models, QEC, topology |
+| **tensor** | AI/ML | 110 ops: arithmetic, attention, convolution, normalisation, quantisation, GNN, diffusion |
+| **quantum** | Quantum computing | 48 gates: Pauli, Clifford, parametric, multi-qubit; noise models, QEC, topology |
 | **hybrid** | Classical-quantum | 21 ops: encoding, gradient methods, variational algorithms, GPU↔QPU transfer |
 
 The unified pipeline: **import → verify → analyse → optimise → predict → export**.
@@ -417,7 +417,7 @@ let mem = ShapeInference::compute_memory_bytes(&TensorOp::MatMul, &[&a, &b]);
 println!("Memory: {:?} bytes", mem);
 ```
 
-### 5.7 All 107 Tensor Operations
+### 5.7 All 110 Tensor Operations
 
 | Category | Operations |
 |----------|-----------|
@@ -576,7 +576,7 @@ ctx.add_op_to_block(block, cx_op);
 lift_core::verifier::verify(&ctx).expect("Valid circuit");
 ```
 
-### 7.4 All 46+ Quantum Gates
+### 7.4 All 48 Quantum Gates
 
 | Category | Gates |
 |----------|-------|
@@ -2054,8 +2054,8 @@ std::fs::write("my_mlp.onnx", &onnx).unwrap();
 |-------|---------|
 | **lift-core** | IR foundation: Context, types, values, operations, blocks, regions, verifier, printer, pass manager |
 | **lift-ast** | Lexer, parser, IR builder for `.lif` files |
-| **lift-tensor** | Tensor operations (107), shape inference, FLOPs computation |
-| **lift-quantum** | Quantum gates (46+), noise models, topology, QEC codes, Kraus channels |
+| **lift-tensor** | Tensor operations (110), shape inference, FLOPs computation |
+| **lift-quantum** | Quantum gates (48), noise models, topology, QEC codes, Kraus channels |
 | **lift-hybrid** | Hybrid operations (21), encoding strategies, gradient methods |
 | **lift-opt** | Optimisation passes (11): canonicalize, fusion, FlashAttention, gate cancellation, etc. |
 | **lift-sim** | Cost models (GPU + QPU), analysis reports, energy models, budgets |
@@ -2134,7 +2134,7 @@ std::fs::write("my_mlp.onnx", &onnx).unwrap();
 
 | Item | Description |
 |------|-------------|
-| `TensorOp` enum | 107 tensor operations |
+| `TensorOp` enum | 110 tensor operations |
 | `TensorOp::name()` → `&str` | Get string name |
 | `TensorOp::from_name(s)` → `Option<TensorOp>` | Parse from string |
 | `TensorOp::num_inputs()` → `(usize, usize)` | Min/max input count |
@@ -2153,7 +2153,7 @@ std::fs::write("my_mlp.onnx", &onnx).unwrap();
 
 | Item | Description |
 |------|-------------|
-| `QuantumGate` enum | 46+ quantum gates |
+| `QuantumGate` enum | 48 quantum gates |
 | `QuantumGate::op_name()` → `&str` | Get gate name (e.g. `"quantum.h"`) |
 | `QuantumGate::from_name(s)` → `Option<QuantumGate>` | Parse from string |
 | `QuantumGate::num_qubits()` → `usize` | Gate arity |
@@ -2343,8 +2343,8 @@ println!("After CX: fidelity = {:.6}", circuit.total_fidelity);
 
 | Dialect | Count | Categories |
 |---------|-------|-----------|
-| **tensor** | 107 | Arithmetic, activations, normalisation, shape, attention, convolution, pooling, recurrent, math, sparse, quantisation, diffusion, GNN, memory, gradient, parallelism, fused |
-| **quantum** | 46+ | 1Q standard, 1Q parametric, 1Q fixed, 2Q standard, 2Q parametric, IonQ native, 3Q, multi-controlled, measurement, special |
+| **tensor** | 110 | Arithmetic, activations, normalisation, shape, attention, convolution, pooling, recurrent, math, sparse, quantisation, diffusion, GNN, memory, gradient, parallelism, fused |
+| **quantum** | 48 | 1Q standard, 1Q parametric, 1Q fixed, 2Q standard, 2Q parametric, IonQ native, 3Q, multi-controlled, measurement, special |
 | **hybrid** | 21 | Encoding, gradient methods, processing, variational, data transfer, co-execution, measurement |
 
 **Total: 174+ operations** across three dialects in a single unified IR.

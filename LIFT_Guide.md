@@ -12,8 +12,8 @@ This document describes **every feature** of the LIFT framework, numbered and or
 1. [General Architecture](#1-general-architecture)
 2. [lift-core — IR Core](#2-lift-core--ir-core)
 3. [lift-ast — Parsing the .lif Language](#3-lift-ast--parsing-the-lif-language)
-4. [lift-tensor — Tensor Operations (107 ops)](#4-lift-tensor--tensor-operations-107-ops)
-5. [lift-quantum — Quantum Gates and Noise (46+ gates)](#5-lift-quantum--quantum-gates-and-noise-46-gates)
+4. [lift-tensor — Tensor Operations (110 ops)](#4-lift-tensor--tensor-operations-110-ops)
+5. [lift-quantum — Quantum Gates and Noise (48 gates)](#5-lift-quantum--quantum-gates-and-noise-48-gates)
 6. [lift-hybrid — Classical-Quantum Hybrid Computation](#6-lift-hybrid--classical-quantum-hybrid-computation)
 7. [lift-opt — Optimisation Passes (13 passes)](#7-lift-opt--optimisation-passes-13-passes)
 8. [lift-sim — Simulation and Cost Analysis](#8-lift-sim--simulation-and-cost-analysis)
@@ -330,7 +330,7 @@ fn load_lif_file(path: &str) -> Result<Context, String> {
 
 ---
 
-## 4. lift-tensor — Tensor Operations (90+ ops)
+## 4. lift-tensor — Tensor Operations (110 ops)
 
 ### 4.1 Complete Operation List by Category
 
@@ -555,7 +555,7 @@ assert!(TensorOp::Reshape.is_zero_flop());
 | 104 | `FusedLinearGeLU` | Linear + GeLU | Bandwidth gain |
 | 105 | `FusedAttentionLayerNorm` | Attention + LayerNorm | Memory reduction |
 | 106 | `FusedLinearSiLU` | Linear + SiLU | Bandwidth gain |
-| 107 | `FusedConvBatchNormReLU` | Conv + BN + ReLU | Fast inference |
+| 110 | `FusedConvBatchNormReLU` | Conv + BN + ReLU | Fast inference |
 
 ### 4.2 Shape Inference
 
@@ -607,7 +607,7 @@ op.flops_formula();     // "2*B*H*(S^2*D + S*D^2)"
 
 ---
 
-## 5. lift-quantum — Quantum Gates and Noise (50+ gates)
+## 5. lift-quantum — Quantum Gates and Noise (48 gates)
 
 ### 5.1 Quantum Gates
 

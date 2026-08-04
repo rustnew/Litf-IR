@@ -12,8 +12,8 @@ LIFT is a modular compiler framework that provides a single SSA-based intermedia
 
 ## Key Features
 
-- **107 tensor operations** — arithmetic, attention (Flash, Paged, GQA), convolutions, normalisation, quantisation, MoE, GNN, diffusion, and more
-- **46+ quantum gates** — Pauli, Clifford, parametric, multi-qubit; noise models, Kraus channels, QEC codes
+- **110 tensor operations** — arithmetic, attention (Flash, Paged, GQA), convolutions, normalisation, quantisation, MoE, GNN, diffusion, and more
+- **48 quantum gates** — Pauli, Clifford, parametric, multi-qubit; noise models, Kraus channels, QEC codes
 - **21 hybrid operations** — encoding strategies, gradient methods (parameter shift, adjoint), variational algorithms (VQC, VQE, QAOA)
 - **13 optimisation passes** — canonicalise, constant folding, DCE, CSE, tensor fusion, FlashAttention replacement, quantisation annotation, gate cancellation, rotation merging, noise-aware scheduling, qubit layout mapping, gate decomposition, real qubit routing
 - **3 export backends** — **LLVM IR** (GPU/CPU runtime), **ONNX** (opset 21, PyTorch/TensorFlow/TensorRT interop), **OpenQASM 3.0** (IBM, Rigetti, IonQ, Quantinuum)
@@ -56,8 +56,8 @@ LIFT is a modular compiler framework that provides a single SSA-based intermedia
 |-------|-------------|
 | **lift-core** | SSA IR, type system, verifier, printer, pass manager, dialect registry, `ModelBuilder` |
 | **lift-ast** | Lexer, parser, IR builder for `.lif` source files |
-| **lift-tensor** | 107 tensor operations with shape inference and FLOP counting |
-| **lift-quantum** | 46+ quantum gates, hardware providers, device topology, noise models, Kraus channels, QEC |
+| **lift-tensor** | 110 tensor operations with shape inference and FLOP counting |
+| **lift-quantum** | 48 quantum gates, hardware providers, device topology, noise models, Kraus channels, QEC |
 | **lift-hybrid** | 21 hybrid ops — encoding, gradient methods, variational algorithms, co-execution |
 | **lift-opt** | 13 optimisation passes (classical, quantum, and AI-specific) |
 | **lift-sim** | Classical/quantum cost models, energy estimation, reactive budgets, module analysis |
@@ -201,6 +201,7 @@ lift-config  = "0.4.0"
 ```rust
 use lift_ast::{Lexer, Parser, IrBuilder};
 use lift_core::{Context, verifier, pass::PassManager};
+use lift_quantum::{Provider, DeviceTopology};
 
 // Parse a .lif file
 let source = std::fs::read_to_string("model.lif").unwrap();
@@ -226,7 +227,7 @@ pm.add_pass(Box::new(lift_opt::GateCancellation));
 pm.add_pass(Box::new(lift_opt::RotationMerge));
 pm.add_pass(Box::new(lift_opt::NoiseAwareSchedule));
 pm.add_pass(Box::new(lift_opt::LayoutMapping));
-pm.add_pass(Box::new(lift_opt::GateDecomposition::new(Some(Provider::Ibm))));
+pm.add_pass(Box::new(lift_opt::GateDecomposition::new(Provider::IbmKyoto)));
 pm.add_pass(Box::new(lift_opt::RealRouting::new(DeviceTopology::linear(8))));
 pm.run_all(&mut ctx);
 
@@ -240,7 +241,7 @@ let qasm = lift_export::QasmExporter::new().export(&ctx).unwrap();
 
 ### LLVM IR
 
-Generates LLVM IR with runtime function calls for all 107 tensor operations (cuBLAS/cuDNN backend):
+Generates LLVM IR with runtime function calls for all 110 tensor operations (cuBLAS/cuDNN backend):
 
 ```bash
 lift export model.lif --backend llvm --output model.ll
@@ -276,7 +277,7 @@ lift export model.lif --backend onnx --output model.onnx
 
 ### OpenQASM 3.0
 
-Generates OpenQASM 3.0 for quantum hardware execution. Supports all 46+ gates including IBM, Rigetti, IonQ, and Quantinuum native gate sets:
+Generates OpenQASM 3.0 for quantum hardware execution. Supports all 48 gates including IBM, Rigetti, IonQ, and Quantinuum native gate sets:
 
 ```bash
 lift export quantum.lif --backend qasm --output circuit.qasm

@@ -22,7 +22,11 @@ use crate::attributes::{Attribute, Attributes};
 use crate::context::Context;
 use crate::functions::FunctionData;
 use crate::location::Location;
-use crate::types::{DataType, Dimension, MemoryLayout};
+use crate::types::{Dimension, MemoryLayout};
+
+/// Re-exported so users can write
+/// `use lift_core::model_builder::{ModelBuilder, DataType, tensor}`.
+pub use crate::types::DataType;
 
 /// Shape descriptor for tensor types.
 #[derive(Debug, Clone)]

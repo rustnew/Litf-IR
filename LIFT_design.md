@@ -29,7 +29,7 @@ LIFT is a **unified compiler infrastructure** that treats AI computation (tensor
                       │                                                          │
           ┌───────────┼───────────┐                                 ┌────────────┼────────────┐
      LIFT-TENSOR  LIFT-QUANTUM  LIFT-HYBRID                    CUDA (GPU)   OpenQASM 3   LLVM (CPU)   ONNX
-     107 tensor   50+ gates     21 hybrid                      H100/A100    IBM/Rigetti   AVX-512      TensorRT
+     110 tensor   48 gates     21 hybrid                      H100/A100    IBM/Rigetti   AVX-512      TensorRT
      operations   Kraus/QEC     VQC/VQE ops                    MI300        IonQ          OpenMP       PyTorch
 ```
 
@@ -80,8 +80,8 @@ No existing IR handles both AI and quantum in a single representation.
 |-------|---------|-------------|
 | `lift-core` | SSA IR foundation | Types, values, operations, blocks, regions, verifier, printer, pass manager |
 | `lift-ast` | Frontend | Lexer, parser, AST, IR builder for `.lif` files |
-| `lift-tensor` | AI dialect | 107 ops (attention, conv, pooling, MoE, quantisation, GNN, fused), shape inference |
-| `lift-quantum` | Quantum dialect | 50+ gates (IBM/Rigetti/IonQ native), noise models, Kraus channels, QEC, topology |
+| `lift-tensor` | AI dialect | 110 ops (attention, conv, pooling, MoE, quantisation, GNN, fused), shape inference |
+| `lift-quantum` | Quantum dialect | 48 gates (IBM/Rigetti/IonQ native), noise models, Kraus channels, QEC, topology |
 | `lift-hybrid` | Fusion dialect | 21 ops (VQC, VQE, QAOA), gradient methods, encoding strategies, GPU-QPU transfer |
 | `lift-sim` | Analysis engine | Cost models (A100/H100), quantum cost (superconducting/trapped-ion/neutral-atom), energy, carbon |
 | `lift-predict` | Prediction | Roofline model, budget enforcement |
@@ -191,8 +191,8 @@ prediction {
 |-----------|--------|----------|
 | `lift-core` | Stable | SSA IR, types, verifier, printer, pass manager |
 | `lift-ast` | Stable | Full lexer, parser, AST, IR builder |
-| `lift-tensor` | Stable | 107 operations, shape inference, FLOP counting |
-| `lift-quantum` | Stable | 50+ gates, noise models, Kraus channels, QEC codes, topology |
+| `lift-tensor` | Stable | 110 operations, shape inference, FLOP counting |
+| `lift-quantum` | Stable | 48 gates, noise models, Kraus channels, QEC codes, topology |
 | `lift-hybrid` | Stable | 21 operations, gradient methods, encoding strategies |
 | `lift-sim` | Stable | Cost models, energy model, quantum simulation, budget tracking |
 | `lift-predict` | Stable | Roofline model, budget enforcement |
