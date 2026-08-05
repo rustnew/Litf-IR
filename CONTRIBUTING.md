@@ -90,24 +90,39 @@ Releases are published to [crates.io](https://crates.io). The process:
    version references across `README.md` and the docs (`LIFT_Guide.md`,
    `LIFT_Manual.md`, `LIFT_design.md`, `DIALECTS.md`).
 2. Update `CHANGELOG.md`.
-3. Publish crates in dependency order (L0 → L1 → L2 → L3 → L4):
+3. Push a version tag — the [`publish` workflow](.github/workflows/publish.yml)
+   publishes all 13 crates automatically in dependency order
+   (L0 → L1 → L2 → L3 → L4) using **Trusted Publishing** (OIDC, no API token):
 
    ```bash
-   cargo publish -p lift-core
-   cargo publish -p lift-config
-   # ... then L1, L2, L3, L4 ...
+   git tag v0.4.4
+   git push origin v0.4.4
    ```
 
+   > Trusted Publishing is configured per crate on crates.io (Settings →
+   > Trusted Publishing) for `rustnew/Lift`, workflow `publish.yml`. The
+   > workflow can also be triggered manually via the Actions tab
+   > (`workflow_dispatch`).
+   >
    > crates.io does not allow overwriting a published version — a fix to an
    > already-published release requires a new version bump.
 
-4. Tag the release and create a GitHub release:
+4. Create a GitHub release:
 
    ```bash
-   git tag v0.4.3
-   git push origin v0.4.3
-   gh release create v0.4.3 --title "..." --notes "..."
+   gh release create v0.4.4 --title "..." --notes "..."
    ```
+
+### Manual fallback
+
+If you need to publish outside CI (e.g. the very first release of a new
+crate), publish in dependency order with the API token:
+
+```bash
+cargo publish -p lift-core
+cargo publish -p lift-config
+# ... then L1, L2, L3, L4 ...
+```
 
 ## Commit conventions
 

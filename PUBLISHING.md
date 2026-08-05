@@ -13,6 +13,13 @@ AI, and quantum ecosystems, plus the channels still to pursue.
 | GitHub Releases | https://github.com/rustnew/Lift/releases | ✅ 7 releases |
 | GitHub Pages (docs book) | https://rustnew.github.io/Lift/ | ✅ |
 | GitHub Discussions | https://github.com/rustnew/Lift/discussions | ✅ |
+| crates.io Trusted Publishing | 13 crates → `rustnew/Lift` workflow `publish.yml` | ✅ configured |
+
+> **Publishing is now secure**: all 13 crates use [Trusted Publishing](https://crates.io/docs/trusted-publishing)
+> (OIDC, no API token). Pushing a `v*` tag triggers
+> [`.github/workflows/publish.yml`](.github/workflows/publish.yml), which
+> publishes every crate in dependency order. See
+> [CONTRIBUTING.md](CONTRIBUTING.md#publishing).
 
 ## Pull requests submitted (awaiting merge)
 
