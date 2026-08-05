@@ -1,7 +1,7 @@
 # LIFT User Manual — Complete Usage Guide
 
 > **LIFT** — *Language for Intelligent Frameworks and Technologies*
-> Version 0.4.1
+> Version 0.4.2
 
 This manual is the definitive reference for every use case of the LIFT compiler framework. It presents **real-world problems**, explains how LIFT solves them, and provides **working code examples** for each scenario.
 
@@ -2378,4 +2378,4 @@ lift export input.lif --backend qasm -o circuit.qasm
 
 ---
 
-*LIFT v0.4.1 — MIT License — https://github.com/rustnew/Lift*
+*LIFT v0.4.2 — MIT License — https://github.com/rustnew/Lift*
