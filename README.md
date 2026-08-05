@@ -444,6 +444,12 @@ bash examples/validate_all.sh   # Full pipeline validation (105 checks)
 - **[LIFT_design.md](LIFT_design.md)** — Architecture and design document
 - **[CAPABILITIES.md](CAPABILITIES.md)** — Capabilities, limits, and roadmap
 - **[DIALECTS.md](DIALECTS.md)** — Dialect reference (tensor, quantum, hybrid)
+- **[CHANGELOG.md](CHANGELOG.md)** — Version history and release notes
+
+## Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for the
+development workflow, project layout, code style, and how to open a pull request.
 
 ## Roadmap
 

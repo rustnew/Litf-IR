@@ -1,76 +1,134 @@
 # Contributing to LIFT
 
-Thank you for your interest in contributing to **LIFT — Language for Intelligent
-Frameworks and Technologies**. This project is a unified SSA-based intermediate
-representation for AI, quantum, and hybrid computation.
+Thanks for your interest in contributing to LIFT — a unified intermediate
+representation for AI and quantum computing.
 
-## Code of Conduct
+This guide covers the development workflow, project layout, and how to get
+your changes reviewed and merged.
 
-Be respectful and constructive. This project is open to everyone.
+## Table of contents
 
-## Getting Started
+- [Development setup](#development-setup)
+- [Project layout](#project-layout)
+- [Building and testing](#building-and-testing)
+- [Code style](#code-style)
+- [Validation](#validation)
+- [Publishing](#publishing)
+- [Commit conventions](#commit-conventions)
+- [Opening a pull request](#opening-a-pull-request)
+
+## Development setup
+
+Requirements:
+
+- **Rust** 1.80 or newer (see `rust-version` in `Cargo.toml`)
+- **Cargo** (comes with Rust)
+
+Clone and build:
 
 ```bash
-# Clone and build
-git clone <your-fork-url>
-cd lift
+git clone git@github.com:rustnew/Lift.git
+cd Lift
+cargo build --workspace
+```
+
+## Project layout
+
+LIFT is a Cargo workspace of 13 published crates, organised by dependency layer:
+
+| Layer | Crates | Purpose |
+|-------|--------|---------|
+| L0 — Foundation | `lift-core`, `lift-config` | SSA IR, verifier; O0–O3 pipeline config |
+| L1 — Dialects & Frontend | `lift-ast`, `lift-tensor`, `lift-quantum` | lexer/parser; AI ops; quantum gates & noise |
+| L2 — Analysis & I/O | `lift-opt`, `lift-sim`, `lift-export`, `lift-import`, `lift-hybrid` | passes; cost model; backends; importers; fusion |
+| L3 — Prediction | `lift-predict` | roofline / performance prediction |
+| L4 — Tools | `lift-cli`, `lift-codegen` | CLI; programmatic model generation |
+
+`lift-tests` is a private crate (`publish = false`) used for integration tests.
+
+## Building and testing
+
+```bash
+# Build the whole workspace
 cargo build --workspace
 
-# Run the full test suite (515+ tests)
+# Run all tests
 cargo test --workspace
+
+# Build a single crate
+cargo build -p lift-core
 ```
 
-## Repository Layout
+## Code style
 
-| Path | Contents |
-|------|----------|
-| `crates/lift-core/` | SSA IR foundation: `Context`, types, verifier, printer, pass manager, `ModelBuilder` |
-| `crates/lift-ast/` | Lexer, parser, AST, IR builder for `.lif` source files |
-| `crates/lift-tensor/` | Tensor dialect (~110 ops), shape inference, FLOP counting |
-| `crates/lift-quantum/` | Quantum dialect (50+ gates), noise models, topology, QEC |
-| `crates/lift-hybrid/` | Hybrid dialect (21 ops), encoding strategies, gradient methods |
-| `crates/lift-opt/` | 11 optimisation passes |
-| `crates/lift-sim/` | Static analysis, cost models, energy estimation |
-| `crates/lift-predict/` | Roofline and quantum performance prediction |
-| `crates/lift-import/` | ONNX / PyTorch FX / OpenQASM importers |
-| `crates/lift-export/` | LLVM IR / ONNX / OpenQASM exporters |
-| `crates/lift-config/` | `.lith` configuration parser |
-| `crates/lift-cli/` | `lift` command-line interface |
-| `crates/lift-codegen/` | Programmatic model generation |
-| `lift-test/` | Hybrid AI+Quantum integration test (medical imaging) |
-| `examples/` | Hand-written and generated models, configs, validation script |
-
-## Development Workflow
-
-1. **Fork** the repository and create a feature branch.
-2. Make your changes with clear commit messages.
-3. Verify everything before pushing:
+- Run `rustfmt` — CI enforces `cargo fmt --all --check`.
+- Run `clippy` with warnings denied — CI enforces `cargo clippy --all-targets -- -D warnings`.
+- Keep changes minimal and focused on a single concern.
 
 ```bash
-cargo fmt --all --check        # formatting
-cargo clippy --all-targets -- -D warnings   # linting (warnings are errors)
-cargo test --workspace        # tests
-bash examples/validate_all.sh # end-to-end pipeline validation
+cargo fmt --all
+cargo clippy --all-targets -- -D warnings
 ```
 
-4. Open a pull request. CI runs all four checks automatically.
+## Validation
 
-## Guidelines
+Before submitting, run the end-to-end validation script, which exercises the
+full pipeline (`verify → analyse → optimise → predict → export`) across all
+example models:
 
-- **Keep changes minimal** and focused on one concern.
-- **Preserve SSA semantics**: every value defined once, qubit linearity enforced.
-- **Update documentation** when behaviour changes: `README.md`, `DIALECTS.md`,
-  `CAPABILITIES.md`, and relevant crate docs.
-- **Add tests** for new operations, passes, or analyses.
-- Use conventional commit prefixes: `feat:`, `fix:`, `docs:`, `refactor:`,
-  `test:`, `chore:`.
+```bash
+bash examples/validate_all.sh
+```
 
-## Where to Help
+This is also run in CI on every push to `main` and on pull requests.
 
-See [`CAPABILITIES.md`](CAPABILITIES.md) for the honest gap analysis and the
-roadmap (importers, real LLVM lowering, state-vector simulator, gate
-decomposition, SABRE routing, PyO3 bindings, etc.).
+## Publishing
 
-## Questions
+Releases are published to [crates.io](https://crates.io). The process:
 
-Open an issue with the `question` label, or a discussion in the repository.
+1. Bump the version in `Cargo.toml` (`[workspace.package] version`) and update
+   version references across `README.md` and the docs (`LIFT_Guide.md`,
+   `LIFT_Manual.md`, `LIFT_design.md`, `DIALECTS.md`).
+2. Update `CHANGELOG.md`.
+3. Publish crates in dependency order (L0 → L1 → L2 → L3 → L4):
+
+   ```bash
+   cargo publish -p lift-core
+   cargo publish -p lift-config
+   # ... then L1, L2, L3, L4 ...
+   ```
+
+   > crates.io does not allow overwriting a published version — a fix to an
+   > already-published release requires a new version bump.
+
+4. Tag the release and create a GitHub release:
+
+   ```bash
+   git tag v0.4.2
+   git push origin v0.4.2
+   gh release create v0.4.2 --title "..." --notes "..."
+   ```
+
+## Commit conventions
+
+Use conventional commit prefixes:
+
+- `feat:` — new feature
+- `fix:` — bug fix
+- `docs:` — documentation only
+- `chore:` — maintenance (bumps, metadata, tooling)
+- `refactor:` — code change that neither fixes a bug nor adds a feature
+- `test:` — adding or updating tests
+
+Example: `docs: add vision, roadmap, and layer-graph diagrams to README`
+
+## Opening a pull request
+
+1. Fork the repository and create a feature branch.
+2. Make your changes, keeping them focused.
+3. Run `cargo fmt`, `cargo clippy`, `cargo test`, and `bash examples/validate_all.sh`.
+4. Push your branch and open a pull request against `main`.
+5. CI runs automatically (fmt, clippy, tests, validation). All checks must pass
+   before merge.
+
+Thank you for contributing to LIFT!

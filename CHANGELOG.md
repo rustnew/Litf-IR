@@ -7,104 +7,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned (LIFT v5 roadmap)
-- Functional ONNX / PyTorch FX / OpenQASM importers (currently stubs)
-- Real LLVM IR lowering with cuBLAS/cuDNN runtime calls
+### Planned (v0.5)
 - State-vector quantum simulator (CPU, up to ~25 qubits)
-- Tensor interpreter for simulation-first execution
-- SABRE qubit routing with dynamic re-placement
-- Multi-file support (`include` / linking)
+- Tensor interpreter (numpy-like execution of tensor ops)
+- Real LLVM IR lowering with cuBLAS/cuDNN runtime calls
+- Functional importers — ONNX, PyTorch FX, OpenQASM 3 (currently stubs)
+- SABRE-style dynamic qubit re-placement
+
+### Planned (v0.6)
 - True automatic differentiation (backward graph construction)
 - PyO3 Python bindings
+- Multi-file support (`include` / linking)
+- v1.0 release — full pipeline, benchmarks, arXiv paper
 
-## [0.4.0] - 2026
-
-### Added
-- **Optimisation pipeline by level** (`lift-config`): `O0`–`O3` presets,
-  `OptimisationConfig::passes_for_level()`, `effective_passes()` with
-  explicit-passes override and `disabled_passes`, unknown-pass detection
-  (`OptimisationConfig::validate()`). 13 passes registered in `ALL_PASSES`.
-- **Semantic verification** (`lift-core`): `verify_semantics()` checks operation
-  input arity against dialect signatures; public `verify_with_dialects()` lets
-  callers supply a full dialect registry; `cmd verify` now builds the complete
-  registry (core + tensor + quantum + hybrid).
-- **Generic fusion pass** (`lift-opt`): 5 patterns — `matmul+bias+relu`,
-  `matmul+bias`, `linear+gelu`, `linear+silu`, `conv2d+bn+relu` — in a two-phase
-  runner (ternary patterns before binary ones).
-- **Gate decomposition** (`lift-opt`): `gate-decomposition` pass lowering H, T,
-  Tdg, S, Sdg, Y, RX to native gate sets (IBM/Rigetti/IonQ/Quantinuum) driven by
-  `QuantumConfig.provider`. New `QuantumProvider` enum and `provider` key in
-  `.lith` files.
-- **Non-adjacent gate cancellation & rotation merging** (`lift-opt`): passes now
-  cancel/merge gate pairs that are separated by commuting gates on other qubits
-  (SSA-chain check), not just consecutive ones.
-- **Real qubit routing** (`lift-opt`): `real-routing` pass inserts actual
-  `quantum.swap` operations (BFS shortest path) to satisfy device connectivity,
-  with logical↔physical placement tracking. Topology from `QuantumConfig`
-  (linear/grid/heavy-hex/all-to-all/tree).
-- `Context::insert_op_before()` preserves SSA dominance when passes insert ops.
-- Test count grows to **535** (was 515); `examples/validate_all.sh` now covers
-  all 13 passes and reports **105/105**.
+## [0.4.2] — 2026-08-05
 
 ### Fixed
-- `resnet_generated.lif` called `tensor.batchnorm` with 2 inputs (minimum 3);
-  `lift-codegen` now emits the scale/bias parameters (`bn1_b`, `bn2_b`).
-- `examples/validate_all.sh` referenced removed `deepseek_v2_lite.lif` and
-  `attention.lif` models; script updated to current model set.
-- Remaining dead-code warning in `lift-export` LLVM backend resolved
-  (`llvm_type_for_value` now annotates emitted IR).
-- Workspace, all crates, and CLI aligned on version **0.4.0**.
+- **LICENSE now ships in every published crate package** (was missing from
+  crates.io tarballs because Cargo only auto-includes LICENSE files located in
+  each package directory, not the workspace root).
+- **Repository field corrected to `rustnew/Lift`** in all published manifests
+  (the GitHub rename from `Litf-IR` had not been propagated to crates.io).
+- Docs version references bumped to 0.4.2.
 
-## [0.3.0] - 2026
+### Changed
+- All 13 crates republished to crates.io at v0.4.2.
 
-### Added
-- `lift-tests` integration crate (515 tests, 0 failures)
-- `lift-test` hybrid AI+Quantum integration test (CNN + VQC medical imaging,
-  17 pipeline steps)
-- ONNX export backend (opset 21, protobuf text, standard + com.microsoft ops)
-- `lift-codegen` binary: programmatic model generation (Phi-3, MLP, ResNet, VQE)
-  with multi-format export (`.lif`, `.ll`, `.onnx`, `.qasm`, `.lith`)
-- `ModelBuilder` fluent API in `lift-core`
-- 11 optimisation passes (canonicalize, constant folding, DCE, CSE, tensor
-  fusion, flash attention, quantisation, gate cancellation, rotation merge,
-  noise-aware schedule, layout mapping)
-- Energy/carbon estimation models (`EnergyModel`)
-- Reactive budget tracking (`ReactiveBudget`)
-- Device topologies (grid, heavy-hex, all-to-all, linear, tree) with BFS
-- QEC codes (Surface, Steane, Shor, Repetition, LDPC)
-- Kraus channel noise models (6 channels)
-- Complete documentation: `README.md`, `DIALECTS.md`, `CAPABILITIES.md`,
-  `LIFT_Guide.md`, `LIFT_Manual.md`, `LIFT_design.md`, `STRATEGY.md`,
-  `MANUAL.md`, `CONTRIBUTING.md`, `CHANGELOG.md`
+## [0.4.1] — 2026-08-05
 
 ### Fixed
-- CLI version aligned with workspace version
-- Clippy lint errors (approximate constants, formatting)
-- Codebase fully `rustfmt`-clean
+- Corrected op/gate counts in docs (110 tensor ops, 48 quantum gates, 21 hybrid ops).
+- README examples now compile against the real API (`GateDecomposition::new(Provider::IbmKyoto)`, `DataType` re-export from `model_builder`).
+- Repository references updated to `rustnew/Lift` (renamed from `Litf-IR`).
 
-## [0.2.0] - 2026
+### Changed
+- Architecture diagrams moved to Mermaid (pipeline, dependency layers, roadmap).
+- All 13 crates republished to crates.io at v0.4.1.
 
-### Added
-- Core SSA IR (`lift-core`): `Context`, type system, verifier, printer,
-  pass manager, dialect registry
-- `.lif` frontend (`lift-ast`): lexer, parser, IR builder
-- Tensor dialect (`lift-tensor`) with shape inference and FLOP counting
-- Quantum dialect (`lift-quantum`): gates, providers, noise, topology
-- Hybrid dialect (`lift-hybrid`): encoding, gradients, variational algorithms
-- Static analysis (`lift-sim`) and roofline prediction (`lift-predict`)
-- 6 optimisation passes
-- LLVM IR and OpenQASM 3.0 export backends
-- `.lith` configuration parser (`lift-config`)
-- `lift` CLI: verify, analyse, print, optimise, predict, export
-
-## [0.1.0] - 2025
+## [0.4.0] — 2026-08-05
 
 ### Added
-- Initial project scaffolding and design documentation
-- Prototype IR types and verifier
+- **Optimisation levels `O0`–`O3`** with explicit-pass override and per-pass enable/disable.
+- **Semantic verification** (op arity vs dialect signatures).
+- **13 optimisation passes** including generic tensor fusion, hardware-native gate
+  decomposition, real qubit routing (SWAP + BFS), non-adjacent gate cancellation &
+  rotation merging.
+- All 13 crates published to crates.io (first full workspace release).
 
-[Unreleased]: https://github.com/rustnew/Lift
-[0.4.0]: https://github.com/rustnew/Lift/releases/tag/v0.4.0
-[0.3.0]: https://github.com/rustnew/Lift/releases/tag/v0.3.0
-[0.2.0]: https://github.com/rustnew/Lift/releases/tag/v0.2.0
-[0.1.0]: https://github.com/rustnew/Lift/releases/tag/v0.1.0
+## [0.3.0] — 2026-04-30
+
+### Added
+- Tensor / quantum / hybrid dialects.
+- Cost modelling (FLOPs, memory, energy/carbon).
+- Performance prediction (roofline analysis).
+- Export backends (LLVM IR, ONNX, OpenQASM 3.0).
+
+## [0.2.1] — 2026-04-30
+
+### Changed
+- Stability tuning.
+
+## [0.2.0] — 2026-03-31
+
+### Added
+- Initial public release of the LIFT compiler framework.
+- SSA-based intermediate representation.
+- Tensor, quantum, and hybrid dialects.
+- Core compiler infrastructure (types, values, operations, blocks, regions, verifier).
