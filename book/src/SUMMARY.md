@@ -20,3 +20,4 @@
 
 - [Changelog](CHANGELOG.md)
 - [Contributing](CONTRIBUTING.md)
+- [Publishing & Visibility](PUBLISHING.md)

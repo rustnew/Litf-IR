@@ -26,7 +26,7 @@ jobs:
       - name: Prepare mdbook sources
         run: |
           cp README.md LIFT_Guide.md LIFT_Manual.md CAPABILITIES.md DIALECTS.md \
-             LIFT_design.md CHANGELOG.md CONTRIBUTING.md \
+             LIFT_design.md CHANGELOG.md CONTRIBUTING.md PUBLISHING.md \
              docs/ROADMAP-v0.5.md book/src/
 
       - name: Setup mdBook

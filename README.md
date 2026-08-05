@@ -448,6 +448,7 @@ bash examples/validate_all.sh   # Full pipeline validation (105 checks)
 - **[CAPABILITIES.md](CAPABILITIES.md)** — Capabilities, limits, and roadmap
 - **[DIALECTS.md](DIALECTS.md)** — Dialect reference (tensor, quantum, hybrid)
 - **[CHANGELOG.md](CHANGELOG.md)** — Version history and release notes
+- **[PUBLISHING.md](PUBLISHING.md)** — Where LIFT is published and how to promote it
 
 ## Contributing
 
