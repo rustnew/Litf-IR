@@ -449,6 +449,7 @@ bash examples/validate_all.sh   # Full pipeline validation (105 checks)
 - **[DIALECTS.md](DIALECTS.md)** — Dialect reference (tensor, quantum, hybrid)
 - **[CHANGELOG.md](CHANGELOG.md)** — Version history and release notes
 - **[PUBLISHING.md](PUBLISHING.md)** — Where LIFT is published and how to promote it
+- **[ANNOUNCEMENTS.md](docs/ANNOUNCEMENTS.md)** — Ready-to-post announcement texts for community channels
 
 ## Contributing
 

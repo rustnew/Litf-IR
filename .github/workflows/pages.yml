@@ -27,7 +27,7 @@ jobs:
         run: |
           cp README.md LIFT_Guide.md LIFT_Manual.md CAPABILITIES.md DIALECTS.md \
              LIFT_design.md CHANGELOG.md CONTRIBUTING.md PUBLISHING.md \
-             docs/ROADMAP-v0.5.md book/src/
+             docs/ROADMAP-v0.5.md docs/ANNOUNCEMENTS.md book/src/
 
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v2
