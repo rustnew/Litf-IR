@@ -65,3 +65,37 @@ Ready-to-post texts for each channel are in [docs/ANNOUNCEMENTS.md](docs/ANNOUNC
 - The crate name `lift` is taken on crates.io (a DB migration tool, unrelated).
   `lift-ir` is available if a standalone brand name is ever needed.
 - lib.rs indexes crates.io automatically; no manual submission needed.
+
+## Capabilities & readiness (v0.4.4) — truth check for marketing & reprise
+
+> Written 2026-08-05 (pause until ~2026-09). Keep this in sync with every
+> release so the messaging never overpromises. **Rule of thumb**: announce what
+> the *code* does today, not what the roadmap plans.
+
+### ✅ Already usable today
+
+| Area | Status | Audience |
+|------|--------|----------|
+| IR construction (modules, functions, blocks, ops, regions, values, types) | Solid | Compiler developers |
+| Dialects: 110 tensor ops, 48 quantum gates, 21 hybrid ops (full types/API) | Real | API consumers |
+| 13 optimisation passes (fusion, DCE, rewrites…) + pass framework | Real | Pass developers |
+| IR verifier | Real | Program validation |
+| Quantum analysis: circuit depth, estimated fidelity, depolarising noise | Real but **static** | Estimation only, no execution |
+| Export: ONNX / QASM / LLVM-IR text | Partial | Prototyping |
+
+### ❌ NOT yet usable (honest gaps — these are the v0.5/v0.6 plan)
+
+| Gap | Impact |
+|-----|--------|
+| No real simulator — `quantum_sim.rs` is static analysis, not state-vector simulation | Cannot run a circuit to get states/amplitudes |
+| Importers are ~55-line skeletons (ONNX / PyTorch FX / QASM), not full parsers | Cannot load a real `.onnx` / `.qasm` file end-to-end |
+| No real LLVM lowering — backend emits IR text, not executable bytecode | Cannot compile-and-run natively |
+| No tensor execution — numpy-like interpreter is planned (v0.5) | Tensor ops do not compute yet |
+
+### 🎯 One-line positioning (use in all marketing)
+
+> **"Rust compiler framework: unified SSA IR for AI + quantum, 13 optimisation
+> passes, O0-O3 pipelines, LLVM/ONNX/QASM backends."**
+
+This is accurate today. It is a **framework** (build compilers with it), not yet
+an end-to-end compiler you can feed a model/circuit into and run.
