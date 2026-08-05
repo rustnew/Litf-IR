@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.80%2B-orange.svg)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/version-0.4.0-green.svg)](Cargo.toml)
+[![Version](https://img.shields.io/badge/version-0.4.1-green.svg)](Cargo.toml)
 [![crates.io](https://img.shields.io/crates/v/lift-core.svg)](https://crates.io/crates/lift-core)
 [![Documentation](https://img.shields.io/badge/docs.rs-lift--core-blue.svg)](https://docs.rs/lift-core)
 
@@ -29,26 +29,90 @@ LIFT is a modular compiler framework that provides a single SSA-based intermedia
 
 ## Architecture
 
+### Compilation pipeline
+
+```mermaid
+flowchart LR
+    subgraph Frontend
+        LIF[".lif source"]
+        LITH[".lith config"]
+        CODGEN["lift-codegen / ModelBuilder"]
+    end
+
+    subgraph Core
+        AST["lift-ast (lexer / parser / builder)"]
+        IR["lift-core — SSA IR, verifier, dialect registry"]
+    end
+
+    subgraph Dialects
+        TEN["lift-tensor (AI ops)"]
+        QUA["lift-quantum (gates, noise, QEC, topology)"]
+        HYB["lift-hybrid (classical-quantum fusion)"]
+    end
+
+    subgraph Optimise
+        CFG["lift-config (O0-O3 pipeline)"]
+        OPT["lift-opt (13 passes)"]
+    end
+
+    subgraph Analyse
+        SIM["lift-sim (FLOPs, memory, energy)"]
+        PRED["lift-predict (roofline, budgets)"]
+    end
+
+    subgraph Export
+        LLVM["LLVM IR (cuBLAS/cuDNN)"]
+        ONNX["ONNX (opset 21)"]
+        QASM["OpenQASM 3.0"]
+    end
+
+    LIF --> AST
+    LITH --> CFG
+    CODGEN --> AST
+    AST --> IR
+    IR --> TEN & QUA & HYB
+    IR --> OPT
+    CFG --> OPT
+    OPT --> SIM
+    SIM --> PRED
+    IR --> SIM
+    IR --> LLVM & ONNX & QASM
+    OPT --> LLVM & ONNX & QASM
 ```
-                    ┌──────────┐
-                    │ lift-cli │  ← User interface
-                    └────┬─────┘
-           ┌─────────────┼─────────────┐
-           │             │             │
-    ┌──────┴──────┐ ┌────┴────┐ ┌──────┴──────┐
-    │ lift-import │ │lift-opt │ │ lift-export │
-    └──────┬──────┘ └────┬────┘ └──────┬──────┘
-           │             │             │
-    ┌──────┴──────┐ ┌────┴────┐ ┌──────┴──────┐
-    │  lift-ast   │ │lift-sim │ │lift-predict │
-    └──────┬──────┘ └────┬────┘ └──────┬──────┘
-           │             │             │
-    ┌──────┴─────────────┴─────────────┴──────┐
-    │              lift-core                    │
-    ├──────────┬──────────┬───────────────────┤
-    │lift-tensor│lift-quantum│  lift-hybrid    │
-    └──────────┴──────────┴───────────────────┘
+
+### Crate dependency graph
+
+```mermaid
+flowchart TB
+    CLI["lift-cli"]
+    CGEN["lift-codegen"]
+    OPT["lift-opt"]
+    EXP["lift-export"]
+    IMP["lift-import"]
+    CFG["lift-config"]
+    PRED["lift-predict"]
+    SIM["lift-sim"]
+    AST["lift-ast"]
+    HYB["lift-hybrid"]
+    QUA["lift-quantum"]
+    TEN["lift-tensor"]
+    CORE["lift-core"]
+
+    CLI --> AST & CFG & CORE & EXP & HYB & OPT & PRED & QUA & SIM & TEN
+    CGEN --> AST & CFG & CORE & EXP & OPT & PRED & SIM
+    EXP --> CORE & QUA & TEN
+    IMP --> CORE & QUA & TEN
+    OPT --> CORE & QUA & TEN
+    PRED --> CORE & QUA & SIM & TEN
+    SIM --> CORE & QUA & TEN
+    HYB --> CORE & QUA & TEN
+    QUA --> CORE
+    TEN --> CORE
+    AST --> CORE
 ```
+
+Chaque arête `A → B` signifie « la crate A dépend de B » (vérifié via
+`cargo metadata`).
 
 ### Crates
 
@@ -68,7 +132,7 @@ LIFT is a modular compiler framework that provides a single SSA-based intermedia
 | **lift-cli** | Command-line interface (`verify`, `analyse`, `optimise`, `predict`, `export`, `print`) |
 | **lift-codegen** | Programmatic model generation binary — define models from Rust, emit all formats |
 
-### Published Crates (v0.4.0)
+### Published Crates (v0.4.1)
 
 All LIFT crates are published to [crates.io](https://crates.io):
 
@@ -185,17 +249,17 @@ std::fs::write("my_model.onnx", &onnx_ir).unwrap();
 
 ```toml
 [dependencies]
-lift-core    = "0.4.0"
-lift-ast     = "0.4.0"
-lift-tensor  = "0.4.0"
-lift-quantum = "0.4.0"
-lift-hybrid  = "0.4.0"
-lift-opt     = "0.4.0"
-lift-sim     = "0.4.0"
-lift-predict = "0.4.0"
-lift-import  = "0.4.0"
-lift-export  = "0.4.0"
-lift-config  = "0.4.0"
+lift-core    = "0.4.1"
+lift-ast     = "0.4.1"
+lift-tensor  = "0.4.1"
+lift-quantum = "0.4.1"
+lift-hybrid  = "0.4.1"
+lift-opt     = "0.4.1"
+lift-sim     = "0.4.1"
+lift-predict = "0.4.1"
+lift-import  = "0.4.1"
+lift-export  = "0.4.1"
+lift-config  = "0.4.1"
 ```
 
 ```rust

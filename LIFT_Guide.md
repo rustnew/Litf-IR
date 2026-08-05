@@ -75,17 +75,17 @@ Source (.lif) → Lexer → Parser → IR (SSA) → Verification → Optimisatio
 
 ```toml
 [dependencies]
-lift-core     = "0.4.0"
-lift-ast      = "0.4.0"
-lift-tensor   = "0.4.0"
-lift-quantum  = "0.4.0"
-lift-hybrid   = "0.4.0"
-lift-opt      = "0.4.0"
-lift-sim      = "0.4.0"
-lift-predict  = "0.4.0"
-lift-import   = "0.4.0"
-lift-export   = "0.4.0"
-lift-config   = "0.4.0"
+lift-core     = "0.4.1"
+lift-ast      = "0.4.1"
+lift-tensor   = "0.4.1"
+lift-quantum  = "0.4.1"
+lift-hybrid   = "0.4.1"
+lift-opt      = "0.4.1"
+lift-sim      = "0.4.1"
+lift-predict  = "0.4.1"
+lift-import   = "0.4.1"
+lift-export   = "0.4.1"
+lift-config   = "0.4.1"
 ```
 
 ---
