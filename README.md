@@ -8,7 +8,33 @@
 [![crates.io](https://img.shields.io/crates/v/lift-core.svg)](https://crates.io/crates/lift-core)
 [![Documentation](https://img.shields.io/badge/docs.rs-lift--core-blue.svg)](https://docs.rs/lift-core)
 
-LIFT is a modular compiler framework that provides a single SSA-based intermediate representation spanning **tensor operations** (AI/ML), **quantum gates**, and **classical-quantum hybrid computation**. It enables a unified pipeline: **define → verify → analyse → optimise → predict → export**.
+LIFT is a modular compiler framework that provides a single SSA-based intermediate representation spanning **tensor operations** (AI/ML), **quantum gates**, and **classical-quantum hybrid computation**. It enables a unified pipeline: **define → verify → optimise → analyse → predict → export**.
+
+## Why LIFT?
+
+The next decade of computing is **both intelligent and quantum**. AI models run on GPUs;
+quantum circuits run on QPUs; and hybrid classical-quantum systems (VQE, QAOA, quantum
+chemistry, quantum machine learning) need **both** — but today they live in separate worlds
+with separate IRs, separate toolchains, and no way to reason about them together.
+
+LIFT's vision is a **single unified foundation** for AI + quantum computation:
+
+1. **One IR, two worlds** — AI tensors, quantum gates, and their hybrids are equal
+   citizens in the same SSA graph. Joint optimisation across classical and quantum
+   operations becomes possible.
+2. **Noise in the type system** — every quantum gate carries T1/T2, fidelity, and
+   crosstalk metadata, so the compiler reasons about noise at every stage — not after
+   the fact.
+3. **Linear qubit types** — the no-cloning theorem is enforced at compile time. Reusing
+   a qubit is a type error, not a runtime crash.
+4. **Simulation-first compilation** — FLOPs, peak memory, circuit depth, expected
+   fidelity, and energy cost are computed *before* any hardware runs. Budget violations
+   halt compilation with actionable suggestions.
+5. **One config language** — a single `.lith` file replaces the 6–8 configuration files
+   scattered across separate frameworks.
+
+> LIFT — because the future of computation is both intelligent and quantum,
+> and it deserves a unified foundation.
 
 ## Key Features
 
@@ -31,38 +57,40 @@ LIFT is a modular compiler framework that provides a single SSA-based intermedia
 
 ### Compilation pipeline
 
+The pipeline reads left to right: **Frontend → Core (with semantic verification) → Dialects → Optimise → Analyse → Export**. The 13 optimisation passes are orchestrated by `lift-config` at the Optimise stage.
+
 ```mermaid
 flowchart LR
-    subgraph Frontend
+    subgraph Frontend["Frontend"]
         LIF[".lif source"]
         LITH[".lith config"]
         CODGEN["lift-codegen / ModelBuilder"]
     end
 
-    subgraph Core
-        AST["lift-ast (lexer / parser / builder)"]
-        IR["lift-core — SSA IR, verifier, dialect registry"]
+    subgraph Core["Core + Verify"]
+        AST["lift-ast (lexer / parser)"]
+        IR["lift-core — SSA IR, verifier"]
     end
 
-    subgraph Dialects
+    subgraph Dialects["Dialects"]
         TEN["lift-tensor (AI ops)"]
-        QUA["lift-quantum (gates, noise, QEC, topology)"]
-        HYB["lift-hybrid (classical-quantum fusion)"]
+        QUA["lift-quantum (gates, noise)"]
+        HYB["lift-hybrid (fusion)"]
     end
 
-    subgraph Optimise
-        CFG["lift-config (O0-O3 pipeline)"]
+    subgraph Optimise["Optimise"]
+        CFG["lift-config (O0-O3)"]
         OPT["lift-opt (13 passes)"]
     end
 
-    subgraph Analyse
-        SIM["lift-sim (FLOPs, memory, energy)"]
-        PRED["lift-predict (roofline, budgets)"]
+    subgraph Analyse["Analyse"]
+        SIM["lift-sim (FLOPs, memory)"]
+        PRED["lift-predict (roofline)"]
     end
 
-    subgraph Export
-        LLVM["LLVM IR (cuBLAS/cuDNN)"]
-        ONNX["ONNX (opset 21)"]
+    subgraph Export["Export"]
+        LLVM["LLVM IR"]
+        ONNX["ONNX"]
         QASM["OpenQASM 3.0"]
     end
 
@@ -78,41 +106,66 @@ flowchart LR
     IR --> SIM
     IR --> LLVM & ONNX & QASM
     OPT --> LLVM & ONNX & QASM
+
+    classDef stage fill:#e8f0fe,stroke:#1a73e8,color:#174ea6;
+    class Frontend,Core,Dialects,Optimise,Analyse,Export stage;
 ```
 
-### Crate dependency graph
+### Crate dependency graph (by layer)
 
 ```mermaid
 flowchart TB
-    CLI["lift-cli"]
-    CGEN["lift-codegen"]
-    OPT["lift-opt"]
-    EXP["lift-export"]
-    IMP["lift-import"]
-    CFG["lift-config"]
-    PRED["lift-predict"]
-    SIM["lift-sim"]
-    AST["lift-ast"]
-    HYB["lift-hybrid"]
-    QUA["lift-quantum"]
-    TEN["lift-tensor"]
-    CORE["lift-core"]
+    subgraph L4["Layer 4 — Tools"]
+        CLI["lift-cli"]
+        CGEN["lift-codegen"]
+    end
+    subgraph L3["Layer 3 — Prediction"]
+        PRED["lift-predict"]
+    end
+    subgraph L2["Layer 2 — Analysis & I/O"]
+        OPT["lift-opt"]
+        SIM["lift-sim"]
+        EXP["lift-export"]
+        IMP["lift-import"]
+        HYB["lift-hybrid"]
+    end
+    subgraph L1["Layer 1 — Dialects & Frontend"]
+        AST["lift-ast"]
+        TEN["lift-tensor"]
+        QUA["lift-quantum"]
+    end
+    subgraph L0["Layer 0 — Foundation"]
+        CORE["lift-core"]
+        CFG["lift-config"]
+    end
 
-    CLI --> AST & CFG & CORE & EXP & HYB & OPT & PRED & QUA & SIM & TEN
-    CGEN --> AST & CFG & CORE & EXP & OPT & PRED & SIM
-    EXP --> CORE & QUA & TEN
-    IMP --> CORE & QUA & TEN
-    OPT --> CORE & QUA & TEN
-    PRED --> CORE & QUA & SIM & TEN
-    SIM --> CORE & QUA & TEN
-    HYB --> CORE & QUA & TEN
-    QUA --> CORE
-    TEN --> CORE
+    CLI --> PRED & OPT & SIM & EXP & HYB & AST & TEN & QUA & CORE & CFG
+    CGEN --> PRED & OPT & SIM & EXP & AST & CORE & CFG
+    PRED --> SIM & CORE & TEN & QUA
+    OPT --> CORE & TEN & QUA
+    SIM --> CORE & TEN & QUA
+    EXP --> CORE & TEN & QUA
+    IMP --> CORE & TEN & QUA
+    HYB --> CORE & TEN & QUA
     AST --> CORE
+    TEN --> CORE
+    QUA --> CORE
+
+    classDef l0 fill:#f3e8ff,stroke:#7c3aed;
+    classDef l1 fill:#e8f0fe,stroke:#1a73e8;
+    classDef l2 fill:#e6f4ea,stroke:#188038;
+    classDef l3 fill:#fef7e0,stroke:#f9ab00;
+    classDef l4 fill:#fce8e6,stroke:#d93025;
+    class CORE,CFG l0;
+    class AST,TEN,QUA l1;
+    class OPT,SIM,EXP,IMP,HYB l2;
+    class PRED l3;
+    class CLI,CGEN l4;
 ```
 
 Chaque arête `A → B` signifie « la crate A dépend de B » (vérifié via
-`cargo metadata`).
+`cargo metadata`). Les crates sont disposées par **niveau de dépendance**
+(de haut en bas, `L4` → `L0`) : rien ne pointe vers le haut.
 
 ### Crates
 
@@ -388,6 +441,42 @@ bash examples/validate_all.sh   # Full pipeline validation (105 checks)
 - **[LIFT_design.md](LIFT_design.md)** — Architecture and design document
 - **[CAPABILITIES.md](CAPABILITIES.md)** — Capabilities, limits, and roadmap
 - **[DIALECTS.md](DIALECTS.md)** — Dialect reference (tensor, quantum, hybrid)
+
+## Roadmap
+
+LIFT is built in phases. Each phase is released on [crates.io](https://crates.io)
+and validated end-to-end (`examples/validate_all.sh`).
+
+```mermaid
+flowchart LR
+    V3["v0.3 — IR, dialects, 11 passes, export"]
+    V4["v0.4 — O0-O3 pipeline, semantic verify, 13 passes, crates.io"]
+    V5["v0.5 — simulator, real backends, importers"]
+    V6["v0.6 — autodiff, Python bindings, v1.0"]
+    V3 --> V4 --> V5 --> V6
+```
+
+### v0.4 (current) — done
+- Optimisation pipeline by level (`O0`–`O3`) with explicit-pass override
+- Semantic verification (op arity vs dialect signatures)
+- 13 optimisation passes: generic tensor fusion, hardware-native gate
+  decomposition, real qubit routing (SWAP + BFS), non-adjacent gate
+  cancellation & rotation merging
+- All 13 crates published to crates.io
+
+### v0.5 — in progress
+- **State-vector quantum simulator** (CPU, up to ~25 qubits) — validate
+  circuits before deploying to real QPUs
+- **Tensor interpreter** — execute tensor ops with real values (numpy-like)
+- **Real LLVM IR lowering** with cuBLAS/cuDNN runtime calls
+- **Functional importers** — ONNX, PyTorch FX, OpenQASM 3 (currently stubs)
+- **SABRE-style dynamic qubit re-placement**
+
+### v0.6 — planned
+- **True automatic differentiation** (backward graph construction)
+- **PyO3 Python bindings** — use LIFT from Python
+- **Multi-file support** (`include` / linking)
+- **v1.0 release** — full pipeline, benchmarks, arXiv paper
 
 ## License
 
