@@ -6,7 +6,10 @@
 [![Rust](https://img.shields.io/badge/Rust-1.80%2B-orange.svg)](https://www.rust-lang.org/)
 [![Version](https://img.shields.io/badge/version-0.4.2-green.svg)](Cargo.toml)
 [![crates.io](https://img.shields.io/crates/v/lift-core.svg)](https://crates.io/crates/lift-core)
-[![Documentation](https://img.shields.io/badge/docs.rs-lift--core-blue.svg)](https://docs.rs/lift-core)
+[![Downloads](https://img.shields.io/crates/d/lift-core.svg)](https://crates.io/crates/lift-core)
+[![Documentation](https://img.shields.io/docsrs/lift-core)](https://docs.rs/lift-core)
+[![CI](https://github.com/rustnew/Lift/actions/workflows/ci.yml/badge.svg)](https://github.com/rustnew/Lift/actions/workflows/ci.yml)
+[![GitHub Release](https://img.shields.io/github/v/release/rustnew/Lift)](https://github.com/rustnew/Lift/releases)
 
 LIFT is a modular compiler framework that provides a single SSA-based intermediate representation spanning **tensor operations** (AI/ML), **quantum gates**, and **classical-quantum hybrid computation**. It enables a unified pipeline: **define → verify → optimise → analyse → predict → export**.
 
