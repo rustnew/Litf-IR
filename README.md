@@ -10,6 +10,7 @@
 [![Documentation](https://img.shields.io/docsrs/lift-core)](https://docs.rs/lift-core)
 [![CI](https://github.com/rustnew/Lift/actions/workflows/ci.yml/badge.svg)](https://github.com/rustnew/Lift/actions/workflows/ci.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/rustnew/Lift)](https://github.com/rustnew/Lift/releases)
+[![GitHub Pages](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://rustnew.github.io/Lift/)
 
 LIFT is a modular compiler framework that provides a single SSA-based intermediate representation spanning **tensor operations** (AI/ML), **quantum gates**, and **classical-quantum hybrid computation**. It enables a unified pipeline: **define → verify → optimise → analyse → predict → export**.
 
@@ -192,21 +193,21 @@ Chaque arête `A → B` signifie « la crate A dépend de B » (vérifié via
 
 All LIFT crates are published to [crates.io](https://crates.io):
 
-| Crate | Docs |
-|-------|------|
-| [lift-core](https://crates.io/crates/lift-core) | [docs.rs](https://docs.rs/lift-core) |
-| [lift-ast](https://crates.io/crates/lift-ast) | [docs.rs](https://docs.rs/lift-ast) |
-| [lift-tensor](https://crates.io/crates/lift-tensor) | [docs.rs](https://docs.rs/lift-tensor) |
-| [lift-quantum](https://crates.io/crates/lift-quantum) | [docs.rs](https://docs.rs/lift-quantum) |
-| [lift-hybrid](https://crates.io/crates/lift-hybrid) | [docs.rs](https://docs.rs/lift-hybrid) |
-| [lift-sim](https://crates.io/crates/lift-sim) | [docs.rs](https://docs.rs/lift-sim) |
-| [lift-predict](https://crates.io/crates/lift-predict) | [docs.rs](https://docs.rs/lift-predict) |
-| [lift-opt](https://crates.io/crates/lift-opt) | [docs.rs](https://docs.rs/lift-opt) |
-| [lift-import](https://crates.io/crates/lift-import) | [docs.rs](https://docs.rs/lift-import) |
-| [lift-export](https://crates.io/crates/lift-export) | [docs.rs](https://docs.rs/lift-export) |
-| [lift-config](https://crates.io/crates/lift-config) | [docs.rs](https://docs.rs/lift-config) |
-| [lift-cli](https://crates.io/crates/lift-cli) | [docs.rs](https://docs.rs/lift-cli) |
-| [lift-codegen](https://crates.io/crates/lift-codegen) | [docs.rs](https://docs.rs/lift-codegen) |
+| Crate | Docs | Downloads |
+|-------|------|-----------|
+| [lift-core](https://crates.io/crates/lift-core) | [docs.rs](https://docs.rs/lift-core) | ![Downloads](https://img.shields.io/crates/d/lift-core) |
+| [lift-ast](https://crates.io/crates/lift-ast) | [docs.rs](https://docs.rs/lift-ast) | ![Downloads](https://img.shields.io/crates/d/lift-ast) |
+| [lift-tensor](https://crates.io/crates/lift-tensor) | [docs.rs](https://docs.rs/lift-tensor) | ![Downloads](https://img.shields.io/crates/d/lift-tensor) |
+| [lift-quantum](https://crates.io/crates/lift-quantum) | [docs.rs](https://docs.rs/lift-quantum) | ![Downloads](https://img.shields.io/crates/d/lift-quantum) |
+| [lift-hybrid](https://crates.io/crates/lift-hybrid) | [docs.rs](https://docs.rs/lift-hybrid) | ![Downloads](https://img.shields.io/crates/d/lift-hybrid) |
+| [lift-sim](https://crates.io/crates/lift-sim) | [docs.rs](https://docs.rs/lift-sim) | ![Downloads](https://img.shields.io/crates/d/lift-sim) |
+| [lift-predict](https://crates.io/crates/lift-predict) | [docs.rs](https://docs.rs/lift-predict) | ![Downloads](https://img.shields.io/crates/d/lift-predict) |
+| [lift-opt](https://crates.io/crates/lift-opt) | [docs.rs](https://docs.rs/lift-opt) | ![Downloads](https://img.shields.io/crates/d/lift-opt) |
+| [lift-import](https://crates.io/crates/lift-import) | [docs.rs](https://docs.rs/lift-import) | ![Downloads](https://img.shields.io/crates/d/lift-import) |
+| [lift-export](https://crates.io/crates/lift-export) | [docs.rs](https://docs.rs/lift-export) | ![Downloads](https://img.shields.io/crates/d/lift-export) |
+| [lift-config](https://crates.io/crates/lift-config) | [docs.rs](https://docs.rs/lift-config) | ![Downloads](https://img.shields.io/crates/d/lift-config) |
+| [lift-cli](https://crates.io/crates/lift-cli) | [docs.rs](https://docs.rs/lift-cli) | ![Downloads](https://img.shields.io/crates/d/lift-cli) |
+| [lift-codegen](https://crates.io/crates/lift-codegen) | [docs.rs](https://docs.rs/lift-codegen) | ![Downloads](https://img.shields.io/crates/d/lift-codegen) |
 
 ## Quick Start
 
@@ -439,9 +440,11 @@ bash examples/validate_all.sh   # Full pipeline validation (105 checks)
 
 ## Documentation
 
+- **📖 [Online book (GitHub Pages)](https://rustnew.github.io/Lift/)** — the full documentation set rendered as a searchable book
 - **[LIFT_Guide.md](LIFT_Guide.md)** — Complete feature guide with code examples for every crate
 - **[LIFT_Manual.md](LIFT_Manual.md)** — User manual with real-world use cases
 - **[LIFT_design.md](LIFT_design.md)** — Architecture and design document
+- **[v0.5 Roadmap](docs/ROADMAP-v0.5.md)** — Detailed development plan for the next release
 - **[CAPABILITIES.md](CAPABILITIES.md)** — Capabilities, limits, and roadmap
 - **[DIALECTS.md](DIALECTS.md)** — Dialect reference (tensor, quantum, hybrid)
 - **[CHANGELOG.md](CHANGELOG.md)** — Version history and release notes

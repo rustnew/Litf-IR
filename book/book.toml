@@ -1,0 +1,16 @@
+[book]
+title = "LIFT — Language for Intelligent Frameworks and Technologies"
+authors = ["LIFT Framework Contributors"]
+language = "en"
+description = "Unified intermediate representation for AI and quantum computing."
+
+[output.html]
+no-section-label = true
+git-repository-url = "https://github.com/rustnew/Lift"
+edit-url-template = "https://github.com/rustnew/Lift/edit/main/{path}"
+
+[output.html.search]
+enable = true
+
+[output.html.playground]
+editor = true
