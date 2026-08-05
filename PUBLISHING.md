@@ -7,7 +7,7 @@ AI, and quantum ecosystems, plus the channels still to pursue.
 
 | Channel | URL | Status |
 |---------|-----|--------|
-| crates.io (13 crates) | https://crates.io/crates/lift-core | ✅ v0.4.3 |
+| crates.io (13 crates) | https://crates.io/crates/lift-core | ✅ v0.4.4 |
 | docs.rs (13 crates) | https://docs.rs/lift-core | ✅ |
 | GitHub repo | https://github.com/rustnew/Lift | ✅ |
 | GitHub Releases | https://github.com/rustnew/Lift/releases | ✅ 7 releases |

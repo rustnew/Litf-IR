@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.80%2B-orange.svg)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/version-0.4.3-green.svg)](Cargo.toml)
+[![Version](https://img.shields.io/badge/version-0.4.4-green.svg)](Cargo.toml)
 [![crates.io](https://img.shields.io/crates/v/lift-core.svg)](https://crates.io/crates/lift-core)
 [![Downloads](https://img.shields.io/crates/d/lift-core.svg)](https://crates.io/crates/lift-core)
 [![Documentation](https://img.shields.io/docsrs/lift-core)](https://docs.rs/lift-core)
@@ -189,7 +189,7 @@ Chaque arête `A → B` signifie « la crate A dépend de B » (vérifié via
 | **lift-cli** | Command-line interface (`verify`, `analyse`, `optimise`, `predict`, `export`, `print`) |
 | **lift-codegen** | Programmatic model generation binary — define models from Rust, emit all formats |
 
-### Published Crates (v0.4.3)
+### Published Crates (v0.4.4)
 
 All LIFT crates are published to [crates.io](https://crates.io):
 
@@ -306,17 +306,17 @@ std::fs::write("my_model.onnx", &onnx_ir).unwrap();
 
 ```toml
 [dependencies]
-lift-core    = "0.4.3"
-lift-ast     = "0.4.3"
-lift-tensor  = "0.4.3"
-lift-quantum = "0.4.3"
-lift-hybrid  = "0.4.3"
-lift-opt     = "0.4.3"
-lift-sim     = "0.4.3"
-lift-predict = "0.4.3"
-lift-import  = "0.4.3"
-lift-export  = "0.4.3"
-lift-config  = "0.4.3"
+lift-core    = "0.4.4"
+lift-ast     = "0.4.4"
+lift-tensor  = "0.4.4"
+lift-quantum = "0.4.4"
+lift-hybrid  = "0.4.4"
+lift-opt     = "0.4.4"
+lift-sim     = "0.4.4"
+lift-predict = "0.4.4"
+lift-import  = "0.4.4"
+lift-export  = "0.4.4"
+lift-config  = "0.4.4"
 ```
 
 ```rust

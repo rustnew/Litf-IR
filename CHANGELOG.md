@@ -20,6 +20,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multi-file support (`include` / linking)
 - v1.0 release — full pipeline, benchmarks, arXiv paper
 
+## [0.4.4] — 2026-08-05
+
+### Changed
+- **Automated releases via crates.io Trusted Publishing (OIDC)** — no API
+  token needed. All 13 crates configured with `rustnew/Lift` workflow
+  `publish.yml`; pushing a `v*` tag publishes every crate in dependency order
+  from CI (`.github/workflows/publish.yml`).
+- Version bump 0.4.3 → 0.4.4 across workspace and docs.
+
 ## [0.4.3] — 2026-08-05
 
 ### Changed
