@@ -7,7 +7,7 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 readme = "../../README.md"
-description = "LIFT-QUANTUM: Quantum dialect — qubits (linear types), gates, noise attributes, layout mapping"
+description = "LIFT compiler quantum dialect: qubits (linear types), quantum gates, noise attributes, layout mapping"
 keywords = ["quantum", "quantum-computing", "gates", "compiler", "ir"]
 categories = ["compilers", "science"]
 

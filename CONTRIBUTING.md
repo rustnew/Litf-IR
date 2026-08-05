@@ -104,9 +104,9 @@ Releases are published to [crates.io](https://crates.io). The process:
 4. Tag the release and create a GitHub release:
 
    ```bash
-   git tag v0.4.2
-   git push origin v0.4.2
-   gh release create v0.4.2 --title "..." --notes "..."
+   git tag v0.4.3
+   git push origin v0.4.3
+   gh release create v0.4.3 --title "..." --notes "..."
    ```
 
 ## Commit conventions

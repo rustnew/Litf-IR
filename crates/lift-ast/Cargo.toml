@@ -7,7 +7,7 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 readme = "../../README.md"
-description = "LIFT-AST: Lexer, parser, and AST for the .lif source language"
+description = "LIFT compiler framework AST: lexer, parser, and AST for the .lif source language"
 keywords = ["compiler", "parser", "lexer", "ast", "ir"]
 categories = ["compilers", "parsing"]
 

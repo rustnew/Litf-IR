@@ -7,7 +7,7 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 readme = "../../README.md"
-description = "LIFT-SIM: Static analysis engine — shape propagation, FLOP counting, memory analysis, noise simulation"
+description = "LIFT compiler static analysis: shape propagation, FLOP counting, memory analysis, noise simulation"
 keywords = ["simulation", "cost-model", "roofline", "compiler", "quantum"]
 categories = ["compilers", "science"]
 

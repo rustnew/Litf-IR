@@ -7,7 +7,7 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 readme = "../../README.md"
-description = "LIFT-CORE: SSA IR foundation — types, values, operations, blocks, regions, verifier"
+description = "LIFT compiler framework core: unified SSA intermediate representation (IR) for AI and quantum — types, values, operations, blocks, regions, verifier"
 keywords = ["compiler", "ir", "ssa", "type-system", "quantum"]
 categories = ["compilers", "science"]
 

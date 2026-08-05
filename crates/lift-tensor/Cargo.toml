@@ -7,7 +7,7 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 readme = "../../README.md"
-description = "LIFT-TENSOR: AI dialect — tensor types, attention, KV cache, MoE, quantisation"
+description = "LIFT compiler AI dialect: tensor types, attention, KV cache, MoE, quantisation operations"
 keywords = ["tensor", "deep-learning", "attention", "compiler", "ir"]
 categories = ["compilers", "science"]
 

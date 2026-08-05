@@ -7,7 +7,7 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 readme = "../../README.md"
-description = "LIFT-CONFIG: .lith configuration language parser and validator"
+description = "LIFT compiler configuration: .lith language parser and validator, O0-O3 optimisation pipeline presets"
 keywords = ["config", "configuration", "parser", "compiler", "ir"]
 categories = ["compilers", "config"]
 

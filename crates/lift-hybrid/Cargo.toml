@@ -7,7 +7,7 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 readme = "../../README.md"
-description = "LIFT-HYBRID: Fusion dialect — classical-quantum data encoding, joint gradient computation"
+description = "LIFT compiler hybrid dialect: classical-quantum data encoding and joint gradient computation"
 keywords = ["hybrid", "quantum-classical", "variational", "compiler", "ir"]
 categories = ["compilers", "science"]
 

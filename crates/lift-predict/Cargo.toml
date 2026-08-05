@@ -7,7 +7,7 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 readme = "../../README.md"
-description = "LIFT-PREDICT: Performance prediction engine — analytical roofline model, budget enforcement"
+description = "LIFT compiler performance prediction: analytical roofline model and budget enforcement for GPU/QPU workloads"
 keywords = ["performance", "roofline", "prediction", "compiler", "gpu"]
 categories = ["compilers", "science"]
 

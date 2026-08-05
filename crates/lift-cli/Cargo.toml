@@ -7,7 +7,7 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 readme = "../../README.md"
-description = "LIFT CLI: Command-line interface — verify, analyse, print, compile, simulate, predict"
+description = "LIFT compiler CLI: verify, analyse, optimise, print, compile, simulate, and predict from the command line"
 keywords = ["cli", "compiler", "ir", "quantum", "deep-learning"]
 categories = ["compilers", "command-line-utilities"]
 

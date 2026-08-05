@@ -7,7 +7,7 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 readme = "../../README.md"
-description = "LIFT-OPT: Pass manager and optimisation passes — constant folding, DCE, tensor fusion, gate cancellation"
+description = "LIFT compiler pass manager: 13 optimisation passes — constant folding, DCE, CSE, tensor fusion, gate cancellation, qubit routing"
 keywords = ["optimisation", "compiler", "passes", "fusion", "quantum"]
 categories = ["compilers", "science"]
 

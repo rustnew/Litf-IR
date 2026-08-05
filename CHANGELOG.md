@@ -20,6 +20,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multi-file support (`include` / linking)
 - v1.0 release — full pipeline, benchmarks, arXiv paper
 
+## [0.4.3] — 2026-08-05
+
+### Changed
+- Optimised crate descriptions for discoverability: every description now
+  leads with "LIFT compiler", so the crates surface in crates.io searches for
+  "compiler", "compiler framework", "quantum compiler", and "AI compiler".
+- All 13 crates republished to crates.io at v0.4.3.
+
 ## [0.4.2] — 2026-08-05
 
 ### Fixed

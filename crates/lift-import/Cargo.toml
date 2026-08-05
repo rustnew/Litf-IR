@@ -7,7 +7,7 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 readme = "../../README.md"
-description = "LIFT-IMPORT: Importers — PyTorch FX, ONNX, Qiskit, OpenQASM 3"
+description = "LIFT compiler importers: PyTorch FX, ONNX, Qiskit, and OpenQASM 3 frontends"
 keywords = ["import", "onnx", "pytorch", "qasm", "compiler"]
 categories = ["compilers", "science"]
 
