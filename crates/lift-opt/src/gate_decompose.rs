@@ -226,13 +226,13 @@ fn decompose(
                 vec![("angle", Attribute::Float(-std::f64::consts::FRAC_PI_2))],
             ),
         ],
-        // ── RX(theta) -> RZ(-pi/2) SX RZ(pi/2 + theta) RZ(-pi/2) SX RZ(-pi/2)
-        //    Simplified: RX(theta) = RZ(-pi/2) SX RZ(pi + theta) SX RZ(pi/2)
+        // ── RX(theta) = RZ(pi/2) SX RZ(pi + theta) SX RZ(pi/2), in circuit order.
+        //    Equality holds up to global phase, see test_rx_decomposition_matches_rx.
         "quantum.rx" => vec![
             (
                 "quantum.rz".into(),
                 vec![0],
-                vec![("angle", Attribute::Float(-std::f64::consts::FRAC_PI_2))],
+                vec![("angle", Attribute::Float(std::f64::consts::FRAC_PI_2))],
             ),
             ("quantum.sx".into(), vec![0], vec![]),
             (
@@ -345,5 +345,118 @@ mod tests {
         // H is already gone -> only the CX decomposition may apply (CX is
         // native for IBM, so this should be Unchanged on second run).
         let _ = (result, rz_before);
+    }
+
+    // ── 2x2 complex helpers, local so this test adds no dependency ──
+
+    type C = (f64, f64);
+    type M = [[C; 2]; 2];
+
+    fn cmul(a: C, b: C) -> C {
+        (a.0 * b.0 - a.1 * b.1, a.0 * b.1 + a.1 * b.0)
+    }
+
+    fn mmul(a: M, b: M) -> M {
+        let mut r = [[(0.0, 0.0); 2]; 2];
+        for i in 0..2 {
+            for j in 0..2 {
+                let x = cmul(a[i][0], b[0][j]);
+                let y = cmul(a[i][1], b[1][j]);
+                r[i][j] = (x.0 + y.0, x.1 + y.1);
+            }
+        }
+        r
+    }
+
+    fn rz_matrix(t: f64) -> M {
+        let (c, s) = ((t / 2.0).cos(), (t / 2.0).sin());
+        [
+            [(c, -s), (0.0, 0.0)],
+            [(0.0, 0.0), (c, s)],
+        ]
+    }
+
+    fn sx_matrix() -> M {
+        [
+            [(0.5, 0.5), (0.5, -0.5)],
+            [(0.5, -0.5), (0.5, 0.5)],
+        ]
+    }
+
+    fn rx_matrix(t: f64) -> M {
+        let (c, s) = ((t / 2.0).cos(), (t / 2.0).sin());
+        [
+            [(c, 0.0), (0.0, -s)],
+            [(0.0, -s), (c, 0.0)],
+        ]
+    }
+
+    /// True when `a` and `b` describe the same operator up to a global phase.
+    fn same_up_to_global_phase(a: M, b: M) -> bool {
+        let mut phase: Option<C> = None;
+        for i in 0..2 {
+            for j in 0..2 {
+                let (ar, ai) = a[i][j];
+                let (br, bi) = b[i][j];
+                if ar.hypot(ai) < 1e-12 {
+                    if br.hypot(bi) > 1e-9 {
+                        return false;
+                    }
+                    continue;
+                }
+                let d = ar * ar + ai * ai;
+                let ratio = ((br * ar + bi * ai) / d, (bi * ar - br * ai) / d);
+                match phase {
+                    None => phase = Some(ratio),
+                    Some(p) => {
+                        if (p.0 - ratio.0).abs() > 1e-9 || (p.1 - ratio.1).abs() > 1e-9 {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+        phase.map_or(false, |p| (p.0.hypot(p.1) - 1.0).abs() < 1e-9)
+    }
+
+    /// The RX entry in the decomposition table must implement RX(theta).
+    /// This builds the operator from whatever the table returns, so it keeps
+    /// checking the real entry rather than a copy of it.
+    #[test]
+    fn test_rx_decomposition_matches_rx() {
+        use std::f64::consts::{FRAC_PI_2, PI};
+
+        for theta in [0.0, 0.3, 1.0, FRAC_PI_2, PI, 2.2, -0.7, 3.9] {
+            let mut attrs = lift_core::attributes::Attributes::new();
+            attrs.set("angle", Attribute::Float(theta));
+            let sequence =
+                decompose("quantum.rx", &attrs).expect("rx should have a decomposition");
+
+            // The sequence is in circuit order, so each gate multiplies on the left.
+            let mut built: M = [[(1.0, 0.0), (0.0, 0.0)], [(0.0, 0.0), (1.0, 0.0)]];
+            for (name, _qubits, params) in &sequence {
+                let gate = match name.as_str() {
+                    "quantum.rz" => {
+                        let angle = params
+                            .iter()
+                            .find(|(k, _)| *k == "angle")
+                            .and_then(|(_, v)| match v {
+                                Attribute::Float(f) => Some(*f),
+                                _ => None,
+                            })
+                            .expect("rz in the table should carry a float angle");
+                        rz_matrix(angle)
+                    }
+                    "quantum.sx" => sx_matrix(),
+                    other => panic!("unexpected gate {other} in the rx decomposition"),
+                };
+                built = mmul(gate, built);
+            }
+
+            assert!(
+                same_up_to_global_phase(built, rx_matrix(theta)),
+                "rx decomposition does not implement RX({theta})"
+            );
+        }
     }
 }
