@@ -370,25 +370,19 @@ mod tests {
 
     fn rz_matrix(t: f64) -> M {
         let (c, s) = ((t / 2.0).cos(), (t / 2.0).sin());
-        [
-            [(c, -s), (0.0, 0.0)],
-            [(0.0, 0.0), (c, s)],
-        ]
+        [[(c, -s), (0.0, 0.0)], [(0.0, 0.0), (c, s)]]
     }
 
+    /// sqrt(X), which is the OpenQASM stdgates convention and the one
+    /// qasm_export.rs emits as `sx q[n];`. With the dagger convention instead,
+    /// the same sequence would implement RX(-theta).
     fn sx_matrix() -> M {
-        [
-            [(0.5, 0.5), (0.5, -0.5)],
-            [(0.5, -0.5), (0.5, 0.5)],
-        ]
+        [[(0.5, 0.5), (0.5, -0.5)], [(0.5, -0.5), (0.5, 0.5)]]
     }
 
     fn rx_matrix(t: f64) -> M {
         let (c, s) = ((t / 2.0).cos(), (t / 2.0).sin());
-        [
-            [(c, 0.0), (0.0, -s)],
-            [(0.0, -s), (c, 0.0)],
-        ]
+        [[(c, 0.0), (0.0, -s)], [(0.0, -s), (c, 0.0)]]
     }
 
     /// True when `a` and `b` describe the same operator up to a global phase.
@@ -409,14 +403,55 @@ mod tests {
                 match phase {
                     None => phase = Some(ratio),
                     Some(p) => {
-                        if (p.0 - ratio.0).abs() > 1e-9 || (p.1 - ratio.1).abs() > 1e-9 {
+                        // Compare relative to the entry size. An absolute bound
+                        // here fails on correct code when |a| is near zero,
+                        // since the float noise is divided by a tiny number.
+                        let scale = ar.hypot(ai).max(1.0);
+                        if (p.0 - ratio.0).abs() > 1e-9 * scale
+                            || (p.1 - ratio.1).abs() > 1e-9 * scale
+                        {
                             return false;
                         }
                     }
                 }
             }
         }
-        phase.map_or(false, |p| (p.0.hypot(p.1) - 1.0).abs() < 1e-9)
+        phase.is_some_and(|p| (p.0.hypot(p.1) - 1.0).abs() < 1e-9)
+    }
+
+    /// `mmul(gate, built)` has to mean "gate runs after everything in built",
+    /// which is what reading a decomposition in circuit order requires.
+    ///
+    /// This needs its own test: every entry in the table today is a single
+    /// gate, a palindrome, or a conjugation, and all three give the same
+    /// product in either order, so no table entry can pin this down.
+    #[test]
+    fn test_composition_is_in_circuit_order() {
+        use std::f64::consts::FRAC_PI_2;
+
+        let x: M = [[(0.0, 0.0), (1.0, 0.0)], [(1.0, 0.0), (0.0, 0.0)]];
+        let id: M = [[(1.0, 0.0), (0.0, 0.0)], [(0.0, 0.0), (1.0, 0.0)]];
+
+        // RZ(pi/2) first, then X.
+        let mut built = id;
+        for gate in [rz_matrix(FRAC_PI_2), x] {
+            built = mmul(gate, built);
+        }
+
+        // The expected product is written out rather than composed, so that a
+        // wrong multiplication order cannot cancel itself out on both sides.
+        let r = std::f64::consts::FRAC_1_SQRT_2;
+        let expected: M = [[(0.0, 0.0), (r, r)], [(r, -r), (0.0, 0.0)]];
+        let reversed: M = [[(0.0, 0.0), (r, -r)], [(r, r), (0.0, 0.0)]];
+
+        assert!(
+            same_up_to_global_phase(built, expected),
+            "composition should apply the first listed gate first"
+        );
+        assert!(
+            !same_up_to_global_phase(expected, reversed),
+            "the two orders must be distinguishable, otherwise this test proves nothing"
+        );
     }
 
     /// The RX entry in the decomposition table must implement RX(theta).
@@ -429,10 +464,11 @@ mod tests {
         for theta in [0.0, 0.3, 1.0, FRAC_PI_2, PI, 2.2, -0.7, 3.9] {
             let mut attrs = lift_core::attributes::Attributes::new();
             attrs.set("angle", Attribute::Float(theta));
-            let sequence =
-                decompose("quantum.rx", &attrs).expect("rx should have a decomposition");
+            let sequence = decompose("quantum.rx", &attrs).expect("rx should have a decomposition");
 
-            // The sequence is in circuit order, so each gate multiplies on the left.
+            // Circuit order, so each gate multiplies on the left. That
+            // convention is pinned by test_composition_is_in_circuit_order,
+            // since the rx sequence is a palindrome and cannot pin it here.
             let mut built: M = [[(1.0, 0.0), (0.0, 0.0)], [(0.0, 0.0), (1.0, 0.0)]];
             for (name, _qubits, params) in &sequence {
                 let gate = match name.as_str() {
