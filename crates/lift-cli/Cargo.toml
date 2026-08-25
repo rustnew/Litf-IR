@@ -11,6 +11,10 @@ description = "LIFT compiler CLI: verify, analyse, optimise, print, compile, sim
 keywords = ["cli", "compiler", "ir", "quantum", "deep-learning"]
 categories = ["compilers", "command-line-utilities"]
 
+[[bin]]
+name = "lift"
+path = "src/main.rs"
+
 [dependencies]
 lift-core = { workspace = true }
 lift-ast = { workspace = true }

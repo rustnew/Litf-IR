@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.80%2B-orange.svg)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/version-0.4.5-green.svg)](Cargo.toml)
+[![Version](https://img.shields.io/badge/version-0.4.6-green.svg)](Cargo.toml)
 [![crates.io](https://img.shields.io/crates/v/lift-core.svg)](https://crates.io/crates/lift-core)
 [![Downloads](https://img.shields.io/crates/d/lift-core.svg)](https://crates.io/crates/lift-core)
 [![Documentation](https://img.shields.io/docsrs/lift-core)](https://docs.rs/lift-core)
@@ -189,7 +189,7 @@ bottom, `L4` → `L0`): nothing points upward.
 | **lift-cli** | Command-line interface (`verify`, `analyse`, `optimise`, `predict`, `export`, `print`) |
 | **lift-codegen** | Programmatic model generation binary — define models from Rust, emit all formats |
 
-### Published Crates (v0.4.5)
+### Published Crates (v0.4.6)
 
 All LIFT crates are published to [crates.io](https://crates.io):
 
@@ -312,17 +312,17 @@ std::fs::write("my_model.onnx", &onnx_ir).unwrap();
 
 ```toml
 [dependencies]
-lift-core    = "0.4.5"
-lift-ast     = "0.4.5"
-lift-tensor  = "0.4.5"
-lift-quantum = "0.4.5"
-lift-hybrid  = "0.4.5"
-lift-opt     = "0.4.5"
-lift-sim     = "0.4.5"
-lift-predict = "0.4.5"
-lift-import  = "0.4.5"
-lift-export  = "0.4.5"
-lift-config  = "0.4.5"
+lift-core    = "0.4.6"
+lift-ast     = "0.4.6"
+lift-tensor  = "0.4.6"
+lift-quantum = "0.4.6"
+lift-hybrid  = "0.4.6"
+lift-opt     = "0.4.6"
+lift-sim     = "0.4.6"
+lift-predict = "0.4.6"
+lift-import  = "0.4.6"
+lift-export  = "0.4.6"
+lift-config  = "0.4.6"
 ```
 
 ```rust

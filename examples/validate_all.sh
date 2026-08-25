@@ -6,7 +6,7 @@
 
 set -e
 
-LIFT="cargo run --bin lift-cli --"
+LIFT="cargo run --bin lift --"
 PASS=0
 FAIL=0
 TOTAL=0

@@ -20,6 +20,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multi-file support (`include` / linking)
 - v1.0 release — full pipeline, benchmarks, arXiv paper
 
+## [0.4.6] — 2026-08-25
+
+### Fixed
+- **`cargo install lift-cli` now installs a binary named `lift`**, not
+  `lift-cli`. Every piece of documentation (README, the book, this
+  changelog) has always shown `lift verify ...` — but the package had no
+  `[[bin]] name` override, so Cargo defaulted the binary to the package
+  name. Added `[[bin]] name = "lift"` to `crates/lift-cli/Cargo.toml`.
+  `examples/validate_all.sh` hardcoded `cargo run --bin lift-cli --`, which
+  broke under the rename; fixed to `--bin lift`.
+
 ## [0.4.5] — 2026-08-25
 
 ### Fixed
