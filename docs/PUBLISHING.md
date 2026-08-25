@@ -10,7 +10,7 @@ AI, and quantum ecosystems, plus the channels still to pursue.
 | crates.io (13 crates) | https://crates.io/crates/lift-core | ✅ v0.4.5 |
 | docs.rs (13 crates) | https://docs.rs/lift-core | ✅ |
 | GitHub repo | https://github.com/rustnew/Lift | ✅ |
-| GitHub Releases | https://github.com/rustnew/Lift/releases | ✅ 7 releases |
+| GitHub Releases | https://github.com/rustnew/Lift/releases | ✅ 9 releases |
 | GitHub Pages (docs book) | https://rustnew.github.io/Lift/ | ✅ |
 | GitHub Discussions | https://github.com/rustnew/Lift/discussions | ✅ |
 | crates.io Trusted Publishing | 13 crates → `rustnew/Lift` workflow `publish.yml` | ✅ configured |
@@ -81,7 +81,8 @@ Ready-to-post texts for each channel are in [ANNOUNCEMENTS.md](ANNOUNCEMENTS.md)
 | 13 optimisation passes (fusion, DCE, rewrites…) + pass framework | Real | Pass developers |
 | IR verifier | Real | Program validation |
 | Quantum analysis: circuit depth, estimated fidelity, depolarising noise | Real but **static** | Estimation only, no execution |
-| Export: ONNX / QASM / LLVM-IR text | Partial | Prototyping |
+| Export: QASM (all 48 gates), ONNX (70+/110 ops, opset 21) | Real, partial coverage | Prototyping, QASM hardware runs |
+| Export: LLVM-IR | Text skeleton, not executable | Not yet usable for real compilation |
 
 ### ❌ NOT yet usable (honest gaps — these are the v0.5/v0.6 plan)
 
