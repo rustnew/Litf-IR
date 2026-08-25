@@ -1299,6 +1299,13 @@ max_circuit_depth = 1000
 |-----|------|--------|---------|
 | `level` | enum | `O0`, `O1`, `O2`, `O3` | `O2` |
 | `max_iterations` | usize | Any positive integer | `10` |
+| `passes` | comma-separated list | Any names from the table below | none (derived from `level`) |
+| `disabled_passes` | comma-separated list | Any names from the table below | none |
+
+`passes`, when set, overrides `level` entirely. `disabled_passes` is always
+subtracted from the effective list afterwards, whether it came from `passes`
+or from `level`. Unknown pass names are dropped with a warning
+(`OptimisationConfig::validate()`).
 
 ```ini
 [optimisation]
@@ -1310,14 +1317,14 @@ max_iterations = 10
 
 | Level | What it does |
 |-------|-------------|
-| **O0** | No optimisation (debug mode) |
-| **O1** | Canonicalize + Dead Code Elimination |
-| **O2** | + Tensor Fusion + Constant Folding + Gate Cancellation + Rotation Merge |
-| **O3** | + Flash Attention + CSE + Quantisation Pass + Noise-Aware Schedule + Layout Mapping |
+| **O0** | No optimisation |
+| **O1** | Canonicalize + Constant Folding + Dead Code Elimination |
+| **O2** | O1 + CSE + Tensor Fusion |
+| **O3** | O2 + Flash Attention + Quantisation Pass + Gate Cancellation + Rotation Merge + Noise-Aware Schedule + Layout Mapping + Gate Decomposition + Real Routing (all 13 passes) |
 
 ### Default passes at O2
 
-`canonicalize`, `constant-folding`, `dce`, `tensor-fusion`
+`canonicalize`, `constant-folding`, `dce`, `cse`, `tensor-fusion`
 
 ### All available optimisation passes
 
@@ -1326,14 +1333,16 @@ max_iterations = 10
 | `canonicalize` | All | Simplify operations to canonical forms |
 | `constant-folding` | Tensor | Evaluate constant expressions at compile time |
 | `dce` | All | Remove dead (unused) operations |
+| `cse` | All | Common Subexpression Elimination |
 | `tensor-fusion` | Tensor | Fuse adjacent tensor operations into single kernels |
 | `flash-attention` | Tensor | Replace standard attention with flash attention |
-| `cse` | All | Common Subexpression Elimination |
-| `quantisation-pass` | Tensor | Apply INT8/INT4/FP8 quantisation |
-| `gate-cancellation` | Quantum | Cancel adjacent inverse gates (H·H=I, X·X=I) |
-| `rotation-merge` | Quantum | Merge consecutive rotations (RZ(a)·RZ(b)=RZ(a+b)) |
+| `quantisation-pass` | Tensor | Annotate compute-heavy ops for INT8/INT4/FP8 quantisation |
+| `gate-cancellation` | Quantum | Cancel adjacent (and non-consecutive) inverse gates (H·H=I, X·X=I, S·Sdg=I, T·Tdg=I) |
+| `rotation-merge` | Quantum | Merge consecutive (and non-consecutive) rotations (RZ(a)·RZ(b)=RZ(a+b)) |
 | `noise-aware-schedule` | Quantum | Schedule gates considering hardware noise |
-| `layout-mapping` | Quantum | Map logical qubits to physical qubits (SABRE algorithm) |
+| `layout-mapping` | Quantum | Legacy pass: annotates non-adjacent 2-qubit gates with `needs_swap = true`. Does **not** insert SWAPs or route — that's `real-routing`'s job. Not a SABRE implementation. |
+| `gate-decomposition` | Quantum | Replace H/T/Tdg/S/Sdg/Y/RX with the `[quantum] provider`'s native gate set |
+| `real-routing` | Quantum | Insert real `quantum.swap` ops (BFS shortest path) so 2-qubit gates land on connected physical qubits |
 
 ## 5.5 `[simulation]` Section
 
@@ -1360,13 +1369,19 @@ Only needed for quantum or hybrid programs.
 |-----|------|--------|---------|
 | `topology` | string | `grid`, `heavy_hex`, `all_to_all`, `linear`, `tree` | `linear` |
 | `num_qubits` | usize | Any positive integer | `5` |
+| `provider` | string | `ibm`/`ibm_eagle`, `ibm_kyoto`, `rigetti`, `ionq`, `quantinuum`, `simulator`/`sim` | none (falls back to `simulator`, where every gate is native) |
 | `error_mitigation` | string | Mitigation strategy name | none |
 | `shots` | usize | Number of measurement shots | none |
+
+`provider` drives the `gate-decomposition` pass's target native gate set and
+`real-routing`'s topology defaults; it's read here rather than from
+`[target]`.
 
 ```ini
 [quantum]
 topology = heavy_hex
 num_qubits = 127
+provider = ibm_kyoto
 error_mitigation = zne
 shots = 8192
 ```
