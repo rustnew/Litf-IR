@@ -25,9 +25,10 @@ jobs:
 
       - name: Prepare mdbook sources
         run: |
-          cp README.md LIFT_Guide.md LIFT_Manual.md CAPABILITIES.md DIALECTS.md \
-             LIFT_design.md CHANGELOG.md CONTRIBUTING.md PUBLISHING.md \
-             docs/ROADMAP-v0.5.md docs/ANNOUNCEMENTS.md book/src/
+          cp README.md CHANGELOG.md CONTRIBUTING.md book/src/
+          cp docs/LIFT_Guide.md docs/LIFT_Manual.md docs/CAPABILITIES.md \
+             docs/DIALECTS.md docs/LIFT_design.md docs/PUBLISHING.md \
+             docs/STRATEGY.md docs/ROADMAP-v0.5.md docs/ANNOUNCEMENTS.md book/src/
 
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v2

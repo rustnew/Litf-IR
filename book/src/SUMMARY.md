@@ -10,6 +10,7 @@
 - [LIFT Manual](LIFT_Manual.md)
 - [Capabilities](CAPABILITIES.md)
 - [Dialects Reference](DIALECTS.md)
+- [Strategic Business Guide](STRATEGY.md)
 
 # Design
 

@@ -87,8 +87,8 @@ This is also run in CI on every push to `main` and on pull requests.
 Releases are published to [crates.io](https://crates.io). The process:
 
 1. Bump the version in `Cargo.toml` (`[workspace.package] version`) and update
-   version references across `README.md` and the docs (`LIFT_Guide.md`,
-   `LIFT_Manual.md`, `LIFT_design.md`, `DIALECTS.md`).
+   version references across `README.md` and the docs (`docs/LIFT_Guide.md`,
+   `docs/LIFT_Manual.md`, `docs/LIFT_design.md`, `docs/DIALECTS.md`).
 2. Update `CHANGELOG.md`.
 3. Push a version tag — the [`publish` workflow](.github/workflows/publish.yml)
    publishes all 13 crates automatically in dependency order

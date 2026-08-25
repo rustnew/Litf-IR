@@ -447,14 +447,15 @@ bash examples/validate_all.sh   # Full pipeline validation (105 checks)
 ## Documentation
 
 - **📖 [Online book (GitHub Pages)](https://rustnew.github.io/Lift/)** — the full documentation set rendered as a searchable book
-- **[LIFT_Guide.md](LIFT_Guide.md)** — Complete feature guide with code examples for every crate
-- **[LIFT_Manual.md](LIFT_Manual.md)** — User manual with real-world use cases
-- **[LIFT_design.md](LIFT_design.md)** — Architecture and design document
+- **[LIFT_Guide.md](docs/LIFT_Guide.md)** — Complete feature guide with code examples for every crate
+- **[LIFT_Manual.md](docs/LIFT_Manual.md)** — User manual with real-world use cases
+- **[LIFT_design.md](docs/LIFT_design.md)** — Architecture and design document
 - **[v0.5 Roadmap](docs/ROADMAP-v0.5.md)** — Detailed development plan for the next release
-- **[CAPABILITIES.md](CAPABILITIES.md)** — Capabilities, limits, and roadmap
-- **[DIALECTS.md](DIALECTS.md)** — Dialect reference (tensor, quantum, hybrid)
+- **[CAPABILITIES.md](docs/CAPABILITIES.md)** — Capabilities, limits, and roadmap
+- **[DIALECTS.md](docs/DIALECTS.md)** — Dialect reference (tensor, quantum, hybrid)
+- **[STRATEGY.md](docs/STRATEGY.md)** — Business/ROI guide: who uses LIFT and why
 - **[CHANGELOG.md](CHANGELOG.md)** — Version history and release notes
-- **[PUBLISHING.md](PUBLISHING.md)** — Where LIFT is published and how to promote it
+- **[PUBLISHING.md](docs/PUBLISHING.md)** — Where LIFT is published and how to promote it
 - **[ANNOUNCEMENTS.md](docs/ANNOUNCEMENTS.md)** — Ready-to-post announcement texts for community channels
 
 ## Contributing

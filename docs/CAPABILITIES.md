@@ -334,7 +334,7 @@ L'objectif de LIFT est : **"Simulate → Predict → Optimise → Compile"**. Vo
 - [x] Connecter les 13 passes au CLI (déjà fait dans `cmd_optimise`, main.rs)
 - [x] Connecter EnergyModel au CLI (`predict --energy`, `--num-gpus`)
 - [x] Connecter predict_quantum au CLI (`predict --quantum <hardware> --precision`)
-- [x] `lift-test/src/config.rs` présent et compile (`cargo build -p lift-test`)
+- [x] `crates/lift-demo/src/config.rs` présent et compile (`cargo build -p lift-demo`)
 
 ## Priorité 2 — Import/Export fonctionnels (effort moyen, impact élevé)
 

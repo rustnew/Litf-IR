@@ -14,7 +14,8 @@ members = [
     "crates/lift-config",
     "crates/lift-cli",
     "crates/lift-codegen",
-    "crates/lift-tests", "lift-test",
+    "crates/lift-tests",
+    "crates/lift-demo",
 ]
 
 [workspace.package]
