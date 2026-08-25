@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://rustnew.github.io/Lift/
+    about: Read the full LIFT book before filing an issue — your question may already be answered there.
+  - name: Discussions
+    url: https://github.com/rustnew/Lift/discussions
+    about: Ask questions, share ideas, or discuss usage that isn't a bug or a feature request.

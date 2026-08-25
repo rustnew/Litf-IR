@@ -10,7 +10,7 @@ The first Intermediate Representation built natively for both AI and Quantum Com
 
 *Simulate before you run. Compile once. Optimise everywhere.*
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-orange.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-orange.svg)](../LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.80+-orange.svg)](https://rustlang.org)
 [![Tests](https://img.shields.io/badge/Tests-505%20passed-brightgreen.svg)]()
 [![Version](https://img.shields.io/badge/Version-0.4.3-blue.svg)]()
@@ -231,7 +231,7 @@ prediction {
 | API documentation | Easy | Rustdoc for all public items |
 | Tutorials | Easy | Getting started guides and examples |
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for code style and PR process.
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for code style and PR process.
 
 ---
 
@@ -249,7 +249,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for code style and PR process.
 
 ## License
 
-MIT -- see [LICENSE](LICENSE).
+MIT -- see [LICENSE](../LICENSE).
 
 ---
 

@@ -167,9 +167,9 @@ flowchart TB
     class CLI,CGEN l4;
 ```
 
-Chaque arête `A → B` signifie « la crate A dépend de B » (vérifié via
-`cargo metadata`). Les crates sont disposées par **niveau de dépendance**
-(de haut en bas, `L4` → `L0`) : rien ne pointe vers le haut.
+Each edge `A → B` means "crate A depends on crate B" (verified via
+`cargo metadata`). Crates are arranged by **dependency layer** (top to
+bottom, `L4` → `L0`): nothing points upward.
 
 ### Crates
 
@@ -462,6 +462,8 @@ bash examples/validate_all.sh   # Full pipeline validation (105 checks)
 
 Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for the
 development workflow, project layout, code style, and how to open a pull request.
+This project follows a [Code of Conduct](CODE_OF_CONDUCT.md). To report a
+security vulnerability, see [SECURITY.md](SECURITY.md).
 
 ## Roadmap
 

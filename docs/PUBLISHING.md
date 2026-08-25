@@ -17,9 +17,9 @@ AI, and quantum ecosystems, plus the channels still to pursue.
 
 > **Publishing is now secure**: all 13 crates use [Trusted Publishing](https://crates.io/docs/trusted-publishing)
 > (OIDC, no API token). Pushing a `v*` tag triggers
-> [`.github/workflows/publish.yml`](.github/workflows/publish.yml), which
+> [`.github/workflows/publish.yml`](../.github/workflows/publish.yml), which
 > publishes every crate in dependency order. See
-> [CONTRIBUTING.md](CONTRIBUTING.md#publishing).
+> [CONTRIBUTING.md](../CONTRIBUTING.md#publishing).
 
 ## Pull requests submitted (awaiting merge)
 
@@ -38,7 +38,7 @@ AI, and quantum ecosystems, plus the channels still to pursue.
 
 ## Community announcements
 
-Ready-to-post texts for each channel are in [docs/ANNOUNCEMENTS.md](docs/ANNOUNCEMENTS.md).
+Ready-to-post texts for each channel are in [ANNOUNCEMENTS.md](ANNOUNCEMENTS.md).
 
 | Channel | Status |
 |---------|--------|

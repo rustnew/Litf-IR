@@ -44,7 +44,9 @@ LIFT is a Cargo workspace of 13 published crates, organised by dependency layer:
 | L3 — Prediction | `lift-predict` | roofline / performance prediction |
 | L4 — Tools | `lift-cli`, `lift-codegen` | CLI; programmatic model generation |
 
-`lift-tests` is a private crate (`publish = false`) used for integration tests.
+`lift-tests` (`publish = false`) holds the integration test suite. `lift-demo`
+(`publish = false`) is a standalone, end-to-end hybrid AI+quantum pipeline
+walkthrough — useful as a worked example, not part of the library API.
 
 ## Building and testing
 

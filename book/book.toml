@@ -13,4 +13,4 @@ edit-url-template = "https://github.com/rustnew/Lift/edit/main/{path}"
 enable = true
 
 [output.html.playground]
-editor = true
+editable = true
