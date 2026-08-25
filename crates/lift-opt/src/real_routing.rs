@@ -45,7 +45,12 @@ impl Pass for RealRouting {
         let mut placement: HashMap<usize, usize> = HashMap::new();
         let mut reverse: HashMap<usize, usize> = HashMap::new(); // physical -> logical
 
-        for block_key in ctx.blocks.keys().collect::<Vec<_>>() {
+        // The collect is required, not needless: the loop body mutates `ctx`
+        // (inserting SWAP ops and values), which would conflict with an
+        // active borrow from an uncollected `ctx.blocks.keys()` iterator.
+        #[allow(clippy::needless_collect)]
+        let block_keys: Vec<_> = ctx.blocks.keys().collect();
+        for block_key in block_keys {
             // We rebuild the block op list as we insert SWAPs, so process in
             // chunks: handle one gate at a time and refresh the snapshot.
             // The `loop + index` form is required because the op list grows
@@ -261,7 +266,7 @@ mod tests {
         let (cx, _) = ctx.create_op(
             "quantum.cx",
             "quantum",
-            qubits.clone(),
+            qubits,
             vec![qty, qty],
             attrs,
             Location::unknown(),
@@ -292,7 +297,7 @@ mod tests {
         let (cx, _) = ctx.create_op(
             "quantum.cx",
             "quantum",
-            qubits.clone(),
+            qubits,
             vec![qty, qty],
             attrs,
             Location::unknown(),

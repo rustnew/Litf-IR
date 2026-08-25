@@ -26,9 +26,9 @@ impl Pass for FlashAttentionPass {
         let mut replaced = 0usize;
         let flash_name = ctx.strings.intern("tensor.flash_attention");
 
-        let op_keys: Vec<_> = ctx.ops.keys().collect();
-        let attention_ops: Vec<_> = op_keys
-            .into_iter()
+        let attention_ops: Vec<_> = ctx
+            .ops
+            .keys()
             .filter(|&ok| {
                 if let Some(op) = ctx.ops.get(ok) {
                     let name = ctx.strings.resolve(op.name);

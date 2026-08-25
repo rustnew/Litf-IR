@@ -375,7 +375,7 @@ fn build_vqe() -> ModelBuilder {
         .op("quantum.ry", &["q0"], "q0a", q.clone())
         .op("quantum.ry", &["q1"], "q1a", q.clone())
         .op("quantum.cx", &["q0a", "q1a"], "q0b", q.clone())
-        .op("quantum.rz", &["q0b"], "q0c", q.clone())
+        .op("quantum.rz", &["q0b"], "q0c", q)
         .returns("q0c")
         .done()
 }

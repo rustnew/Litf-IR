@@ -72,7 +72,7 @@ fn test_tensor_type_dtypes() {
     let fp32 = ctx.make_tensor_type(shape.clone(), DataType::FP32, MemoryLayout::Contiguous);
     let fp16 = ctx.make_tensor_type(shape.clone(), DataType::FP16, MemoryLayout::Contiguous);
     let bf16 = ctx.make_tensor_type(shape.clone(), DataType::BF16, MemoryLayout::Contiguous);
-    let i8t = ctx.make_tensor_type(shape.clone(), DataType::INT8, MemoryLayout::Contiguous);
+    let i8t = ctx.make_tensor_type(shape, DataType::INT8, MemoryLayout::Contiguous);
     assert_ne!(fp32, fp16);
     assert_ne!(fp16, bf16);
     assert_ne!(bf16, i8t);

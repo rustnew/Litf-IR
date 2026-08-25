@@ -45,9 +45,9 @@ impl Pass for QuantisationPass {
         let mut quantised = 0usize;
 
         // Find ops that benefit from quantisation
-        let op_keys: Vec<_> = ctx.ops.keys().collect();
-        let target_ops: Vec<_> = op_keys
-            .into_iter()
+        let target_ops: Vec<_> = ctx
+            .ops
+            .keys()
             .filter(|&ok| {
                 if let Some(op) = ctx.ops.get(ok) {
                     let name = ctx.strings.resolve(op.name);
