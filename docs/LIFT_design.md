@@ -12,7 +12,7 @@ The first Intermediate Representation built natively for both AI and Quantum Com
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-orange.svg)](../LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.80+-orange.svg)](https://rustlang.org)
-[![Tests](https://img.shields.io/badge/Tests-505%20passed-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-541%20passed-brightgreen.svg)]()
 [![Version](https://img.shields.io/badge/Version-0.4.5-blue.svg)]()
 [![Status](https://img.shields.io/badge/Status-Research%20Alpha-gold.svg)]()
 
@@ -22,15 +22,22 @@ The first Intermediate Representation built natively for both AI and Quantum Com
 
 ## Overview
 
-LIFT is a **unified compiler infrastructure** that treats AI computation (tensors, gradients, attention) and quantum computation (qubits, gates, noise models) as first-class citizens in the same SSA-based intermediate representation. One `.lif` source file, one `.lith` config, one pipeline: **simulate, predict, optimise, compile**.
+LIFT is a **unified compiler infrastructure** that treats AI computation (tensors, gradients, attention) and quantum computation (qubits, gates, noise models) as first-class citizens in the same SSA-based intermediate representation. One `.lif` source file, one `.lith` config, one target pipeline: **simulate, predict, optimise, compile**.
+
+That target is a work in progress, not today's state — see
+[docs/CAPABILITIES.md](CAPABILITIES.md) for an honest, source-verified
+breakdown of what's real versus planned for each of the four stages.
+**Predict** and **Optimise** are solid; **Simulate** is static analysis only
+(no real execution yet); **Compile** produces text output, not executable
+code, for any target.
 
 ```
  .lif source ──► LIFT-CORE (SSA IR) ──► SIMULATE ──► PREDICT ──► OPTIMISE ──► COMPILE
-                      │                                                          │
+                      │                    (static)                              │
           ┌───────────┼───────────┐                                 ┌────────────┼────────────┐
-     LIFT-TENSOR  LIFT-QUANTUM  LIFT-HYBRID                    CUDA (GPU)   OpenQASM 3   LLVM (CPU)   ONNX
-     110 tensor   48 gates     21 hybrid                      H100/A100    IBM/Rigetti   AVX-512      TensorRT
-     operations   Kraus/QEC     VQC/VQE ops                    MI300        IonQ          OpenMP       PyTorch
+     LIFT-TENSOR  LIFT-QUANTUM  LIFT-HYBRID                   OpenQASM 3   LLVM IR text   ONNX
+     110 tensor   48 gates     21 hybrid                     (10/50+ gates)  (skeleton)  (opset 21)
+     operations   Kraus/QEC     VQC/VQE ops                                              CUDA PTX (planned)
 ```
 
 ---
@@ -70,7 +77,7 @@ No existing IR handles both AI and quantum in a single representation.
   DIALECTS    LIFT-CORE  |  LIFT-TENSOR  |  LIFT-QUANTUM  |  LIFT-HYBRID
   ANALYSIS    Shape inference  |  FLOP count  |  Noise sim  |  Energy model  |  Roofline
   PASSES      TensorFusion  FlashAttention  GateCancellation  RotationMerge  LayoutMapping  CSE ...
-  BACKENDS    CUDA (PTX)  |  OpenQASM 3  |  LLVM IR  |  ONNX (opset 21)  |  XLA (planned)
+  BACKENDS    OpenQASM 3 (10/50+ gates)  |  LLVM IR (skeleton)  |  ONNX (opset 21)  |  CUDA PTX, XLA (planned)
   HARDWARE    H100 / A100 / MI300  |  IBM Kyoto / Rigetti / IonQ  |  TPU
 ```
 
@@ -102,11 +109,14 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 # Clone and build
 git clone https://github.com/rustnew/Lift.git
-cd lift
+cd Lift
 cargo build --release
 
-# Run tests (535 tests)
+# Run tests (541 tests)
 cargo test --workspace
+
+# Install the `lift` CLI on your PATH (or use `cargo run -p lift-cli --` instead)
+cargo install lift-cli
 ```
 
 ### Example: Tensor Program
@@ -132,17 +142,19 @@ lift print   hello.lif    # Pretty-print the IR
 ```lif
 #dialect quantum
 module @bell {
-    func @bell_state() -> (bit, bit) {
-        %q0 = "quantum.init"() : () -> qubit
-        %q1 = "quantum.init"() : () -> qubit
-        %q0 = "quantum.h"(%q0)         : (qubit) -> qubit
-        %q0, %q1 = "quantum.cx"(%q0, %q1) : (qubit, qubit) -> (qubit, qubit)
-        %b0 = "quantum.measure"(%q0) : (qubit) -> bit
-        %b1 = "quantum.measure"(%q1) : (qubit) -> bit
+    func @bell_state(%q0: qubit, %q1: qubit) -> (bit, bit) {
+        %q2 = "quantum.h"(%q0) : (qubit) -> qubit
+        %q3, %q4 = "quantum.cx"(%q2, %q1) : (qubit, qubit) -> (qubit, qubit)
+        %b0 = "quantum.measure"(%q3) : (qubit) -> bit
+        %b1 = "quantum.measure"(%q4) : (qubit) -> bit
         return %b0, %b1
     }
 }
 ```
+
+(Every `%name` is assigned exactly once — SSA requires this. Reusing `%q0` as
+both the block argument and a gate result, as an earlier version of this
+example did, fails `lift verify` with `MultipleDefinition`.)
 
 ---
 
@@ -151,37 +163,47 @@ module @bell {
 One file controls the entire compilation pipeline:
 
 ```lith
-compilation {
-    target {
-        gpu  { backend = "cuda"  arch = "sm_90"  memory_limit_gb = 80 }
-        qpu  { provider = "ibm"  backend_name = "ibm_kyoto"  shots = 4096 }
-    }
-}
-optimization {
-    pipeline = ["canonicalize", "tensor-fusion", "gate-cancellation", "layout-mapping"]
-}
-prediction {
-    budget { max_latency_ms = 200  min_fidelity = 0.92  max_memory_gb = 40 }
-}
+[target]
+backend = "llvm"
+device = "h100"
+precision = "fp16"
+
+[quantum]
+provider = "ibm_kyoto"
+topology = "heavy_hex"
+num_qubits = 27
+
+[optimisation]
+level = O3
+passes = canonicalize, tensor-fusion, gate-cancellation, gate-decomposition, real-routing
+
+[budget]
+max_memory_bytes = 80000000000
+max_time_ms = 200.0
+min_fidelity = 0.92
 ```
 
 ---
 
 ## Optimisation Passes
 
+All 13 passes are reachable from the CLI and from `.lith`'s `[optimisation] passes = ...`.
+
 | Pass | Domain | Description |
 |------|--------|-------------|
 | Canonicalise | All | Normalise IR to canonical form |
 | Constant Folding | All | Evaluate compile-time constants |
 | Dead Code Elimination | All | Remove unused operations |
-| Tensor Fusion | AI | Fuse MatMul+Bias+ReLU chains (30-50% bandwidth reduction) |
-| Flash Attention | AI | Replace O(n^2) attention with tiled O(n) (10-20x speedup) |
-| Quantisation | AI | INT8/FP8 annotation (4x model size reduction) |
 | Common Subexpression Elimination | All | Deduplicate identical computations |
-| Gate Cancellation | Quantum | H*H=I, Rz(a)*Rz(b)=Rz(a+b) (15-40% depth reduction) |
-| Rotation Merge | Quantum | Merge consecutive rotation gates |
-| Noise-Aware Schedule | Quantum | Reorder gates for maximum fidelity |
-| Layout Mapping | Quantum | SABRE routing to physical qubit topology |
+| Tensor Fusion | AI | Fuse MatMul+Bias+ReLU, Linear+GELU/SiLU, Conv+BN+ReLU chains |
+| Flash Attention | AI | Replace standard attention with FlashAttention above a sequence-length threshold |
+| Quantisation | AI | Annotate compute-heavy ops for INT8/INT4/FP8 quantisation |
+| Gate Cancellation | Quantum | Cancel H·H=I, X·X=I, S·Sdg=I, T·Tdg=I, including non-consecutive pairs |
+| Rotation Merge | Quantum | Merge Rz(a)·Rz(b) → Rz(a+b), including non-consecutive pairs |
+| Noise-Aware Schedule | Quantum | Reorder gates to minimise decoherence |
+| Layout Mapping | Quantum | Legacy pass: annotates non-adjacent 2-qubit gates with `needs_swap = true` — does not insert SWAPs itself |
+| Gate Decomposition | Quantum | Replace H/T/Tdg/S/Sdg/Y/RX with the target provider's native gate set |
+| Real Routing | Quantum | Insert real `quantum.swap` ops (BFS shortest path) so 2-qubit gates land on connected physical qubits |
 
 ---
 
@@ -196,14 +218,14 @@ prediction {
 | `lift-hybrid` | Stable | 21 operations, gradient methods, encoding strategies |
 | `lift-sim` | Stable | Cost models, energy model, quantum simulation, budget tracking |
 | `lift-predict` | Stable | Roofline model, budget enforcement |
-| `lift-opt` | Stable | 11 optimisation passes |
-| `lift-import` | Active | ONNX, PyTorch FX, OpenQASM 3 importers |
-| `lift-export` | Active | LLVM IR, ONNX (opset 21), OpenQASM 3 exporters |
+| `lift-opt` | Stable | 13 optimisation passes |
+| `lift-import` | Skeleton | ONNX/PyTorch FX/OpenQASM 3 importers parse the source format but don't yet convert nodes into LIFT ops |
+| `lift-export` | Active | ONNX (opset 21) is operational; OpenQASM covers 10/50+ gates; LLVM IR is a text skeleton (ops as comments) |
 | `lift-config` | Stable | `.lith` parser and types |
 | `lift-cli` | Stable | verify, analyse, print, optimise, predict, export |
 | `lift-codegen` | Stable | programmatic model generation, multi-format export |
 
-**Test suite:** 535 tests, 100% pass rate across 14 crates.
+**Test suite:** 541 tests, 100% pass rate across 14 crates.
 
 ---
 
@@ -214,7 +236,7 @@ prediction {
 | Core IR + Dialects | Done | SSA IR, tensor/quantum/hybrid dialects complete |
 | Optimisation Passes | Done | 13 passes implemented and tested |
 | Analysis Engine | Done | Cost models, energy, noise simulation |
-| Import/Export | Active | ONNX, PyTorch FX, LLVM, ONNX (opset 21), OpenQASM |
+| Functional Import/Export | Planned (v0.5) | Real ONNX/PyTorch FX/OpenQASM import; full 50+-gate OpenQASM export |
 | Hardware Backends | Planned | CUDA PTX, native OpenQASM execution |
 | Python Bindings | Planned | PyO3-based Python API |
 | v1.0 Release | Q4 2026 | Full pipeline, benchmarks, arXiv paper |
@@ -240,9 +262,9 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for code style and PR process.
 ```bibtex
 @software{lift2025,
   title  = {LIFT: Language for Intelligent Frameworks and Technologies},
-  author = {Martial-FOSSOUO},
+  author = {LIFT Framework Contributors},
   year   = {2025},
-  url    = {https://github.com/lift-framework/lift},
+  url    = {https://github.com/rustnew/Lift},
   note   = {Unified IR for AI and Quantum Computing}
 }
 ```
