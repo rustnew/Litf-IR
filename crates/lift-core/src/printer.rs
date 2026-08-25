@@ -47,7 +47,7 @@ impl<'a> Printer<'a> {
         // Print any standalone blocks/ops not in modules
         for (block_key, _block) in &self.ctx.blocks {
             if self.ctx.blocks[block_key].parent_region.is_none() {
-                self.print_block(block_key);
+                self.print_block(block_key, true);
             }
         }
 
@@ -58,12 +58,40 @@ impl<'a> Printer<'a> {
         let name = self.ctx.strings.resolve(func.name);
         let mut sig = format!("func @{}(", name);
 
-        for (i, &param_ty) in func.params.iter().enumerate() {
-            if i > 0 {
-                sig.push_str(", ");
+        // The entry block's arguments are the actual values the body refers
+        // to (see lift-ast's builder, which creates them directly from the
+        // parameter list). Print those real names instead of disconnected
+        // fresh ones, so the signature and body agree and the printed .lif
+        // can be parsed back in.
+        let mut entry_args: Option<Vec<ValueKey>> = None;
+        if let Some(region) = func.body {
+            if let Some(r) = self.ctx.get_region(region) {
+                if let Some(&block_key) = r.blocks.first() {
+                    if let Some(block) = self.ctx.get_block(block_key) {
+                        entry_args = Some(block.args.clone());
+                    }
+                }
             }
-            let pname = self.fresh_value_name();
-            let _ = write!(sig, "%{}: {}", pname, self.format_type(param_ty));
+        }
+
+        if let Some(args) = entry_args {
+            for (i, arg) in args.into_iter().enumerate() {
+                if i > 0 {
+                    sig.push_str(", ");
+                }
+                let vname = self.get_value_name(arg);
+                if let Some(val) = self.ctx.get_value(arg) {
+                    let _ = write!(sig, "%{}: {}", vname, self.format_type(val.ty));
+                }
+            }
+        } else {
+            for (i, &param_ty) in func.params.iter().enumerate() {
+                if i > 0 {
+                    sig.push_str(", ");
+                }
+                let pname = self.fresh_value_name();
+                let _ = write!(sig, "%{}: {}", pname, self.format_type(param_ty));
+            }
         }
 
         sig.push_str(") -> ");
@@ -84,7 +112,7 @@ impl<'a> Printer<'a> {
             sig.push_str(" {");
             self.write_line(&sig);
             self.indent += 1;
-            self.print_region(body);
+            self.print_function_body(body);
             self.indent -= 1;
             self.write_line("}");
         } else {
@@ -96,34 +124,55 @@ impl<'a> Printer<'a> {
     fn print_region(&mut self, region_key: RegionKey) {
         if let Some(region) = self.ctx.get_region(region_key) {
             for &block_key in &region.blocks {
-                self.print_block(block_key);
+                self.print_block(block_key, true);
             }
         }
     }
 
-    fn print_block(&mut self, block_key: BlockKey) {
-        let block_name = self.get_block_name(block_key);
-        if let Some(block) = self.ctx.get_block(block_key) {
-            if !block.args.is_empty() {
-                let mut args = String::new();
-                for (i, &arg) in block.args.iter().enumerate() {
-                    if i > 0 {
-                        args.push_str(", ");
-                    }
-                    let vname = self.get_value_name(arg);
-                    if let Some(val) = self.ctx.get_value(arg) {
-                        let _ = write!(args, "%{}: {}", vname, self.format_type(val.ty));
-                    }
-                }
-                self.write_line(&format!("^{}({}):", block_name, args));
-            } else {
-                self.write_line(&format!("^{}:", block_name));
+    /// Prints a function's body region. The entry block's args were already
+    /// declared in the function signature (`print_function`), so its
+    /// `^bb0(...):` header would be redundant — and unparseable, since the
+    /// current `.lif` grammar has no rule for block labels (every function
+    /// is single-block). Any further blocks (not producible by the parser
+    /// today, but structurally possible) still get a normal header.
+    fn print_function_body(&mut self, region_key: RegionKey) {
+        if let Some(region) = self.ctx.get_region(region_key) {
+            for (i, &block_key) in region.blocks.iter().enumerate() {
+                self.print_block(block_key, i != 0);
             }
+        }
+    }
 
+    fn print_block(&mut self, block_key: BlockKey, print_header: bool) {
+        if print_header {
+            let block_name = self.get_block_name(block_key);
+            if let Some(block) = self.ctx.get_block(block_key) {
+                if !block.args.is_empty() {
+                    let mut args = String::new();
+                    for (i, &arg) in block.args.iter().enumerate() {
+                        if i > 0 {
+                            args.push_str(", ");
+                        }
+                        let vname = self.get_value_name(arg);
+                        if let Some(val) = self.ctx.get_value(arg) {
+                            let _ = write!(args, "%{}: {}", vname, self.format_type(val.ty));
+                        }
+                    }
+                    self.write_line(&format!("^{}({}):", block_name, args));
+                } else {
+                    self.write_line(&format!("^{}:", block_name));
+                }
+            }
             self.indent += 1;
+        }
+
+        if let Some(block) = self.ctx.get_block(block_key) {
             for &op_key in &block.ops {
                 self.print_op(op_key);
             }
+        }
+
+        if print_header {
             self.indent -= 1;
         }
     }

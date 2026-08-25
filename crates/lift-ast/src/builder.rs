@@ -343,4 +343,52 @@ module @test {
         assert_eq!(ctx.modules.len(), 1);
         assert_eq!(ctx.modules[0].functions.len(), 1);
     }
+
+    /// Regression test for the printer/parser round trip: parsing a program,
+    /// printing it back out, and parsing that output again must succeed and
+    /// produce an equivalent IR. This used to fail because the printer
+    /// invented disconnected fresh names for the function signature and
+    /// separately emitted a `^bb0(...):` block label that the parser has no
+    /// grammar rule for.
+    #[test]
+    fn test_print_then_reparse_round_trips() {
+        let src = r#"
+#dialect quantum
+
+module @bell_state {
+    func @bell(%q0: qubit, %q1: qubit) -> (qubit, qubit) {
+        %q2 = "quantum.h"(%q0) : (qubit) -> qubit
+        %q3, %q4 = "quantum.cx"(%q2, %q1) : (qubit, qubit) -> (qubit, qubit)
+        return %q3, %q4
+    }
+}
+"#;
+        let mut ctx = Context::new();
+        let mut builder = IrBuilder::new();
+        let tokens = Lexer::new(src).tokenize().to_vec();
+        let program = Parser::new(tokens).parse().expect("initial parse failed");
+        builder
+            .build_program(&mut ctx, &program)
+            .expect("initial build failed");
+
+        let printed = lift_core::printer::print_ir(&ctx);
+        assert!(
+            !printed.contains("^bb"),
+            "printed output should not contain a block label the parser cannot read back:\n{printed}"
+        );
+
+        let tokens2 = Lexer::new(&printed).tokenize().to_vec();
+        let program2 = Parser::new(tokens2)
+            .parse()
+            .unwrap_or_else(|e| panic!("re-parsing printed output failed: {e:?}\n{printed}"));
+
+        let mut ctx2 = Context::new();
+        IrBuilder::new()
+            .build_program(&mut ctx2, &program2)
+            .unwrap_or_else(|e| panic!("re-building printed output failed: {e}\n{printed}"));
+
+        assert_eq!(ctx2.modules.len(), 1);
+        assert_eq!(ctx2.modules[0].functions.len(), 1);
+        assert_eq!(ctx2.ops.len(), ctx.ops.len());
+    }
 }

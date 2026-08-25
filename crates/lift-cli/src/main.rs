@@ -426,8 +426,7 @@ fn cmd_predict(
                 }
             };
 
-            let qpred =
-                lift_predict::predict_quantum(&analysis, &quantum_cost_model, precision);
+            let qpred = lift_predict::predict_quantum(&analysis, &quantum_cost_model, precision);
 
             println!();
             println!("=== Quantum Prediction ({}) ===", hardware);
