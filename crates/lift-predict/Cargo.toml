@@ -12,10 +12,5 @@ keywords = ["performance", "roofline", "prediction", "compiler", "gpu"]
 categories = ["compilers", "science"]
 
 [dependencies]
-lift-core = { workspace = true }
-lift-tensor = { workspace = true }
-lift-quantum = { workspace = true }
 lift-sim = { workspace = true }
-thiserror = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }

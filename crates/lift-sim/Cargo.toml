@@ -15,6 +15,4 @@ categories = ["compilers", "science"]
 lift-core = { workspace = true }
 lift-tensor = { workspace = true }
 lift-quantum = { workspace = true }
-thiserror = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }

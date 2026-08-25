@@ -13,5 +13,4 @@ categories = ["compilers", "science"]
 
 [dependencies]
 lift-core = { workspace = true }
-thiserror = { workspace = true }
 serde = { workspace = true }

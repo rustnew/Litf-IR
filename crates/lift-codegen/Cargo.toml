@@ -17,9 +17,6 @@ path = "src/main.rs"
 
 [dependencies]
 lift-core = { workspace = true }
-lift-ast = { workspace = true }
 lift-sim = { workspace = true }
 lift-opt = { workspace = true }
 lift-export = { workspace = true }
-lift-config = { workspace = true }
-lift-predict = { workspace = true }

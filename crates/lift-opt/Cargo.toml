@@ -13,7 +13,5 @@ categories = ["compilers", "science"]
 
 [dependencies]
 lift-core = { workspace = true }
-lift-tensor = { workspace = true }
 lift-quantum = { workspace = true }
-thiserror = { workspace = true }
 tracing = { workspace = true }
