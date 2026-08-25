@@ -60,6 +60,18 @@ enum Commands {
         /// Target device (a100, h100)
         #[arg(short, long, default_value = "a100")]
         device: String,
+        /// Also predict quantum fidelity/shots (superconducting, trapped_ion, neutral_atom)
+        #[arg(long, value_name = "HARDWARE")]
+        quantum: Option<String>,
+        /// Target precision for quantum shot count estimation
+        #[arg(long, default_value_t = 0.01)]
+        precision: f64,
+        /// Also print energy and CO2 estimates
+        #[arg(long)]
+        energy: bool,
+        /// Number of GPUs for energy estimation
+        #[arg(long, default_value_t = 1)]
+        num_gpus: usize,
     },
     /// Export to target backend
     Export {
@@ -94,7 +106,21 @@ fn main() {
             config,
             output,
         } => cmd_optimise(&file, config.as_deref(), output.as_deref()),
-        Commands::Predict { file, device } => cmd_predict(&file, &device),
+        Commands::Predict {
+            file,
+            device,
+            quantum,
+            precision,
+            energy,
+            num_gpus,
+        } => cmd_predict(
+            &file,
+            &device,
+            quantum.as_deref(),
+            precision,
+            energy,
+            num_gpus,
+        ),
         Commands::Export {
             file,
             backend,
@@ -334,7 +360,14 @@ fn cmd_optimise(
     Ok(())
 }
 
-fn cmd_predict(path: &std::path::Path, device: &str) -> Result<(), String> {
+fn cmd_predict(
+    path: &std::path::Path,
+    device: &str,
+    quantum_hardware: Option<&str>,
+    precision: f64,
+    energy: bool,
+    num_gpus: usize,
+) -> Result<(), String> {
     let ctx = load_and_parse(path)?;
     let report = lift_sim::analyze_module(&ctx);
 
@@ -357,6 +390,66 @@ fn cmd_predict(path: &std::path::Path, device: &str) -> Result<(), String> {
         prediction.arithmetic_intensity
     );
     println!("Bottleneck: {}", prediction.bottleneck);
+
+    if energy {
+        let energy_model = match device {
+            "a100" => lift_sim::cost::EnergyModel::a100(),
+            "h100" => lift_sim::cost::EnergyModel::h100(),
+            _ => unreachable!(),
+        };
+        let joules = energy_model.energy_joules(prediction.predicted_time_ms, num_gpus);
+        let kwh = energy_model.energy_kwh(prediction.predicted_time_ms, num_gpus);
+        let carbon_g = energy_model.carbon_grams(prediction.predicted_time_ms, num_gpus);
+
+        println!();
+        println!("=== Energy Estimate ({} GPU(s)) ===", num_gpus);
+        println!("Energy: {:.4} J ({:.6} kWh)", joules, kwh);
+        println!("CO2: {:.4} g", carbon_g);
+    }
+
+    if let Some(hardware) = quantum_hardware {
+        let analysis = lift_sim::analyze_quantum_ops(&ctx);
+        if analysis.gate_count == 0 {
+            println!();
+            println!("=== Quantum Prediction ===");
+            println!("No quantum operations found in {}", path.display());
+        } else {
+            let quantum_cost_model = match hardware {
+                "superconducting" => lift_sim::cost::QuantumCostModel::superconducting_default(),
+                "trapped_ion" => lift_sim::cost::QuantumCostModel::trapped_ion_default(),
+                "neutral_atom" => lift_sim::cost::QuantumCostModel::neutral_atom_default(),
+                _ => {
+                    return Err(format!(
+                        "Unknown quantum hardware: {}. Use 'superconducting', 'trapped_ion', or 'neutral_atom'",
+                        hardware
+                    ))
+                }
+            };
+
+            let qpred =
+                lift_predict::predict_quantum(&analysis, &quantum_cost_model, precision);
+
+            println!();
+            println!("=== Quantum Prediction ({}) ===", hardware);
+            println!("Estimated fidelity: {:.6}", qpred.estimated_fidelity);
+            println!("Circuit time: {:.2} us", qpred.circuit_time_us);
+            println!(
+                "Shots needed (precision {:.4}): {}",
+                precision, qpred.num_shots_for_precision
+            );
+            println!(
+                "Total execution time: {:.4} ms",
+                qpred.total_execution_time_ms
+            );
+
+            if energy {
+                let energy_model = lift_sim::cost::EnergyModel::a100();
+                let qjoules = energy_model
+                    .quantum_energy_joules(qpred.circuit_time_us, analysis.num_qubits_used);
+                println!("Quantum energy (per shot): {:.4} J", qjoules);
+            }
+        }
+    }
 
     Ok(())
 }

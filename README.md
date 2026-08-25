@@ -247,6 +247,12 @@ cargo run --release -p lift-cli -- optimise examples/phi3_mini.lif --config exam
 # Predict performance
 cargo run --release -p lift-cli -- predict examples/phi3_mini.lif --device h100
 
+# Predict performance with energy/CO2 estimate
+cargo run --release -p lift-cli -- predict examples/phi3_mini.lif --device h100 --energy
+
+# Predict quantum fidelity, shot count, and execution time
+cargo run --release -p lift-cli -- predict examples/quantum_bell.lif --quantum superconducting
+
 # Export to LLVM IR
 cargo run --release -p lift-cli -- export examples/phi3_mini.lif --backend llvm --output model.ll
 

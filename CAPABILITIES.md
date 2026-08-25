@@ -1,6 +1,6 @@
 # LIFT — Fonctionnalités, Capacités, Limites et Objectifs
 
-**Analyse complète basée sur le code source réel (67 fichiers Rust, 13 crates, 505 tests).**
+**Analyse complète basée sur le code source réel (67 fichiers Rust, 13 crates, 535 tests).**
 
 ---
 
@@ -132,7 +132,7 @@ Binaire `lift-codegen` : définit des modèles depuis Rust via `ModelBuilder`, g
 
 ## 3.6 Modèles d'énergie
 
-EnergyModel A100/H100 : énergie joules/kWh, CO2 grammes, énergie quantique (cryogénie). **Non connecté au CLI.**
+EnergyModel A100/H100 : énergie joules/kWh, CO2 grammes, énergie quantique (cryogénie). Connecté au CLI via `predict --energy`.
 
 ## 3.7 Tests — 535 tests, 0 échecs
 
@@ -162,11 +162,7 @@ Les 3 importeurs lisent le format source mais créent un module+fonction **vides
 
 Ajoute `needs_swap = true` sur les portes 2Q non adjacentes. **Ne fait pas l'insertion réelle de SWAPs ni le routage.**
 
-## 4.6 Passes non connectées au CLI
-
-6 passes existent mais ne sont pas dans le `match` de `cmd_optimise` : rotation-merge, flash-attention, cse, quantisation-pass, noise-aware-schedule, layout-mapping.
-
-## 4.7 Inférence de forme — PARTIELLE
+## 4.6 Inférence de forme — PARTIELLE
 
 Fonctionne pour environ 20 opérations sur 110. Manque : Conv3D, ConvTranspose2D, Reshape, Permute, Concat, Split, Slice, LSTM, GRU, RNN, FFT, SVD, Einsum, GNN, MoE, diffusion, quantisation, parallélisme.
 
@@ -314,12 +310,11 @@ L'objectif de LIFT est : **"Simulate → Predict → Optimise → Compile"**. Vo
 
 ## 8.3 Pour atteindre Optimise (100%)
 
-1. **Connecter les 6 passes manquantes au CLI** (quick fix).
-2. **Plus de patterns de fusion** : matmul+gelu, conv+bn+relu, attention+layernorm.
-3. **Gate cancellation non-locale** : annuler des paires séparées par des opérations sur d'autres qubits (commutation).
-4. **Routage réel** : implémenter SABRE ou A* pour le layout mapping avec insertion de SWAPs.
-5. **Décomposition de portes** : transpiler les portes non natives vers le jeu natif.
-6. **Système de réécriture à base de patterns** : permettre de définir des règles de transformation déclaratives.
+1. **Plus de patterns de fusion** : matmul+gelu, conv+bn+relu, attention+layernorm.
+2. **Gate cancellation non-locale** : annuler des paires séparées par des opérations sur d'autres qubits (commutation).
+3. **Routage réel** : implémenter SABRE ou A* pour le layout mapping avec insertion de SWAPs.
+4. **Décomposition de portes** : transpiler les portes non natives vers le jeu natif.
+5. **Système de réécriture à base de patterns** : permettre de définir des règles de transformation déclaratives.
 
 ## 8.4 Pour atteindre Compile (100%)
 
@@ -336,10 +331,10 @@ L'objectif de LIFT est : **"Simulate → Predict → Optimise → Compile"**. Vo
 
 ## Priorité 1 — Quick fixes (effort faible, impact immédiat)
 
-- [ ] Connecter les 6 passes restantes au CLI (modifier `cmd_optimise` dans main.rs)
-- [ ] Connecter EnergyModel au CLI (ajouter une commande `energy`)
-- [ ] Connecter predict_quantum au CLI (ajouter `--quantum` à la commande predict)
-- [ ] Corriger le fichier lift-test manquant (`lift-test/src/config.rs`)
+- [x] Connecter les 13 passes au CLI (déjà fait dans `cmd_optimise`, main.rs)
+- [x] Connecter EnergyModel au CLI (`predict --energy`, `--num-gpus`)
+- [x] Connecter predict_quantum au CLI (`predict --quantum <hardware> --precision`)
+- [x] `lift-test/src/config.rs` présent et compile (`cargo build -p lift-test`)
 
 ## Priorité 2 — Import/Export fonctionnels (effort moyen, impact élevé)
 
@@ -375,9 +370,9 @@ L'objectif de LIFT est : **"Simulate → Predict → Optimise → Compile"**. Vo
 |----------|--------|
 | **Crates** | 14 |
 | **Fichiers Rust** | 67 |
-| **Tests** | 505 (0 échecs) |
+| **Tests** | 535 (0 échecs) |
 | **Opérations définies** | 179 (110 tensor + 48 quantum + 21 hybrid) |
-| **Passes d'optimisation** | 11 (5 connectées au CLI) |
+| **Passes d'optimisation** | 13 (13 connectées au CLI) |
 | **Backends d'export** | 3 (LLVM IR, ONNX opset 21, OpenQASM 3.0) |
 | **Modèles de coût** | 5 (A100, H100, superconducteur, ions piégés, atomes neutres) |
 | **Portes exportées QASM** | 10 / 50+ |
