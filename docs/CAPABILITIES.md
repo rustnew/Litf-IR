@@ -105,7 +105,7 @@ Explicit `passes` take priority over the level; `disabled_passes` removes passes
 ### Stage 9 — Export (3 backends)
 - **LLVM IR**: ops emitted as comments with cuBLAS/cuDNN runtime calls
 - **ONNX**: protobuf text, opset 21, 70+ operations mapped (standard + com.microsoft)
-- **OpenQASM 3.0**: 10 gates out of 50+ (H, X, Y, Z, CX, CZ, Measure, RZ, RX, RY); qubit indices are resolved by following each gate's actual SSA operand back to its owning qubit, not assigned from a counter
+- **OpenQASM 3.0**: all 48 `QuantumGate` variants have a match arm (verified: no wildcard/unsupported fallback exists in the exporter) — 46 emit a real QASM gate instruction, and `IfElse`/`ParamGate` (control-flow/generic wrappers, not literal gates) emit a descriptive comment. Qubit indices are resolved by following each gate's actual SSA operand back to its owning qubit, not assigned from a counter
 
 ---
 
@@ -151,9 +151,9 @@ The exporter produces `define void @func(ptr %arg0) { entry: ; tensor.matmul  re
 
 The ONNX exporter produces protobuf text (opset 21) with 70+ operations mapped to standard ONNX and com.microsoft ops. Data types, shapes, and initializer nodes are generated. **Missing**: binary protobuf serialisation (currently text only), connected node graphs (nodes are emitted sequentially without explicit edges).
 
-## 4.3 OpenQASM Export — 10 gates out of 50+
+## 4.3 OpenQASM Export — all 48 gates handled, 2 as comments
 
-Functional for H, X, Y, Z, CX, CZ, Measure, RZ, RX, RY. The other 40+ → `// unsupported gate`. Gate order follows the real circuit order (`block.ops`) and qubit indices are resolved from each gate's actual operand chain, not a counter.
+Every `QuantumGate` variant has a match arm; 46 produce a real QASM gate instruction (including less-common ones like `MCX`, `CSWAP`, `GPI`/`GPI2`, `XX`/`YY`/`ZZ`). `IfElse` and `ParamGate` are control-flow/generic wrappers rather than fixed gates, so they emit a descriptive comment instead of a gate line. Gate order follows the real circuit order (`block.ops`) and qubit indices are resolved from each gate's actual operand chain, not a counter.
 
 ## 4.4 ONNX/PyTorch/QASM Import — SKELETONS
 
@@ -319,11 +319,10 @@ LIFT's goal is: **"Simulate → Predict → Optimise → Compile"**. Current sta
 ## 8.4 To Reach Compile (100%)
 
 1. **Tensor → LLVM lowering**: generate real calls to cuBLAS/cuDNN/oneDNN.
-2. **Quantum → QASM full lowering**: support all 50+ gates.
-3. **Memory management**: GPU memory allocator (allocation, deallocation, reuse).
-4. **Launch code**: generate host code that orchestrates GPU kernels.
-5. **Quantum backend**: generate code for IBM Qiskit Runtime, Amazon Braket, or Google Cirq.
-6. **Real import**: convert real ONNX/PyTorch graphs into LIFT operations.
+2. **Memory management**: GPU memory allocator (allocation, deallocation, reuse).
+3. **Launch code**: generate host code that orchestrates GPU kernels.
+4. **Quantum backend**: generate code for IBM Qiskit Runtime, Amazon Braket, or Google Cirq.
+5. **Real import**: convert real ONNX/PyTorch graphs into LIFT operations.
 
 ---
 
@@ -343,7 +342,7 @@ LIFT's goal is: **"Simulate → Predict → Optimise → Compile"**. Current sta
 
 - [ ] Real ONNX import: map ONNX nodes to TensorOp
 - [ ] Real PyTorch FX import: map FX nodes to TensorOp
-- [ ] Full QASM export: support all 50+ gates
+- [x] Full QASM export: all 48 gates handled (done — see §4.3)
 - [ ] Real QASM import: parse gates and create quantum operations
 
 ## Priority 3 — Advanced Optimisation (medium effort)
@@ -378,7 +377,7 @@ LIFT's goal is: **"Simulate → Predict → Optimise → Compile"**. Current sta
 | **Optimisation passes** | 13 (13 wired into the CLI) |
 | **Export backends** | 3 (LLVM IR, ONNX opset 21, OpenQASM 3.0) |
 | **Cost models** | 5 (A100, H100, superconducting, trapped ion, neutral atom) |
-| **QASM-exported gates** | 10 / 50+ |
+| **QASM-exported gates** | 48 / 48 (46 as real gates, 2 as comments) |
 | **ONNX-exported ops** | 70+ / 110 |
 | **Functional imports** | 0 / 3 |
 | **Execution possible** | No |

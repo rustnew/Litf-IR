@@ -36,7 +36,7 @@ code, for any target.
                       │                    (static)                              │
           ┌───────────┼───────────┐                                 ┌────────────┼────────────┐
      LIFT-TENSOR  LIFT-QUANTUM  LIFT-HYBRID                   OpenQASM 3   LLVM IR text   ONNX
-     110 tensor   48 gates     21 hybrid                     (10/50+ gates)  (skeleton)  (opset 21)
+     110 tensor   48 gates     21 hybrid                     (48/48 gates)  (skeleton)  (opset 21)
      operations   Kraus/QEC     VQC/VQE ops                                              CUDA PTX (planned)
 ```
 
@@ -77,7 +77,7 @@ No existing IR handles both AI and quantum in a single representation.
   DIALECTS    LIFT-CORE  |  LIFT-TENSOR  |  LIFT-QUANTUM  |  LIFT-HYBRID
   ANALYSIS    Shape inference  |  FLOP count  |  Noise sim  |  Energy model  |  Roofline
   PASSES      TensorFusion  FlashAttention  GateCancellation  RotationMerge  LayoutMapping  CSE ...
-  BACKENDS    OpenQASM 3 (10/50+ gates)  |  LLVM IR (skeleton)  |  ONNX (opset 21)  |  CUDA PTX, XLA (planned)
+  BACKENDS    OpenQASM 3 (48/48 gates)  |  LLVM IR (skeleton)  |  ONNX (opset 21)  |  CUDA PTX, XLA (planned)
   HARDWARE    H100 / A100 / MI300  |  IBM Kyoto / Rigetti / IonQ  |  TPU
 ```
 
@@ -220,7 +220,7 @@ All 13 passes are reachable from the CLI and from `.lith`'s `[optimisation] pass
 | `lift-predict` | Stable | Roofline model, budget enforcement |
 | `lift-opt` | Stable | 13 optimisation passes |
 | `lift-import` | Skeleton | ONNX/PyTorch FX/OpenQASM 3 importers parse the source format but don't yet convert nodes into LIFT ops |
-| `lift-export` | Active | ONNX (opset 21) is operational; OpenQASM covers 10/50+ gates; LLVM IR is a text skeleton (ops as comments) |
+| `lift-export` | Active | ONNX (opset 21) is operational; OpenQASM covers all 48 gates (46 as real instructions, 2 as comments); LLVM IR is a text skeleton (ops as comments) |
 | `lift-config` | Stable | `.lith` parser and types |
 | `lift-cli` | Stable | verify, analyse, print, optimise, predict, export |
 | `lift-codegen` | Stable | programmatic model generation, multi-format export |
