@@ -112,7 +112,8 @@ The `Context` stores **all** IR data: values, operations, blocks, regions, funct
 | `ctx.regions` | Regions | Contain blocks (function bodies) |
 | `ctx.modules` | Modules | Compilation units |
 | `ctx.strings` | String interning | `ctx.strings.intern("name")` |
-| `ctx.type_interner` | Type interning | Type deduplication |
+| `ctx.types` | Type interning | Type deduplication |
+| `ctx.dialects` | Dialect registry | Populated with the core dialect by `Context::new()`; tensor/quantum/hybrid need explicit registration (see §2.7) |
 
 **Combine with**: All other crates. The `Context` is the entry point for every pipeline.
 
@@ -139,8 +140,11 @@ let tensor_info = TensorTypeInfo {
     layout: MemoryLayout::Contiguous,
 };
 
-// Size in bytes
-let bytes = tensor_info.size_bytes(); // Some(3136) = 1*784*4
+// Size in bytes (element count × dtype size — TensorTypeInfo has no
+// size_bytes() method itself; lift-tensor's ShapeInference computes this
+// for a given op, see §4.2)
+let elems: usize = tensor_info.shape.iter().map(|d| d.static_value().unwrap_or(1)).product();
+let bytes = elems * tensor_info.dtype.byte_size(); // 1*784*4 = 3136
 ```
 
 **Available data types**:
@@ -249,9 +253,18 @@ for (name, result) in &results {
 
 ```rust
 use lift_core::dialect::{DialectRegistry, Dialect};
+use lift_core::Context;
 
+// A standalone registry starts empty.
 let registry = DialectRegistry::new();
-// The tensor, quantum, hybrid dialects are registered automatically
+
+// Context::new() registers only the core dialect automatically
+// (via register_builtin_dialects). Tensor/quantum/hybrid need explicit
+// registration — this is what lift-cli's `verify` command does:
+let mut ctx = Context::new();
+lift_tensor::dialect::register_tensor_dialect(&mut ctx.dialects);
+lift_quantum::dialect::register_quantum_dialect(&mut ctx.dialects);
+lift_hybrid::dialect::register_hybrid_dialect(&mut ctx.dialects);
 ```
 
 The three LIFT dialects:
@@ -353,7 +366,7 @@ println!("Inputs: {:?}", op.num_inputs()); // (2, 2)
 println!("FLOPs: {}", op.flops_formula()); // "2*M*N*K"
 ```
 
-#### 4.1.2 Linear Algebra (4 ops)
+#### 4.1.2 Linear Algebra (5 ops)
 
 | # | Op | Inputs | Description |
 |---|-----|--------|-------------|
@@ -361,22 +374,23 @@ println!("FLOPs: {}", op.flops_formula()); // "2*M*N*K"
 | 7 | `Linear` | 3 | Linear layer (matmul + bias) |
 | 8 | `Embedding` | 2 | Embedding lookup table |
 | 9 | `SparseMatMul` | 2 | Sparse MatMul |
+| 10 | `SparseEmbedding` | 2 | Sparse embedding lookup |
 
 #### 4.1.3 Activations (11 ops)
 
 | # | Op | Description | FLOPs Formula |
 |---|-----|-------------|---------------|
-| 10 | `ReLU` | max(0, x) | N |
-| 11 | `GeLU` | Gaussian Error Linear Unit | ~8N |
-| 12 | `SiLU` | x * sigmoid(x) (Swish) | ~8N |
-| 13 | `Sigmoid` | 1/(1+exp(-x)) | N |
-| 14 | `Tanh` | Hyperbolic tangent | N |
-| 15 | `Softmax` | exp(x)/sum(exp(x)) | 5N |
-| 16 | `LeakyReLU` | max(αx, x) | N |
-| 17 | `ELU` | Exponential Linear Unit | N |
-| 18 | `Mish` | x * tanh(softplus(x)) | ~8N |
-| 19 | `HardSwish` | Swish approximation | ~8N |
-| 20 | `HardSigmoid` | Sigmoid approximation | N |
+| 11 | `ReLU` | max(0, x) | N |
+| 12 | `GeLU` | Gaussian Error Linear Unit | ~8N |
+| 13 | `SiLU` | x * sigmoid(x) (Swish) | ~8N |
+| 14 | `Sigmoid` | 1/(1+exp(-x)) | N |
+| 15 | `Tanh` | Hyperbolic tangent | N |
+| 16 | `Softmax` | exp(x)/sum(exp(x)) | 5N |
+| 17 | `LeakyReLU` | max(αx, x) | N |
+| 18 | `ELU` | Exponential Linear Unit | N |
+| 19 | `Mish` | x * tanh(softplus(x)) | ~8N |
+| 20 | `HardSwish` | Swish approximation | ~8N |
+| 21 | `HardSigmoid` | Sigmoid approximation | N |
 
 ```rust
 assert!(TensorOp::ReLU.is_activation());
@@ -387,11 +401,11 @@ assert!(!TensorOp::MatMul.is_activation());
 
 | # | Op | Inputs | Description |
 |---|-----|--------|-------------|
-| 21 | `LayerNorm` | 2-3 | Layer normalisation |
-| 22 | `RMSNorm` | 2-3 | Root Mean Square Norm (LLaMA) |
-| 23 | `BatchNorm` | 3-5 | Batch normalisation |
-| 24 | `GroupNorm` | 2-3 | Group normalisation |
-| 25 | `InstanceNorm` | 2-3 | Instance normalisation |
+| 22 | `LayerNorm` | 2-3 | Layer normalisation |
+| 23 | `RMSNorm` | 2-3 | Root Mean Square Norm (LLaMA) |
+| 24 | `BatchNorm` | 3-5 | Batch normalisation |
+| 25 | `GroupNorm` | 2-3 | Group normalisation |
+| 26 | `InstanceNorm` | 2-3 | Instance normalisation |
 
 ```rust
 assert!(TensorOp::LayerNorm.is_normalisation());
@@ -401,14 +415,14 @@ assert!(TensorOp::LayerNorm.is_normalisation());
 
 | # | Op | Inputs | Description |
 |---|-----|--------|-------------|
-| 26 | `Attention` | 3-4 | Standard attention (Q, K, V, [mask]) |
-| 27 | `MultiHeadAttention` | 3-4 | Multi-head |
-| 28 | `MultiQueryAttention` | 3-4 | Multi-query (Llama) |
-| 29 | `GroupedQueryAttention` | 3-4 | Grouped query (GQA) |
-| 30 | `FlashAttention` | 3-4 | FlashAttention V2 (O(N) memory) |
-| 31 | `SlidingWindowAttention` | 3-4 | Sliding window (Mistral) |
-| 32 | `CrossAttention` | 3-4 | Cross-attention (encoder-decoder) |
-| 33 | `PagedAttention` | 3-5 | Paged attention (vLLM) |
+| 27 | `Attention` | 3-4 | Standard attention (Q, K, V, [mask]) |
+| 28 | `MultiHeadAttention` | 3-4 | Multi-head |
+| 29 | `MultiQueryAttention` | 3-4 | Multi-query (Llama) |
+| 30 | `GroupedQueryAttention` | 3-4 | Grouped query (GQA) |
+| 31 | `FlashAttention` | 3-4 | FlashAttention V2 (O(N) memory) |
+| 32 | `SlidingWindowAttention` | 3-4 | Sliding window (Mistral) |
+| 33 | `CrossAttention` | 3-4 | Cross-attention (encoder-decoder) |
+| 34 | `PagedAttention` | 3-5 | Paged attention (vLLM) |
 
 ```rust
 assert!(TensorOp::FlashAttention.is_attention());
@@ -418,39 +432,39 @@ assert!(TensorOp::FlashAttention.is_attention());
 
 | # | Op | Description |
 |---|-----|-------------|
-| 34 | `Conv2D` | Convolution 2D standard |
-| 35 | `Conv1D` | 1D convolution (audio, sequences) |
-| 36 | `Conv3D` | 3D convolution (video, volumetric) |
-| 37 | `ConvTranspose2D` | Transposed convolution (upsampling) |
-| 38 | `DepthwiseConv2D` | Depthwise convolution (MobileNet) |
-| 39 | `DilatedConv2D` | Dilated convolution (large receptive field) |
+| 35 | `Conv2D` | Convolution 2D standard |
+| 36 | `Conv1D` | 1D convolution (audio, sequences) |
+| 37 | `Conv3D` | 3D convolution (video, volumetric) |
+| 38 | `ConvTranspose2D` | Transposed convolution (upsampling) |
+| 39 | `DepthwiseConv2D` | Depthwise convolution (MobileNet) |
+| 40 | `DilatedConv2D` | Dilated convolution (large receptive field) |
 
 #### 4.1.7 Pooling (4 ops)
 
 | # | Op | Description |
 |---|-----|-------------|
-| 40 | `MaxPool2D` | Max pooling 2D |
-| 41 | `AvgPool2D` | Average pooling 2D |
-| 42 | `AdaptiveAvgPool2D` | Adaptive average pooling |
-| 43 | `GlobalAvgPool` | Global average pooling |
+| 41 | `MaxPool2D` | Max pooling 2D |
+| 42 | `AvgPool2D` | Average pooling 2D |
+| 43 | `AdaptiveAvgPool2D` | Adaptive average pooling |
+| 44 | `GlobalAvgPool` | Global average pooling |
 
 #### 4.1.8 Shape Operations (13 ops)
 
 | # | Op | Description | FLOPs |
 |---|-----|-------------|-------|
-| 44 | `Reshape` | Change shape | 0 |
-| 45 | `Transpose` | Transpose | 0 |
-| 46 | `Concat` | Concatenate | 0 |
-| 47 | `Split` | Split | 0 |
-| 48 | `Gather` | Advanced indexing | 0 |
-| 49 | `Scatter` | Indexed write | 0 |
-| 50 | `Squeeze` | Remove dim=1 | 0 |
-| 51 | `Unsqueeze` | Add dim=1 | 0 |
-| 52 | `Permute` | Permute dimensions | 0 |
-| 53 | `Expand` | Broadcast expansion | 0 |
-| 54 | `Slice` | Slice | 0 |
-| 55 | `Pad` | Padding | 0 |
-| 56 | `Tile` | Repeat | 0 |
+| 45 | `Reshape` | Change shape | 0 |
+| 46 | `Transpose` | Transpose | 0 |
+| 47 | `Concat` | Concatenate | 0 |
+| 48 | `Split` | Split | 0 |
+| 49 | `Gather` | Advanced indexing | 0 |
+| 50 | `Scatter` | Indexed write | 0 |
+| 51 | `Squeeze` | Remove dim=1 | 0 |
+| 52 | `Unsqueeze` | Add dim=1 | 0 |
+| 53 | `Permute` | Permute dimensions | 0 |
+| 54 | `Expand` | Broadcast expansion | 0 |
+| 55 | `Slice` | Slice | 0 |
+| 56 | `Pad` | Padding | 0 |
+| 57 | `Tile` | Repeat | 0 |
 
 ```rust
 assert!(TensorOp::Reshape.is_zero_flop());
@@ -460,101 +474,103 @@ assert!(TensorOp::Reshape.is_zero_flop());
 
 | # | Op | Description |
 |---|-----|-------------|
-| 57 | `Constant` | Constant tensor |
-| 58 | `Zeros` | Zero tensor |
-| 59 | `Ones` | Ones tensor |
-| 60 | `Arange` | Sequence [0, 1, ..., n-1] |
-| 61 | `Full` | Tensor filled with a value |
+| 58 | `Constant` | Constant tensor |
+| 59 | `Zeros` | Zero tensor |
+| 60 | `Ones` | Ones tensor |
+| 61 | `Arange` | Sequence [0, 1, ..., n-1] |
+| 62 | `Full` | Tensor filled with a value |
 
 #### 4.1.10 Recurrent (3 ops)
 
 | # | Op | Description |
 |---|-----|-------------|
-| 62 | `LSTMCell` | LSTM cell |
-| 63 | `GRUCell` | GRU cell |
-| 64 | `RNNCell` | Simple RNN cell |
+| 63 | `LSTMCell` | LSTM cell |
+| 64 | `GRUCell` | GRU cell |
+| 65 | `RNNCell` | Simple RNN cell |
 
-#### 4.1.11 Advanced Mathematics (9 ops)
+#### 4.1.11 Advanced Mathematics (11 ops)
 
 | # | Op | Description |
 |---|-----|-------------|
-| 65 | `Einsum` | Einstein notation |
-| 66 | `FFT` | Fast Fourier Transform |
-| 67 | `IFFT` | Inverse FFT |
-| 68 | `SVD` | Singular Value Decomposition |
-| 69 | `Eig` | Eigendecomposition |
-| 70 | `Solve` | Linear system solver |
-| 71 | `TopK` | Top-K values |
-| 72 | `Sort` | Sort |
-| 73 | `Cumsum` | Cumulative sum |
+| 66 | `Einsum` | Einstein notation |
+| 67 | `FFT` | Fast Fourier Transform |
+| 68 | `IFFT` | Inverse FFT |
+| 69 | `SVD` | Singular Value Decomposition |
+| 70 | `Eig` | Eigendecomposition |
+| 71 | `Solve` | Linear system solver |
+| 72 | `TopK` | Top-K values |
+| 73 | `Sort` | Sort |
+| 74 | `Cumsum` | Cumulative sum |
+| 75 | `Where` | Element-wise conditional select |
+| 76 | `Clamp` | Clamp values to a [min, max] range |
 
 #### 4.1.12 Quantisation (6 ops)
 
 | # | Op | Description |
 |---|-----|-------------|
-| 74 | `Quantize` | FP → INT8 |
-| 75 | `Dequantize` | INT8 → FP |
-| 76 | `QuantizeInt4` | FP → INT4 |
-| 77 | `DequantizeInt4` | INT4 → FP |
-| 78 | `QuantizeFp8` | FP → FP8 |
-| 79 | `DequantizeFp8` | FP8 → FP |
+| 77 | `Quantize` | FP → INT8 |
+| 78 | `Dequantize` | INT8 → FP |
+| 79 | `QuantizeInt4` | FP → INT4 |
+| 80 | `DequantizeInt4` | INT4 → FP |
+| 81 | `QuantizeFp8` | FP → FP8 |
+| 82 | `DequantizeFp8` | FP8 → FP |
 
 #### 4.1.13 Diffusion / Generative (3 ops)
 
 | # | Op | Description |
 |---|-----|-------------|
-| 80 | `UNetDownBlock` | U-Net down block |
-| 81 | `UNetUpBlock` | U-Net up block |
-| 82 | `TimestepEmbedding` | Timestep embedding (Stable Diffusion) |
+| 83 | `UNetDownBlock` | U-Net down block |
+| 84 | `UNetUpBlock` | U-Net up block |
+| 85 | `TimestepEmbedding` | Timestep embedding (Stable Diffusion) |
 
 #### 4.1.14 GNN — Graph Neural Networks (2 ops)
 
 | # | Op | Description |
 |---|-----|-------------|
-| 83 | `GNNMessagePassing` | GNN message passing |
-| 84 | `GNNGlobalPooling` | GNN global pooling |
+| 86 | `GNNMessagePassing` | GNN message passing |
+| 87 | `GNNGlobalPooling` | GNN global pooling |
 
 #### 4.1.15 MoE — Mixture of Experts (2 ops)
 
 | # | Op | Description |
 |---|-----|-------------|
-| 85 | `MoEDispatch` | Route to experts |
-| 86 | `MoECombine` | Combine expert outputs |
+| 88 | `MoEDispatch` | Route to experts |
+| 89 | `MoECombine` | Combine expert outputs |
 
 #### 4.1.16 Memory and Gradient (11 ops)
 
 | # | Op | Description |
 |---|-----|-------------|
-| 87 | `Checkpoint` | Gradient checkpointing (memory saving) |
-| 88 | `Offload` | CPU offload (for large models) |
-| 89 | `GradAccumulate` | Gradient accumulation |
-| 90 | `GradMatMul` | MatMul gradient |
-| 91 | `GradReLU` | ReLU gradient |
-| 92 | `GradSoftmax` | Softmax gradient |
-| 93 | `GradLayerNorm` | LayerNorm gradient |
-| 94 | `GradAttention` | Attention gradient |
-| 95 | `GradConv2D` | Conv2D gradient |
-| 96 | `GradLinear` | Linear gradient |
-| 97 | `GradGeLU` | GeLU gradient |
+| 90 | `Checkpoint` | Gradient checkpointing (memory saving) |
+| 91 | `Offload` | CPU offload (for large models) |
+| 92 | `GradAccumulate` | Gradient accumulation |
+| 93 | `GradMatMul` | MatMul gradient |
+| 94 | `GradReLU` | ReLU gradient |
+| 95 | `GradSoftmax` | Softmax gradient |
+| 96 | `GradLayerNorm` | LayerNorm gradient |
+| 97 | `GradAttention` | Attention gradient |
+| 98 | `GradConv2D` | Conv2D gradient |
+| 99 | `GradLinear` | Linear gradient |
+| 100 | `GradGeLU` | GeLU gradient |
 
 #### 4.1.17 Parallelism (4 ops)
 
 | # | Op | Description |
 |---|-----|-------------|
-| 98 | `ParallelSplit` | Data parallel split |
-| 99 | `ParallelAllReduce` | All-reduce across GPUs |
-| 100 | `PipelineSend` | Pipeline parallel send |
-| 101 | `PipelineReceive` | Pipeline parallel receive |
+| 101 | `ParallelSplit` | Data parallel split |
+| 102 | `ParallelAllReduce` | All-reduce across GPUs |
+| 103 | `PipelineSend` | Pipeline parallel send |
+| 104 | `PipelineReceive` | Pipeline parallel receive |
 
 #### 4.1.18 Fused Operations (6 ops)
 
 | # | Op | Description | Gain |
 |---|-----|-------------|------|
-| 102 | `FusedMatMulBiasReLU` | MatMul + Bias + ReLU | 1 kernel instead of 3 |
-| 103 | `FusedMatMulBias` | MatMul + Bias | 1 kernel instead of 2 |
-| 104 | `FusedLinearGeLU` | Linear + GeLU | Bandwidth gain |
-| 105 | `FusedAttentionLayerNorm` | Attention + LayerNorm | Memory reduction |
-| 106 | `FusedLinearSiLU` | Linear + SiLU | Bandwidth gain |
+| 105 | `FusedMatMulBiasReLU` | MatMul + Bias + ReLU | 1 kernel instead of 3 |
+| 106 | `FusedMatMulBias` | MatMul + Bias | 1 kernel instead of 2 |
+| 107 | `FusedLinearGeLU` | Linear + GeLU | Bandwidth gain |
+| 108 | `FusedAttentionLayerNorm` | Attention + LayerNorm | Memory reduction |
+| 109 | `FusedLinearSiLU` | Linear + SiLU | Bandwidth gain |
 | 110 | `FusedConvBatchNormReLU` | Conv + BN + ReLU | Fast inference |
 
 ### 4.2 Shape Inference
@@ -682,6 +698,13 @@ op.flops_formula();     // "2*B*H*(S^2*D + S*D^2)"
 | 45 | `Init` | Initialisation |
 | 46 | `ParamGate` | Generic parametric gate |
 
+#### 5.1.6 IonQ Native Gates (2 gates)
+
+| # | Gate | IR Name | Description |
+|---|------|---------|-------------|
+| 47 | `GPI` | `quantum.gpi` | IonQ native single-qubit phase gate |
+| 48 | `GPI2` | `quantum.gpi2` | IonQ native single-qubit phase gate (half-angle) |
+
 ```rust
 use lift_quantum::gates::QuantumGate;
 
@@ -717,7 +740,7 @@ let quant_basis = QuantumGate::native_basis(Provider::Quantinuum);
 | `Quantinuum` | RZ, RX, ZZ |
 | `Simulator` | All gates |
 
-**Combine with**: `lift-opt::LayoutMapping` (transpilation to target hardware).
+**Combine with**: `lift-opt::GateDecomposition` (native gate transpilation) and `lift-opt::RealRouting` (actual SWAP insertion using this topology).
 
 ### 5.3 Device Topology — Hardware Topology
 
@@ -1099,9 +1122,10 @@ let pass_custom = QuantisationPass {
 use lift_opt::LayoutMapping;
 
 let pass = LayoutMapping;
-// Inserts SWAP gates to map logical qubits to physical qubits
-// Based on the target device topology
-// Marks operations requiring swaps via attributes
+// Legacy annotation-only pass: marks 2-qubit gates whose qubits aren't
+// adjacent in the target topology with needs_swap = true.
+// Does NOT insert SWAP gates itself — that's RealRouting (§7.3.5), which
+// actually inserts quantum.swap ops along a BFS shortest path.
 ```
 
 **Combine with**: `lift-quantum::topology::DeviceTopology`.
@@ -1110,16 +1134,21 @@ let pass = LayoutMapping;
 
 ```rust
 use lift_opt::gate_decompose::GateDecomposition;
-use lift_quantum::dialect::Provider;
+use lift_quantum::gates::Provider;
 
-let pass = GateDecomposition::new(Some(Provider::Ibm));
-// Lowers high-level gates to hardware-native gate sets:
+let pass = GateDecomposition::new(Provider::IbmEagle);
+// Lowers high-level gates to hardware-native gate sets, replacing the
+// original gate (not leaving it wired in alongside its decomposition):
 //   H     → RZ(π/2) SX RZ(π/2)
 //   T/Tdg → RZ(±π/4)
 //   S/Sdg → RZ(±π/2)
 //   Y     → RZ(π/2) X RZ(-π/2)
-//   RX(θ) → RZ(-π/2) SX RZ(π+θ) SX RZ(π/2)
-// Provider is read from QuantumConfig (provider = ibm|rigetti|ionq|quantinuum|simulator)
+//   RX(θ) → RZ(π/2) SX RZ(π+θ) SX RZ(π/2)   (verified against the closed-form
+//                                             RX(θ) matrix up to global phase)
+// GateDecomposition::default() reads the provider from the "lift_provider"
+// op metadata key instead, falling back to Provider::Simulator (a no-op)
+// when it's unset — nothing in the CLI/config pipeline sets that key today,
+// so use GateDecomposition::new(provider) explicitly, as above.
 // Uses Context::insert_op_before to preserve SSA dominance
 ```
 
@@ -1187,7 +1216,7 @@ pm.add_pass(Box::new(lift_opt::NoiseAwareSchedule));
 pm.add_pass(Box::new(lift_opt::LayoutMapping));
 
 // Phase 3b: Hardware targeting
-pm.add_pass(Box::new(lift_opt::gate_decompose::GateDecomposition::new(Some(Provider::Ibm))));
+pm.add_pass(Box::new(lift_opt::gate_decompose::GateDecomposition::new(Provider::IbmEagle)));
 pm.add_pass(Box::new(lift_opt::real_routing::RealRouting::new(DeviceTopology::linear(8))));
 
 // Phase 4: Final cleanup
@@ -1509,6 +1538,11 @@ std::fs::write("output.qasm", &qasm).unwrap();
 ```
 
 Produces OpenQASM 3.0 executable on IBM Quantum, Rigetti, IonQ, Quantinuum.
+Every one of the 48 `QuantumGate` variants has a match arm — 46 emit a real
+gate instruction, and `IfElse`/`ParamGate` (control-flow and generic
+wrappers, not literal gates) emit a descriptive comment instead. Qubit
+indices are resolved by following each gate's actual SSA operand back to its
+owning qubit, not assigned from a counter.
 
 **Combine with**: `lift-opt` (optimise before export), `lift-quantum::Provider` (transpile to native gate set).
 
@@ -1568,9 +1602,9 @@ let hybrid = LithConfig::default().with_quantum("heavy_hex", 127);
 | Level | Passes | Usage |
 |-------|--------|-------|
 | `O0` | None | Debug, verification |
-| `O1` | Canonicalize, DCE | Fast compilation |
-| `O2` | + ConstantFolding, TensorFusion | **Default** — good trade-off |
-| `O3` | + FlashAttention, Quantisation, CSE | Maximum performance |
+| `O1` | Canonicalize, ConstantFolding, DCE | Fast compilation |
+| `O2` | O1 + CSE, TensorFusion | **Default** — good trade-off |
+| `O3` | All 13 passes (O2 + FlashAttention, Quantisation, GateCancellation, RotationMerge, NoiseAwareSchedule, LayoutMapping, GateDecomposition, RealRouting) | Maximum performance |
 
 ---
 
