@@ -4,7 +4,7 @@ Ready-to-post announcement texts for each community channel. Each is tuned to
 the platform's tone and audience. Replace the placeholder links if needed.
 
 **Key facts** (verified):
-- 13 crates on crates.io (v0.4.4), docs on docs.rs
+- 13 crates on crates.io (v0.4.5), docs on docs.rs
 - 110 tensor ops, 48 quantum gates, 21 hybrid ops
 - 13 optimisation passes, O0–O3 pipelines
 - 3 backends: LLVM IR, ONNX (opset 21), OpenQASM 3.0

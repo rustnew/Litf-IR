@@ -20,6 +20,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multi-file support (`include` / linking)
 - v1.0 release — full pipeline, benchmarks, arXiv paper
 
+## [0.4.5] — 2026-08-25
+
+### Fixed
+- **Printer/parser round trip** — `optimise --output out.lif` produced a
+  `.lif` file the parser could not read back (the printer emitted disconnected
+  signature names plus a `^bb0(...):` block label with no grammar rule for
+  it). The signature now prints the entry block's real argument names, and
+  the redundant block header is no longer emitted.
+- **QASM export qubit indexing** — gates were numbered from a running counter
+  instead of their actual operand, so any two gates in a row could land on
+  different qubits and `CX`'s control/target could come out swapped. Qubit
+  indices are now resolved by walking each operand's SSA def chain back to
+  its owning qubit. Also fixed gate export order (was iterating the ops
+  slotmap, which drifts once a pass frees a slot and a later pass reuses it;
+  now walks `block.ops` in program order) and per-function qubit counting
+  (was summing qubit-typed block args across every function in the module).
+- **`gate-decomposition` no longer doubles the transformation** — the pass
+  built a native decomposition chain but left the original gate in the block,
+  still wired to produce its own result, so e.g. decomposing `T` silently
+  produced `Rz(pi/4)` *followed by* the still-present `T` (i.e. `S`, not
+  `T`'s actual decomposition). The original gate's results are now redirected
+  to the decomposition chain's output and the original op is removed.
+- **RX decomposition sign error** — the first `Rz` in the native `RX(theta)`
+  sequence had the wrong sign, so `RX(0)` compiled to `Z` instead of the
+  identity, for every angle. Contributed by @cleitonaugusto (#4), verified
+  independently against the closed-form `RX(theta)` matrix at 8 angles.
+- CLI `--version` was hardcoded to `"0.3.0"` from an earlier release; now
+  reads the real crate version via `CARGO_PKG_VERSION`.
+
+### Added
+- `predict --energy [--num-gpus N]` — energy (J/kWh) and CO2 estimates,
+  wiring the existing `EnergyModel` into the CLI.
+- `predict --quantum <hardware> [--precision P]` — quantum fidelity, shot
+  count, and execution-time prediction (`superconducting`, `trapped_ion`,
+  `neutral_atom`), wiring the existing `predict_quantum` into the CLI.
+- `CODE_OF_CONDUCT.md`, `SECURITY.md`, and an issue-template chooser
+  (`.github/ISSUE_TEMPLATE/config.yml`). Private vulnerability reporting is
+  now enabled on the repository so `SECURITY.md`'s instructions work.
+
+### Changed
+- Removed 25 declared-but-unused dependencies across the workspace (found
+  with `cargo-machete`, each verified by hand before removal).
+- Eliminated needless `Vec` collects and redundant clones on `lift-opt`'s
+  hot paths (flash-attention, quantisation-pass, real-routing).
+- `lift-test/` (root) moved to `crates/lift-demo/` — it was the only
+  workspace member outside `crates/`, and its name was one character from
+  the unrelated `crates/lift-tests` integration-test crate.
+- Consolidated secondary docs (`CAPABILITIES.md`, `DIALECTS.md`,
+  `LIFT_design.md`, `LIFT_Guide.md`, `LIFT_Manual.md`, `PUBLISHING.md`,
+  `STRATEGY.md`) into `docs/`; `README.md`, `LICENSE`, `CHANGELOG.md`, and
+  `CONTRIBUTING.md` stay at the root.
+- Translated `docs/CAPABILITIES.md` from French to English (it was the last
+  fully-French document in the project) and corrected several claims that had
+  gone stale since it was written, including two caught by this release's own
+  fixes (QASM qubit indexing, gate-decomposition).
+
 ## [0.4.4] — 2026-08-05
 
 ### Changed

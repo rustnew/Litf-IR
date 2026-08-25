@@ -13,7 +13,7 @@ The first Intermediate Representation built natively for both AI and Quantum Com
 [![License: MIT](https://img.shields.io/badge/License-MIT-orange.svg)](../LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.80+-orange.svg)](https://rustlang.org)
 [![Tests](https://img.shields.io/badge/Tests-505%20passed-brightgreen.svg)]()
-[![Version](https://img.shields.io/badge/Version-0.4.3-blue.svg)]()
+[![Version](https://img.shields.io/badge/Version-0.4.5-blue.svg)]()
 [![Status](https://img.shields.io/badge/Status-Research%20Alpha-gold.svg)]()
 
 </div>
