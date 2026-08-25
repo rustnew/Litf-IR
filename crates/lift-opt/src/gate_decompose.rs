@@ -54,6 +54,7 @@ impl Pass for GateDecomposition {
         let native: Vec<QuantumGate> = QuantumGate::native_basis(provider).to_vec();
 
         let mut decomposed = 0usize;
+        let mut ops_to_remove: Vec<lift_core::operations::OpKey> = Vec::new();
 
         // Work on a snapshot of op keys and block membership.
         let block_keys: Vec<_> = ctx.blocks.keys().collect();
@@ -65,7 +66,7 @@ impl Pass for GateDecomposition {
             };
 
             for &op_key in &op_list {
-                let (op_name, op_inputs, op_attrs, op_location, has_parent) = {
+                let (op_name, op_inputs, op_results, op_attrs, op_location, has_parent) = {
                     let op = match ctx.ops.get(op_key) {
                         Some(op) => op,
                         None => continue,
@@ -84,6 +85,7 @@ impl Pass for GateDecomposition {
                     (
                         name,
                         op.inputs.clone(),
+                        op.results.clone(),
                         op.attrs.clone(),
                         op.location.clone(),
                         op.parent_block.is_some(),
@@ -104,7 +106,7 @@ impl Pass for GateDecomposition {
                 // inserted immediately before the original op so SSA dominance
                 // is preserved.
                 let mut current_inputs = op_inputs.clone();
-                let mut last_results: Vec<ValueKey> = Vec::new();
+                let mut last_results: Vec<ValueKey> = current_inputs.clone();
 
                 for (gate_name, qubit_indexes, params) in sequence {
                     let mut inputs = Vec::new();
@@ -136,12 +138,35 @@ impl Pass for GateDecomposition {
                     last_results = results.clone();
                 }
 
-                // Re-point the original op's inputs to the end of the chain.
-                if let Some(op) = ctx.ops.get_mut(op_key) {
-                    op.inputs = last_results;
+                // Redirect every use of the original op's results to the end
+                // of the decomposition chain, then delete the original op —
+                // it has been replaced, not augmented. Previously the
+                // original gate was left in the block wired to consume the
+                // chain's own output while still producing its own result,
+                // silently doubling the transformation (e.g. T decomposed to
+                // Rz(pi/4) followed by the still-present T, i.e. S).
+                for (old_result, new_result) in op_results.iter().zip(last_results.iter()) {
+                    for other in ctx.ops.values_mut() {
+                        for input in &mut other.inputs {
+                            if input == old_result {
+                                *input = *new_result;
+                            }
+                        }
+                    }
                 }
+                ops_to_remove.push(op_key);
 
                 decomposed += 1;
+            }
+        }
+
+        if !ops_to_remove.is_empty() {
+            let removed: std::collections::HashSet<_> = ops_to_remove.into_iter().collect();
+            for op_key in &removed {
+                ctx.ops.remove(*op_key);
+            }
+            for block in ctx.blocks.values_mut() {
+                block.ops.retain(|op| !removed.contains(op));
             }
         }
 
@@ -311,6 +336,54 @@ mod tests {
         assert!(names.contains(&"quantum.sx".to_string()));
         // CX is native on IBM so it stays.
         assert!(names.contains(&"quantum.cx".to_string()));
+        // The original H must be gone, not left in place alongside its
+        // decomposition (that used to silently compose H with Rz/SX/Rz,
+        // producing a different gate than either the source or the
+        // decomposition alone implements).
+        assert!(
+            !names.contains(&"quantum.h".to_string()),
+            "original H should be replaced, not kept: {:?}",
+            names
+        );
+        assert_eq!(
+            ctx.ops.len(),
+            4,
+            "expected exactly rz, sx, rz (from H) + cx, with the original H gone: {:?}",
+            names
+        );
+    }
+
+    /// Regression test for #3: the original gate used to stay in the block,
+    /// wired to consume the decomposition chain's output while still
+    /// producing its own result — so downstream ops kept using the
+    /// now-doubled gate instead of the decomposition's actual output.
+    #[test]
+    fn test_original_gate_is_removed_not_chained() {
+        let mut ctx = ctx_with_bell();
+        let pass = GateDecomposition::new(Provider::IbmEagle);
+        pass.run(&mut ctx, &mut AnalysisCache::new());
+
+        let h_survives = ctx
+            .ops
+            .values()
+            .any(|op| ctx.strings.resolve(op.name) == "quantum.h");
+        assert!(!h_survives, "H must not survive its own decomposition");
+
+        // The CX (native, untouched) must consume the decomposition's real
+        // output, not a value produced by a since-deleted op.
+        let cx = ctx
+            .ops
+            .values()
+            .find(|op| ctx.strings.resolve(op.name) == "quantum.cx")
+            .expect("cx should still be present");
+        for &input in &cx.inputs {
+            assert!(
+                ctx.ops.values().any(|op| op.results.contains(&input))
+                    || ctx.blocks.values().any(|b| b.args.contains(&input)),
+                "cx input {:?} must be produced by a live op or a block arg",
+                input
+            );
+        }
     }
 
     #[test]
