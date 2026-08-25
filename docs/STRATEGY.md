@@ -425,7 +425,7 @@ Pick the problem that costs you the most money today:
 cargo install lift-cli
 
 # Run your first model
-lift parse model.lif
+lift verify model.lif
 lift analyse model.lif
 lift optimise model.lif -o optimised.lif
 lift predict optimised.lif --device a100
