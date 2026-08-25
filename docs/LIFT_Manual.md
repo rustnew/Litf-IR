@@ -91,7 +91,7 @@ The unified pipeline: **import → verify → analyse → optimise → predict �
 git clone https://github.com/rustnew/Lift.git
 cd Lift
 cargo build --release
-cargo test --workspace   # 535 tests, all pass
+cargo test --workspace   # 541 tests, all pass
 ```
 
 ### 2.3 Use as a Library
@@ -690,14 +690,15 @@ println!("Neutral-atom:    {:.6}", na.circuit_fidelity(80, 20));
 ### 7.8 Gate Optimisation Passes
 
 ```rust
-use lift_opt::{GateCancellation, RotationMerge, NoiseAwareSchedule, LayoutMapping};
+use lift_opt::{GateCancellation, RotationMerge, NoiseAwareSchedule, RealRouting};
 use lift_core::pass::PassManager;
+use lift_quantum::DeviceTopology;
 
 let mut pm = PassManager::new();
 pm.add_pass(Box::new(GateCancellation));     // H·H → I, X·X → I
 pm.add_pass(Box::new(RotationMerge));        // Rz(a)·Rz(b) → Rz(a+b)
 pm.add_pass(Box::new(NoiseAwareSchedule));   // schedule to minimise noise
-pm.add_pass(Box::new(LayoutMapping));        // map to device topology
+pm.add_pass(Box::new(RealRouting::new(DeviceTopology::linear(4)))); // insert real SWAPs
 
 let results = pm.run_all(&mut ctx);
 for (name, result) in &results {
@@ -710,7 +711,8 @@ for (name, result) in &results {
 | `GateCancellation` | Cancels adjacent inverse gates (H·H, X·X, etc.) |
 | `RotationMerge` | Merges consecutive rotations: Rz(a)·Rz(b) → Rz(a+b) |
 | `NoiseAwareSchedule` | Reorders gates to place noisy 2Q gates on high-fidelity edges |
-| `LayoutMapping` | Maps logical qubits to physical qubits with SWAP insertion |
+| `RealRouting` | Maps logical qubits to physical qubits, inserting real `quantum.swap` ops (BFS shortest path) |
+| `LayoutMapping` | Legacy: only *annotates* non-adjacent 2-qubit gates with `needs_swap = true` — does not insert SWAPs itself. Use `RealRouting` instead. |
 
 ---
 
@@ -866,54 +868,71 @@ module @vqe {
 
 You have existing models in ONNX, PyTorch FX, or OpenQASM format and want to bring them into LIFT for unified optimisation and analysis.
 
+> **These three importers are skeletons today** (see
+> [docs/CAPABILITIES.md](CAPABILITIES.md)): they parse the source format
+> enough to find the top-level node list, but they do not convert a single
+> node into a LIFT operation — you get back a valid, empty module+function.
+> The APIs below are real and tested; the *conversion* they're described as
+> doing is the v0.5 roadmap item, not today's behaviour.
+
 ### 9.2 ONNX Import
 
 ```rust
 use lift_import::OnnxImporter;
-use lift_core::pass::PassManager;
+use lift_core::Context;
 
-let importer = OnnxImporter::new();
-let mut ctx = importer.import("model.onnx")
+let json: serde_json::Value = serde_json::from_str(
+    &std::fs::read_to_string("model.onnx.json").unwrap()
+).unwrap();
+
+let mut ctx = Context::new();
+OnnxImporter::new()
+    .import_from_json(&mut ctx, &json)
     .expect("ONNX import failed");
-
-// Optimise with LIFT
-let mut pm = PassManager::new();
-pm.add_pass(Box::new(lift_opt::Canonicalize));
-pm.add_pass(Box::new(lift_opt::TensorFusion));
-pm.add_pass(Box::new(lift_opt::DeadCodeElimination));
-pm.run_all(&mut ctx);
 ```
 
-Supported ONNX operators are mapped to LIFT tensor ops (MatMul, Conv, ReLU, Softmax, Attention, etc.).
+`import_from_json` takes an existing `&mut Context` and a pre-parsed
+`serde_json::Value` (not a file path, and it doesn't return a `Context`).
 
 ### 9.3 PyTorch FX Import
 
 ```rust
 use lift_import::PyTorchFxImporter;
+use lift_core::Context;
 
-let importer = PyTorchFxImporter::new();
-let ctx = importer.import("model_fx.json")
+let json: serde_json::Value = serde_json::from_str(
+    &std::fs::read_to_string("model_fx.json").unwrap()
+).unwrap();
+
+let mut ctx = Context::new();
+PyTorchFxImporter::new()
+    .import_from_json(&mut ctx, &json)
     .expect("FX import failed");
 ```
-
-Import from `torch.fx` graph JSON exports. All standard PyTorch operations are mapped to their LIFT equivalents.
 
 ### 9.4 OpenQASM 3.0 Import
 
 ```rust
 use lift_import::OpenQasm3Importer;
+use lift_core::Context;
 use lift_core::pass::PassManager;
 
-let importer = OpenQasm3Importer::new();
-let mut ctx = importer.import("circuit.qasm")
+let source = std::fs::read_to_string("circuit.qasm").unwrap();
+
+let mut ctx = Context::new();
+OpenQasm3Importer::new()
+    .import_from_source(&mut ctx, &source)
     .expect("QASM import failed");
 
-// Optimise the quantum circuit
+// Optimise the (currently empty) circuit
 let mut pm = PassManager::new();
 pm.add_pass(Box::new(lift_opt::GateCancellation));
 pm.add_pass(Box::new(lift_opt::RotationMerge));
 pm.run_all(&mut ctx);
 ```
+
+`import_from_source` checks for a valid `OPENQASM 3`/`OPENQASM 2` version
+header and creates an empty `circuit` function — it does not yet parse gates.
 
 ### 9.5 Import → Analyse → Compare
 
@@ -1018,6 +1037,7 @@ let analysis = QuantumAnalysis {
     measurements: 10,
     circuit_depth: 30,
     estimated_fidelity: 0.92,
+    ..Default::default() // covers three_qubit_gates and noise
 };
 
 let sc = QuantumCostModel::superconducting_default();
@@ -1127,6 +1147,13 @@ After optimisation, you need to compile the IR to executable code for GPU/CPU or
 
 ### 12.2 Export to LLVM IR
 
+> **Skeleton today** (see [docs/CAPABILITIES.md](CAPABILITIES.md)): the
+> exporter emits function signatures with each tensor op as an LLVM
+> *comment* (`; tensor.matmul`), not a real computation — no cuBLAS/cuDNN
+> calls, no memory management. `clang`/`llc` will happily compile the
+> output, but the resulting binary does nothing; it isn't yet a path to a
+> working executable.
+
 ```rust
 use lift_export::LlvmExporter;
 
@@ -1137,10 +1164,10 @@ std::fs::write("output.ll", &llvm_ir).unwrap();
 println!("Written {} bytes of LLVM IR", llvm_ir.len());
 ```
 
-Compile the output:
+The output is syntactically valid LLVM IR, so tooling accepts it:
 
 ```bash
-# Compile to binary
+# Compiles cleanly — but runs as a no-op today, see the note above
 clang -O3 output.ll -o model
 
 # Or to object file
@@ -1162,12 +1189,13 @@ let onnx_json = exporter.export_json(&ctx).expect("ONNX JSON export failed");
 std::fs::write("model_onnx.json", &onnx_json).unwrap();
 ```
 
-The output is ONNX protobuf text format at **opset version 21**, compatible with:
-- **PyTorch** (via `torch.onnx.export` round-trip)
-- **TensorFlow** (via `tf2onnx`)
-- **TensorRT** (NVIDIA inference)
-- **ONNX Runtime** (cross-platform inference)
-- **Microsoft extensions** for attention, MoE, and fused operations
+The output is ONNX **protobuf text format** at opset version 21 — human-readable
+and diffable, using the same operator set (standard ops plus Microsoft
+extensions for attention/MoE/fused ops) that PyTorch, TensorFlow/`tf2onnx`,
+TensorRT, and ONNX Runtime all understand. Most of those tools load the
+**binary** protobuf `.onnx` format by default, though; `export_json` gives you
+JSON, and text-to-binary conversion (e.g. via `onnx.load`+`save` in Python,
+or `protoc --encode`) is a separate step this exporter doesn't do yet.
 
 **Key ONNX op mappings:**
 
@@ -1187,7 +1215,7 @@ The output is ONNX protobuf text format at **opset version 21**, compatible with
 | `tensor.quantize` | `QuantizeLinear` | standard |
 | `tensor.dequantize` | `DequantizeLinear` | standard |
 | `tensor.moe_dispatch` | `MoE` | com.microsoft |
-| `tensor.fused_matmul_bias_relu` | `FusedMatMulBiasRelu` | com.microsoft |
+| `tensor.fused_matmul_bias_relu` | `FusedMatMul` | com.microsoft |
 | + 55 more operations | | |
 
 ### 12.4 Export to OpenQASM 3.0
@@ -1386,18 +1414,24 @@ println!("Diameter: {}", topo.diameter());
 println!("Avg connectivity: {:.2}", topo.avg_connectivity());
 ```
 
-### 14.4 Layout Mapping Pass
+### 14.4 Real Routing Pass
 
-The `LayoutMapping` pass automatically inserts SWAPs to match your device:
+The `RealRouting` pass inserts real `quantum.swap` operations so every
+2-qubit gate ends up on connected physical qubits, using BFS shortest paths
+over your device's topology:
 
 ```rust
-use lift_opt::LayoutMapping;
+use lift_opt::RealRouting;
 use lift_core::pass::PassManager;
 
 let mut pm = PassManager::new();
-pm.add_pass(Box::new(LayoutMapping));
+pm.add_pass(Box::new(RealRouting::new(DeviceTopology::grid(5, 5))));
 pm.run_all(&mut ctx);
 ```
+
+(`LayoutMapping` is an older, annotation-only pass — it flags non-adjacent
+gates with `needs_swap = true` but never inserts a SWAP itself. `RealRouting`
+does the actual routing and supersedes it.)
 
 ---
 
@@ -1580,15 +1614,21 @@ if let Some(remaining) = tracker.remaining_time_ms() {
 
 ```rust
 use lift_import::OnnxImporter;
-use lift_core::{verifier, pass::PassManager};
+use lift_core::{Context, verifier, pass::PassManager};
 use lift_sim::analysis::analyze_module;
 use lift_sim::cost::CostModel;
 use lift_predict::roofline::predict_performance;
 use lift_export::LlvmExporter;
 
-// ── 1. Import ──
-let mut ctx = OnnxImporter::new()
-    .import("model.onnx").expect("Import failed");
+// ── 1. Import (skeleton today — produces an empty module+function,
+//    see docs/CAPABILITIES.md) ──
+let onnx_json: serde_json::Value = serde_json::from_str(
+    &std::fs::read_to_string("model.onnx.json").unwrap()
+).unwrap();
+let mut ctx = Context::new();
+OnnxImporter::new()
+    .import_from_json(&mut ctx, &onnx_json)
+    .expect("Import failed");
 
 // ── 2. Verify ──
 verifier::verify(&ctx).expect("Verification failed");
@@ -1631,6 +1671,7 @@ println!("Exported {} bytes of LLVM IR", llvm.len());
 ```rust
 use lift_ast::{Lexer, Parser, IrBuilder};
 use lift_core::{Context, verifier, pass::PassManager};
+use lift_quantum::DeviceTopology;
 use lift_sim::cost::QuantumCostModel;
 use lift_export::QasmExporter;
 
@@ -1649,7 +1690,7 @@ let mut pm = PassManager::new();
 pm.add_pass(Box::new(lift_opt::GateCancellation));
 pm.add_pass(Box::new(lift_opt::RotationMerge));
 pm.add_pass(Box::new(lift_opt::NoiseAwareSchedule));
-pm.add_pass(Box::new(lift_opt::LayoutMapping));
+pm.add_pass(Box::new(lift_opt::RealRouting::new(DeviceTopology::linear(8))));
 
 for (name, result) in pm.run_all(&mut ctx) {
     println!("  {}: {:?}", name, result);
@@ -1775,9 +1816,9 @@ error_mitigation = "zne"     # zero-noise extrapolation
 | Level | Passes |
 |-------|--------|
 | **O0** | No optimisation |
-| **O1** | Canonicalize, DCE |
-| **O2** | Canonicalize, constant folding, DCE, tensor fusion (default) |
-| **O3** | All passes including FlashAttention, CSE, gate cancellation, rotation merge |
+| **O1** | Canonicalize, constant folding, DCE |
+| **O2** (default) | O1 + CSE, tensor fusion |
+| **O3** | All 13 passes — O2 + FlashAttention, quantisation, gate cancellation, rotation merge, noise-aware schedule, layout mapping, gate decomposition, real routing |
 
 ### 18.5 Loading Configuration Programmatically
 
@@ -1832,7 +1873,13 @@ let config = LithConfig::default();
 
 ### 19.1 Installation
 
-After building with `cargo build --release`, the CLI binary is at `target/release/lift`.
+After building with `cargo build --release`, the binary is at
+`target/release/lift-cli` (the crate's package name — there's no `[[bin]]`
+override to shorten it to `lift`, and the same is true after
+`cargo install lift-cli`). Every `lift <command>` example below is exactly
+what you'd run, substituting `lift-cli` for `lift` — or
+`cargo run --release -p lift-cli -- <command>` from a source checkout, which
+is what `examples/validate_all.sh` and this repo's other docs use.
 
 ### 19.2 Commands
 
@@ -1848,7 +1895,7 @@ Output:
 ```
 Verification passed: examples/tensor_mlp.lif
   Values: 11
-  Operations: 6
+  Operations: 7
   Blocks: 1
   Regions: 1
 ```
@@ -1871,21 +1918,22 @@ Output:
 === LIFT Analysis Report ===
 File: examples/tensor_mlp.lif
 
-Operations: 6
+Operations: 7
   Tensor ops: 6
   Quantum ops: 0
   Hybrid ops: 0
 
 Compute:
-  Total FLOPs: 803.33 KFLOP
-  Total memory: 3.10 MiB
-  Peak memory: 3.10 MiB
+  Total FLOPs: 407.10 KFLOP
+  Total memory: 802.22 KiB
+  Peak memory: 801.22 KiB
 
 Op breakdown:
   tensor.matmul: 2
   tensor.add: 2
-  tensor.relu: 1
+  core.return: 1
   tensor.softmax: 1
+  tensor.relu: 1
 ```
 
 JSON output:
@@ -1903,12 +1951,16 @@ Output:
 ```
 module @bell_state {
     func @bell(%v0: qubit, %v1: qubit) -> (qubit, qubit) {
-    ^bb0(%v0: qubit, %v1: qubit):
         %v2 = "quantum.h"(%v0) : (qubit) -> qubit
         %v3, %v4 = "quantum.cx"(%v2, %v1) : (qubit, qubit) -> (qubit, qubit)
+        "core.return"(%v3, %v4) : (qubit, qubit) -> ()
     }
 }
 ```
+
+(The entry block's arguments are printed once, in the function signature —
+not repeated as a separate `^bb0(...):` label, since the `.lif` grammar has
+no block-label syntax.)
 
 #### `lift optimise` — Run optimisation passes
 
@@ -1926,9 +1978,13 @@ Optimisation results:
   canonicalize -> unchanged
   constant-folding -> unchanged
   dce -> unchanged
+  common-subexpr-elimination -> unchanged
   tensor-fusion -> changed
 Output written to: optimised.lif
 ```
+
+(O2, the default level, runs 5 passes: canonicalize, constant-folding, dce,
+cse, and tensor-fusion — see [18.4](#184-optimisation-levels).)
 
 #### `lift predict` — Predict performance
 
@@ -1946,9 +2002,9 @@ Output:
 Device: H100
 
 Compute time: 0.0000 ms
-Memory time: 0.0009 ms
-Predicted time: 0.0009 ms
-Arithmetic intensity: 266.67 FLOP/byte
+Memory time: 0.0002 ms
+Predicted time: 0.0002 ms
+Arithmetic intensity: 0.50 FLOP/byte
 Bottleneck: memory
 ```
 
@@ -1999,7 +2055,7 @@ Output:
   [VERIFY] OK — 20 ops, 32 values
   [ANALYSE] FLOPs=54.43 GFLOP, Memory=1.23 GiB, Ops=20
   [OPTIMISE] No changes
-  [EXPORT] examples/phi3_generated.ll (5217 bytes)
+  [EXPORT] examples/phi3_generated.ll (5918 bytes)
   [EXPORT] examples/phi3_generated.onnx (10563 bytes)
 
 ── Generating VQE Circuit ──
@@ -2007,7 +2063,7 @@ Output:
   [VERIFY] OK — 5 ops, 6 values
   [ANALYSE] FLOPs=0 FLOP, Memory=0 B, Ops=5
   [OPTIMISE] No changes
-  [EXPORT] examples/vqe_generated.ll (3138 bytes)
+  [EXPORT] examples/vqe_generated.ll (3248 bytes)
   [EXPORT] examples/vqe_generated.onnx (2023 bytes)
   [EXPORT] examples/vqe_generated.qasm (120 bytes)
 ```
@@ -2057,7 +2113,7 @@ std::fs::write("my_mlp.onnx", &onnx).unwrap();
 | **lift-tensor** | Tensor operations (110), shape inference, FLOPs computation |
 | **lift-quantum** | Quantum gates (48), noise models, topology, QEC codes, Kraus channels |
 | **lift-hybrid** | Hybrid operations (21), encoding strategies, gradient methods |
-| **lift-opt** | Optimisation passes (11): canonicalize, fusion, FlashAttention, gate cancellation, etc. |
+| **lift-opt** | Optimisation passes (13): canonicalize, fusion, FlashAttention, gate cancellation, gate decomposition, real routing, etc. |
 | **lift-sim** | Cost models (GPU + QPU), analysis reports, energy models, budgets |
 | **lift-predict** | Roofline prediction (classical), quantum prediction (fidelity + shots) |
 | **lift-import** | Importers: ONNX, PyTorch FX, OpenQASM 3.0 |
@@ -2066,7 +2122,7 @@ std::fs::write("my_mlp.onnx", &onnx).unwrap();
 | **lift-cli** | Command-line interface |
 | **lift-codegen** | Programmatic model generation binary |
 
-### 20.2 lift-core API
+### 21.2 lift-core API
 
 **Context** — central IR container:
 
@@ -2130,7 +2186,7 @@ std::fs::write("my_mlp.onnx", &onnx).unwrap();
 | `Attribute` | `Integer(i64)`, `Float(f64)`, `String(StringId)`, `Bool(bool)`, `Type(TypeId)`, `Array(Vec)`, `Dict(HashMap)` |
 | `Attributes` | `.set(key, attr)`, `.get(key)`, `.get_integer(key)`, `.get_float(key)`, `.get_bool(key)` |
 
-### 20.3 lift-tensor API
+### 21.3 lift-tensor API
 
 | Item | Description |
 |------|-------------|
@@ -2149,7 +2205,7 @@ std::fs::write("my_mlp.onnx", &onnx).unwrap();
 | `ShapeInference::compute_flops(op, inputs)` → `Option<u64>` | Count FLOPs |
 | `ShapeInference::compute_memory_bytes(op, inputs)` → `Option<u64>` | Estimate memory |
 
-### 20.4 lift-quantum API
+### 21.4 lift-quantum API
 
 | Item | Description |
 |------|-------------|
@@ -2163,7 +2219,7 @@ std::fs::write("my_mlp.onnx", &onnx).unwrap();
 | `QuantumGate::is_measurement()` → `bool` | Measurement or control |
 | `QuantumGate::is_entangling()` → `bool` | Creates entanglement |
 | `QuantumGate::native_basis(provider)` → `&[QuantumGate]` | Hardware-native gates |
-| `Provider` enum | `IbmEagle`, `IbmKyoto`, `Rigetti`, `IonQ`, `Quantinuum`, `Generic` |
+| `Provider` enum | `IbmEagle`, `IbmKyoto`, `Rigetti`, `IonQ`, `Quantinuum`, `Simulator` |
 | `NoiseModel` enum | `Ideal`, `Depolarizing`, `AmplitudeDamping`, `PhaseDamping`, `BitFlip`, `PhaseFlip`, `ThermalRelaxation`, `Kraus`, `Composed` |
 | `NoiseModel::fidelity()` → `f64` | Compute fidelity |
 | `NoiseModel::compose(other)` → `NoiseModel` | Chain noise models |
@@ -2185,7 +2241,7 @@ std::fs::write("my_mlp.onnx", &onnx).unwrap();
 | `topo.diameter()` → `usize` | Graph diameter |
 | `topo.avg_connectivity()` → `f64` | Average degree |
 
-### 20.5 lift-hybrid API
+### 21.5 lift-hybrid API
 
 | Item | Description |
 |------|-------------|
@@ -2207,7 +2263,7 @@ std::fs::write("my_mlp.onnx", &onnx).unwrap();
 | `SyncPolicy` enum | `Blocking`, `Asynchronous`, `Pipeline` |
 | `FeatureMap` enum | `ZZFeatureMap`, `PauliFeatureMap`, `AngleEncoding`, `AmplitudeEncoding` |
 
-### 20.6 lift-opt Passes
+### 21.6 lift-opt Passes
 
 | Pass | Name | Description |
 |------|------|-------------|
@@ -2219,11 +2275,13 @@ std::fs::write("my_mlp.onnx", &onnx).unwrap();
 | `RotationMerge` | `"rotation-merge"` | Merge rotations: Rz(a)·Rz(b)→Rz(a+b) |
 | `FlashAttentionPass` | `"flash-attention"` | Replace attention with FlashAttention when seq_len > threshold |
 | `CommonSubexprElimination` | `"cse"` | Eliminate duplicate computations |
-| `QuantisationPass` | `"quantisation"` | Annotate quantisable operations |
+| `QuantisationPass` | `"quantisation-pass"` | Annotate quantisable operations |
 | `NoiseAwareSchedule` | `"noise-aware-schedule"` | Reorder gates for minimal noise |
-| `LayoutMapping` | `"layout-mapping"` | Map logical qubits to physical topology |
+| `LayoutMapping` | `"layout-mapping"` | Legacy: annotate non-adjacent 2Q gates with `needs_swap = true` (no SWAP insertion) |
+| `GateDecomposition` | `"gate-decomposition"` | Replace non-native gates with the target provider's native set |
+| `RealRouting` | `"real-routing"` | Insert real `quantum.swap` ops (BFS) to satisfy topology connectivity |
 
-### 20.7 lift-sim API
+### 21.7 lift-sim API
 
 | Item | Description |
 |------|-------------|
@@ -2257,7 +2315,7 @@ std::fs::write("my_mlp.onnx", &onnx).unwrap();
 | `analyze_module(&ctx)` → `AnalysisReport` | Full module analysis |
 | `analyze_block(&ctx, block)` → `AnalysisReport` | Single block analysis |
 
-### 20.8 lift-predict API
+### 21.8 lift-predict API
 
 | Item | Description |
 |------|-------------|
@@ -2268,9 +2326,9 @@ std::fs::write("my_mlp.onnx", &onnx).unwrap();
 
 ---
 
-## 21. Troubleshooting
+## 22. Troubleshooting
 
-### 21.1 Common Verification Errors
+### 22.1 Common Verification Errors
 
 | Error | Cause | Fix |
 |-------|-------|-----|
@@ -2282,7 +2340,7 @@ std::fs::write("my_mlp.onnx", &onnx).unwrap();
 | `Linearity violation: qubit not consumed (leaked)` | A qubit is created but never used | Ensure all qubits are measured or returned |
 | `Missing terminator` | A block has no `return` or `branch` at the end | Add a terminator operation |
 
-### 21.2 Common Parse Errors
+### 22.2 Common Parse Errors
 
 | Error | Cause | Fix |
 |-------|-------|-----|
@@ -2290,7 +2348,7 @@ std::fs::write("my_mlp.onnx", &onnx).unwrap();
 | Unknown type | Type name not recognised | Use `tensor<...>`, `qubit`, `bit`, `f32`, `i64`, `bool` |
 | Unresolved dialect | Using an op without declaring the dialect | Add `#dialect tensor`, `#dialect quantum`, or `#dialect hybrid` at file top |
 
-### 21.3 Optimisation Issues
+### 22.3 Optimisation Issues
 
 | Issue | Cause | Fix |
 |-------|-------|-----|
@@ -2298,7 +2356,7 @@ std::fs::write("my_mlp.onnx", &onnx).unwrap();
 | FlashAttention not applied | `seq_len` attribute missing or below threshold | Set `seq_len` attribute on attention ops, or lower threshold |
 | Pass returns Error | IR is in invalid state | Run `verify` before optimisation |
 
-### 21.4 Performance Debugging
+### 22.4 Performance Debugging
 
 ```rust
 // Check if compute-bound or memory-bound
@@ -2317,7 +2375,7 @@ for (op, count) in &report.op_breakdown {
 }
 ```
 
-### 21.5 Quantum Debugging
+### 22.5 Quantum Debugging
 
 ```rust
 use lift_quantum::{CircuitNoise, GateNoise};
@@ -2347,7 +2405,7 @@ println!("After CX: fidelity = {:.6}", circuit.total_fidelity);
 | **quantum** | 48 | 1Q standard, 1Q parametric, 1Q fixed, 2Q standard, 2Q parametric, IonQ native, 3Q, multi-controlled, measurement, special |
 | **hybrid** | 21 | Encoding, gradient methods, processing, variational, data transfer, co-execution, measurement |
 
-**Total: 174+ operations** across three dialects in a single unified IR.
+**Total: 179 operations** (110 + 48 + 21) across three dialects in a single unified IR.
 
 ---
 
