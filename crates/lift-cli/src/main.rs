@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(name = "lift")]
-#[command(version = "0.3.0")]
+#[command(version = env!("CARGO_PKG_VERSION"))]
 #[command(about = "LIFT — Language for Intelligent Frameworks and Technologies")]
 #[command(
     long_about = "Unified IR for AI and Quantum Computing: Simulate → Predict → Optimise → Compile"
