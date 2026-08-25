@@ -37,7 +37,8 @@ jobs:
         run: |
           set -e
           for crate in \
-            lift-tensor lift-quantum \
+            lift-core lift-config \
+            lift-ast lift-tensor lift-quantum \
             lift-export lift-hybrid lift-import lift-opt lift-sim \
             lift-predict \
             lift-codegen \
