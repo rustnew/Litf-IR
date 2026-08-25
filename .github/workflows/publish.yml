@@ -37,14 +37,30 @@ jobs:
         run: |
           set -e
           for crate in \
-            lift-core lift-config \
-            lift-ast lift-tensor lift-quantum \
+            lift-tensor lift-quantum \
             lift-export lift-hybrid lift-import lift-opt lift-sim \
             lift-predict \
             lift-codegen \
             lift-cli
           do
             echo "==> Publishing $crate"
-            cargo publish -p "$crate"
+            # crates.io's index can lag a few seconds behind a just-published
+            # dependency (seen in the wild: publishing lift-ast succeeds and
+            # immediately resolves lift-core from the index, then the very
+            # next crate fails to resolve the same dependency). Retry a
+            # transient failure a couple of times before giving up; a crate
+            # that's already on the registry at this version would fail
+            # every attempt identically, so this doesn't mask real errors.
+            for attempt in 1 2 3; do
+              if cargo publish -p "$crate"; then
+                break
+              fi
+              if [ "$attempt" = "3" ]; then
+                echo "::error::Failed to publish $crate after 3 attempts"
+                exit 1
+              fi
+              echo "Publish of $crate failed (attempt $attempt/3), retrying in 20s..."
+              sleep 20
+            done
           done
           echo "All crates published"
