@@ -20,6 +20,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multi-file support (`include` / linking)
 - v1.0 release — full pipeline, benchmarks, arXiv paper
 
+## [0.4.7] — 2026-08-26
+
+### Changed
+- Rewrote README.md for length and clarity (507 → 261 lines): merged two
+  redundant intro paragraphs and two overlapping crate tables into one each,
+  dropped a full ONNX op-mapping table that already lives in
+  docs/LIFT_Guide.md and docs/LIFT_Manual.md, and cut a 12-line wall of
+  near-identical CLI invocations down to the essentials. Every command and
+  code sample that survived was re-tested against the current release, not
+  just reviewed.
+
 ## [0.4.6] — 2026-08-25
 
 ### Fixed

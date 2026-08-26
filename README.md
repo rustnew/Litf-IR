@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.80%2B-orange.svg)](https://www.rust-lang.org/)
-[![Version](https://img.shields.io/badge/version-0.4.6-green.svg)](Cargo.toml)
+[![Version](https://img.shields.io/badge/version-0.4.7-green.svg)](Cargo.toml)
 [![crates.io](https://img.shields.io/crates/v/lift-core.svg)](https://crates.io/crates/lift-core)
 [![Documentation](https://img.shields.io/docsrs/lift-core)](https://docs.rs/lift-core)
 [![CI](https://github.com/rustnew/Lift/actions/workflows/ci.yml/badge.svg)](https://github.com/rustnew/Lift/actions/workflows/ci.yml)
@@ -154,10 +154,10 @@ above.
 
 ```toml
 [dependencies]
-lift-core    = "0.4.6"
-lift-ast     = "0.4.6"
-lift-opt     = "0.4.6"
-lift-export  = "0.4.6"
+lift-core    = "0.4.7"
+lift-ast     = "0.4.7"
+lift-opt     = "0.4.7"
+lift-export  = "0.4.7"
 ```
 
 ```rust
