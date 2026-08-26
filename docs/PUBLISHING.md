@@ -7,7 +7,7 @@ AI, and quantum ecosystems, plus the channels still to pursue.
 
 | Channel | URL | Status |
 |---------|-----|--------|
-| crates.io (13 crates) | https://crates.io/crates/lift-core | ✅ v0.4.7 |
+| crates.io (13 crates) | https://crates.io/crates/lift-core | ✅ v0.4.8 |
 | docs.rs (13 crates) | https://docs.rs/lift-core | ✅ |
 | GitHub repo | https://github.com/rustnew/Lift | ✅ |
 | GitHub Releases | https://github.com/rustnew/Lift/releases | ✅ 9 releases |
@@ -66,7 +66,7 @@ Ready-to-post texts for each channel are in [ANNOUNCEMENTS.md](ANNOUNCEMENTS.md)
   `lift-ir` is available if a standalone brand name is ever needed.
 - lib.rs indexes crates.io automatically; no manual submission needed.
 
-## Capabilities & readiness (v0.4.7) — truth check for marketing & reprise
+## Capabilities & readiness (v0.4.8) — truth check for marketing & reprise
 
 > Written 2026-08-05 (pause until ~2026-09). Keep this in sync with every
 > release so the messaging never overpromises. **Rule of thumb**: announce what

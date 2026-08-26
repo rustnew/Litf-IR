@@ -27,7 +27,8 @@ fn mk(shape: Vec<usize>, dtype: DataType) -> TensorTypeInfo {
 fn test_shape_embedding() {
     let indices = mk(vec![4, 10], DataType::INT32);
     let table = mk(vec![1000, 256], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::Embedding, &[&indices, &table], None);
+    let result =
+        ShapeInference::infer_output_shape(&TensorOp::Embedding, &[&indices, &table], None);
     assert!(result.is_ok());
 }
 
@@ -42,7 +43,8 @@ fn test_shape_softmax() {
 fn test_shape_layer_norm() {
     let a = mk(vec![2, 8, 64], DataType::FP32);
     let scale = mk(vec![64], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::LayerNorm, &[&a, &scale], None).unwrap();
+    let result =
+        ShapeInference::infer_output_shape(&TensorOp::LayerNorm, &[&a, &scale], None).unwrap();
     assert_eq!(result[0].shape, a.shape);
 }
 
@@ -50,7 +52,8 @@ fn test_shape_layer_norm() {
 fn test_shape_rms_norm() {
     let a = mk(vec![4, 128], DataType::FP16);
     let scale = mk(vec![128], DataType::FP16);
-    let result = ShapeInference::infer_output_shape(&TensorOp::RMSNorm, &[&a, &scale], None).unwrap();
+    let result =
+        ShapeInference::infer_output_shape(&TensorOp::RMSNorm, &[&a, &scale], None).unwrap();
     assert_eq!(result[0].shape, a.shape);
 }
 

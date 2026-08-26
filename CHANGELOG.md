@@ -20,6 +20,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multi-file support (`include` / linking)
 - v1.0 release — full pipeline, benchmarks, arXiv paper
 
+## [0.4.8] — 2026-08-26
+
+### Fixed
+- **`gate-cancellation`** falsely cancelled a 2-qubit gate pair sharing only
+  one wire (e.g. `CX(q0,q1)` then `CX(q0,q2)`), and rewired only wire 0 on
+  cancellation, leaving a dangling reference to a deleted value on any other
+  wire. Cancellation now requires every wire to match and rewires all of them.
+- **`noise-aware-schedule`** unconditionally hoisted every non-quantum op
+  (including `core.return`) before all quantum ops when reordering, discarding
+  program order — dormant today since nothing yet writes differing
+  `gate_time_us`, but would corrupt any circuit ending in a return the moment
+  it does. Now preserves every non-quantum op's original position.
+- **`dce`** did not protect `core.call` (a recognised, side-effecting core op)
+  from removal when its result was unused.
+- **`gate-decomposition`**: `ibm_kyoto` provider metadata folded into
+  `IbmEagle` instead of `IbmKyoto`.
+- **Tensor shape/FLOP inference** (`infer_output_shape`/`compute_flops`/
+  `compute_memory_bytes`, now taking an optional attrs argument):
+  - Conv1D/2D/3D and `DilatedConv2D` ignored stride/padding/dilation entirely
+    (always `in - kernel + 1`), so `DilatedConv2D` behaved exactly like a
+    plain Conv2D. Now read `stride`/`padding`/`dilation` attrs, with
+    `DilatedConv2D` defaulting dilation to 2 so it differs from Conv2D even
+    unconfigured.
+  - `MaxPool2D`/`AvgPool2D` returned the input shape unchanged instead of
+    reducing spatial dimensions when given a kernel-shaped second input.
+  - `compute_memory_bytes` only counted the output's bytes for
+    `MatMul`/`SparseMatMul`; every other op (Conv*, activations, norms, ...)
+    silently omitted the output from the memory-traffic total (understating
+    real traffic by ~46% for a typical Conv2D).
+- **ONNX export**: `tensor.silu` exported as a bare `Sigmoid` node — computing
+  `sigmoid(x)` instead of `SiLU(x) = x*sigmoid(x)`, wrong at every input, not
+  an approximation. Now expands to `Sigmoid` + `Mul`.
+- **QASM export**: `MCX`/`MCZ` hardcoded exactly 3 qubits, silently dropping
+  every control qubit past the third. Now emits every input qubit.
+- **Importers** (QASM/ONNX/PyTorch FX): validated only top-level structure,
+  then returned `Ok(())` with an empty module — silently discarding every
+  gate/node, so a caller checking only the `Result` would believe the
+  import succeeded. Now return an explicit error, since none of the three
+  perform real translation yet (tracked under Planned v0.5 above).
+- **Verifier**: `verify_ssa` only checked that a used value was defined
+  *somewhere* in the context, with no ordering, so a use-before-def within a
+  block passed verification. Added a dominance check scoped to each block's
+  own program order.
+- Also independently re-verified that the #1 and #2 GitHub issue fixes
+  (round-trip parsing, QASM qubit-index-from-operands) still hold, with no
+  further changes needed there.
+
 ## [0.4.7] — 2026-08-26
 
 ### Changed

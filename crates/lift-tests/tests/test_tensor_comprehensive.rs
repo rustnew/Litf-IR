@@ -158,7 +158,8 @@ fn test_unary_ops_preserve_shape() {
 fn test_conv2d_shape() {
     let input = mk(vec![1, 3, 28, 28], DataType::FP32);
     let kernel = mk(vec![16, 3, 5, 5], DataType::FP32);
-    let out = ShapeInference::infer_output_shape(&TensorOp::Conv2D, &[&input, &kernel], None).unwrap();
+    let out =
+        ShapeInference::infer_output_shape(&TensorOp::Conv2D, &[&input, &kernel], None).unwrap();
     assert_eq!(out[0].shape[0].static_value(), Some(1));
     assert_eq!(out[0].shape[1].static_value(), Some(16));
     assert_eq!(out[0].shape[2].static_value(), Some(24));

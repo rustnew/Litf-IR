@@ -261,7 +261,11 @@ impl QasmExporter {
                         // instead so the emitted arity always matches the
                         // op's actual arity.
                         QuantumGate::MCX | QuantumGate::MCZ => {
-                            let mnemonic = if gate == QuantumGate::MCX { "mcx" } else { "mcz" };
+                            let mnemonic = if gate == QuantumGate::MCX {
+                                "mcx"
+                            } else {
+                                "mcz"
+                            };
                             let qubits: Vec<String> = op
                                 .inputs
                                 .iter()

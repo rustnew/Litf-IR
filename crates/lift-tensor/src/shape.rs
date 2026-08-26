@@ -10,9 +10,7 @@ pub struct ShapeInference;
 /// to every spatial axis (symmetric kernels only — matching every example
 /// and test in this codebase, none of which use per-axis values).
 fn spatial_param(attrs: Option<&Attributes>, key: &str, default: i64) -> i64 {
-    attrs
-        .and_then(|a| a.get_integer(key))
-        .unwrap_or(default)
+    attrs.and_then(|a| a.get_integer(key)).unwrap_or(default)
 }
 
 /// Standard convolution/pooling output-length formula:
@@ -162,7 +160,11 @@ impl ShapeInference {
                 let dilation = spatial_param(
                     attrs,
                     "dilation",
-                    if matches!(op, TensorOp::DilatedConv2D) { 2 } else { 1 },
+                    if matches!(op, TensorOp::DilatedConv2D) {
+                        2
+                    } else {
+                        1
+                    },
                 );
 
                 let n = input[0].clone();
@@ -272,13 +274,15 @@ impl ShapeInference {
                 let mut out = input.clone();
                 if let (Some(kh), Dimension::Constant(ih)) = (kh, &input[2]) {
                     let stride = spatial_param(attrs, "stride", kh as i64);
-                    out[2] =
-                        Dimension::Constant(conv_output_dim(*ih as i64, kh as i64, stride, padding, 1) as usize);
+                    out[2] = Dimension::Constant(conv_output_dim(
+                        *ih as i64, kh as i64, stride, padding, 1,
+                    ) as usize);
                 }
                 if let (Some(kw), Dimension::Constant(iw)) = (kw, &input[3]) {
                     let stride = spatial_param(attrs, "stride", kw as i64);
-                    out[3] =
-                        Dimension::Constant(conv_output_dim(*iw as i64, kw as i64, stride, padding, 1) as usize);
+                    out[3] = Dimension::Constant(conv_output_dim(
+                        *iw as i64, kw as i64, stride, padding, 1,
+                    ) as usize);
                 }
                 Ok(vec![TensorTypeInfo {
                     shape: out,
@@ -532,7 +536,11 @@ impl ShapeInference {
                 let dilation = spatial_param(
                     attrs,
                     "dilation",
-                    if matches!(op, TensorOp::DilatedConv2D) { 2 } else { 1 },
+                    if matches!(op, TensorOp::DilatedConv2D) {
+                        2
+                    } else {
+                        1
+                    },
                 );
                 let oh = conv_output_dim(ih as i64, kh as i64, stride, padding, dilation) as u64;
                 let ow = conv_output_dim(iw as i64, kw as i64, stride, padding, dilation) as u64;
@@ -769,7 +777,8 @@ mod tests {
     fn test_matmul_shape() {
         let a = make_tensor(vec![2, 3, 4], DataType::FP32);
         let b = make_tensor(vec![2, 4, 5], DataType::FP32);
-        let result = ShapeInference::infer_output_shape(&TensorOp::MatMul, &[&a, &b], None).unwrap();
+        let result =
+            ShapeInference::infer_output_shape(&TensorOp::MatMul, &[&a, &b], None).unwrap();
         assert_eq!(result.len(), 1);
         let shape = &result[0].shape;
         assert_eq!(shape.len(), 3);
@@ -806,7 +815,8 @@ mod tests {
         let x = make_tensor(vec![1, 784], DataType::FP32);
         let w = make_tensor(vec![784, 64], DataType::FP32);
         let b = make_tensor(vec![64], DataType::FP32);
-        let result = ShapeInference::infer_output_shape(&TensorOp::Linear, &[&x, &w, &b], None).unwrap();
+        let result =
+            ShapeInference::infer_output_shape(&TensorOp::Linear, &[&x, &w, &b], None).unwrap();
         assert_eq!(result[0].shape[0].static_value(), Some(1));
         assert_eq!(result[0].shape[1].static_value(), Some(64));
     }
@@ -816,7 +826,8 @@ mod tests {
         let input = make_tensor(vec![1, 3, 28, 28], DataType::FP32);
         let kernel = make_tensor(vec![16, 3, 5, 5], DataType::FP32);
         let result =
-            ShapeInference::infer_output_shape(&TensorOp::Conv2D, &[&input, &kernel], None).unwrap();
+            ShapeInference::infer_output_shape(&TensorOp::Conv2D, &[&input, &kernel], None)
+                .unwrap();
         assert_eq!(result[0].shape[0].static_value(), Some(1));
         assert_eq!(result[0].shape[1].static_value(), Some(16));
         assert_eq!(result[0].shape[2].static_value(), Some(24)); // 28-5+1
@@ -841,8 +852,9 @@ mod tests {
         assert_eq!(result[0].shape[2].static_value(), Some(14));
         assert_eq!(result[0].shape[3].static_value(), Some(14));
 
-        let flops = ShapeInference::compute_flops(&TensorOp::Conv2D, &[&input, &kernel], Some(&attrs))
-            .unwrap();
+        let flops =
+            ShapeInference::compute_flops(&TensorOp::Conv2D, &[&input, &kernel], Some(&attrs))
+                .unwrap();
         assert_eq!(flops, 2 * 16 * 3 * 3 * 3 * 14 * 14);
     }
 
@@ -855,14 +867,14 @@ mod tests {
         let input = make_tensor(vec![1, 3, 28, 28], DataType::FP32);
         let kernel = make_tensor(vec![16, 3, 3, 3], DataType::FP32);
 
-        let plain =
-            ShapeInference::infer_output_shape(&TensorOp::Conv2D, &[&input, &kernel], None).unwrap();
+        let plain = ShapeInference::infer_output_shape(&TensorOp::Conv2D, &[&input, &kernel], None)
+            .unwrap();
         let dilated =
             ShapeInference::infer_output_shape(&TensorOp::DilatedConv2D, &[&input, &kernel], None)
                 .unwrap();
 
         assert_eq!(plain[0].shape[2].static_value(), Some(26)); // 28-3+1
-                                                                 // dilation=2: out = floor((28 - 2*(3-1) - 1)/1)+1 = 24
+                                                                // dilation=2: out = floor((28 - 2*(3-1) - 1)/1)+1 = 24
         assert_eq!(dilated[0].shape[2].static_value(), Some(24));
         assert_ne!(
             plain[0].shape[2], dilated[0].shape[2],
@@ -893,9 +905,8 @@ mod tests {
     fn test_compute_memory_bytes_includes_output_for_every_op() {
         let input = make_tensor(vec![1, 3, 28, 28], DataType::FP32); // 2352 elems
         let kernel = make_tensor(vec![16, 3, 5, 5], DataType::FP32); // 1200 elems
-        let mem =
-            ShapeInference::compute_memory_bytes(&TensorOp::Conv2D, &[&input, &kernel], None)
-                .unwrap();
+        let mem = ShapeInference::compute_memory_bytes(&TensorOp::Conv2D, &[&input, &kernel], None)
+            .unwrap();
         // input + kernel + output(1,16,24,24) elements, all FP32 (4 bytes/elem).
         let expected = (2352 + 1200 + 16 * 24 * 24) * 4;
         assert_eq!(mem, expected as u64);

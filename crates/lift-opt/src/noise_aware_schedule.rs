@@ -219,7 +219,11 @@ mod tests {
         let names: Vec<String> = final_block
             .ops
             .iter()
-            .map(|&k| ctx.strings.resolve(ctx.ops.get(k).unwrap().name).to_string())
+            .map(|&k| {
+                ctx.strings
+                    .resolve(ctx.ops.get(k).unwrap().name)
+                    .to_string()
+            })
             .collect();
 
         assert_eq!(

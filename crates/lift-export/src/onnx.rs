@@ -337,14 +337,18 @@ impl OnnxExporter {
                                         // Expand it into the two ONNX nodes
                                         // that actually implement it.
                                         if op_name == "tensor.silu" {
-                                            let sigmoid_out =
-                                                format!("{}_sigmoid", node_name);
+                                            let sigmoid_out = format!("{}_sigmoid", node_name);
                                             let _ = writeln!(out, "  node {{");
                                             for iname in &input_names {
                                                 let _ = writeln!(out, "    input: \"{}\"", iname);
                                             }
-                                            let _ = writeln!(out, "    output: \"{}\"", sigmoid_out);
-                                            let _ = writeln!(out, "    name: \"{}_sigmoid\"", node_name);
+                                            let _ =
+                                                writeln!(out, "    output: \"{}\"", sigmoid_out);
+                                            let _ = writeln!(
+                                                out,
+                                                "    name: \"{}_sigmoid\"",
+                                                node_name
+                                            );
                                             let _ = writeln!(out, "    op_type: \"Sigmoid\"");
                                             let _ = writeln!(out, "  }}");
                                             let _ = writeln!(out);
@@ -522,7 +526,10 @@ impl OnnxExporter {
                                             let mul_inputs: Vec<String> = inputs_json
                                                 .iter()
                                                 .cloned()
-                                                .chain(std::iter::once(format!("\"{}\"", sigmoid_out)))
+                                                .chain(std::iter::once(format!(
+                                                    "\"{}\"",
+                                                    sigmoid_out
+                                                )))
                                                 .collect();
                                             nodes.push(format!(
                                                 "      {{ \"name\": \"{}\", \"opType\": \"Mul\", \"input\": [{}], \"output\": [{}] }}",
@@ -781,7 +788,10 @@ mod tests {
     fn test_silu_expands_to_sigmoid_and_mul() {
         let model = lift_core::model_builder::ModelBuilder::new("silu_test")
             .function("forward")
-            .param("x", lift_core::model_builder::tensor(&[1, 10], DataType::FP32))
+            .param(
+                "x",
+                lift_core::model_builder::tensor(&[1, 10], DataType::FP32),
+            )
             .op(
                 "tensor.silu",
                 &["x"],

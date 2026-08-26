@@ -70,7 +70,11 @@ impl Pass for GateCancellation {
                         // cancelling pair: they act on different qubit pairs.
                         let same = !op1.results.is_empty()
                             && op1.results.len() == op2.inputs.len()
-                            && op1.results.iter().zip(op2.inputs.iter()).all(|(r, i)| r == i);
+                            && op1
+                                .results
+                                .iter()
+                                .zip(op2.inputs.iter())
+                                .all(|(r, i)| r == i);
 
                         (g1, g2, same)
                     };
@@ -156,9 +160,7 @@ fn cancel_pair(
             Some(o) => o,
             None => return false,
         };
-        if op1.inputs.is_empty()
-            || op2.results.is_empty()
-            || op1.inputs.len() != op2.results.len()
+        if op1.inputs.is_empty() || op2.results.is_empty() || op1.inputs.len() != op2.results.len()
         {
             return false;
         }

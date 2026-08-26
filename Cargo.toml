@@ -19,7 +19,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.4.7"
+version = "0.4.8"
 edition = "2021"
 rust-version = "1.80"
 license = "MIT"
@@ -29,17 +29,17 @@ description = "LIFT — Language for Intelligent Frameworks and Technologies: Un
 
 [workspace.dependencies]
 # Internal crates
-lift-core = { path = "crates/lift-core", version = "0.4.7" }
-lift-ast = { path = "crates/lift-ast", version = "0.4.7" }
-lift-tensor = { path = "crates/lift-tensor", version = "0.4.7" }
-lift-quantum = { path = "crates/lift-quantum", version = "0.4.7" }
-lift-hybrid = { path = "crates/lift-hybrid", version = "0.4.7" }
-lift-sim = { path = "crates/lift-sim", version = "0.4.7" }
-lift-predict = { path = "crates/lift-predict", version = "0.4.7" }
-lift-opt = { path = "crates/lift-opt", version = "0.4.7" }
-lift-import = { path = "crates/lift-import", version = "0.4.7" }
-lift-export = { path = "crates/lift-export", version = "0.4.7" }
-lift-config = { path = "crates/lift-config", version = "0.4.7" }
+lift-core = { path = "crates/lift-core", version = "0.4.8" }
+lift-ast = { path = "crates/lift-ast", version = "0.4.8" }
+lift-tensor = { path = "crates/lift-tensor", version = "0.4.8" }
+lift-quantum = { path = "crates/lift-quantum", version = "0.4.8" }
+lift-hybrid = { path = "crates/lift-hybrid", version = "0.4.8" }
+lift-sim = { path = "crates/lift-sim", version = "0.4.8" }
+lift-predict = { path = "crates/lift-predict", version = "0.4.8" }
+lift-opt = { path = "crates/lift-opt", version = "0.4.8" }
+lift-import = { path = "crates/lift-import", version = "0.4.8" }
+lift-export = { path = "crates/lift-export", version = "0.4.8" }
+lift-config = { path = "crates/lift-config", version = "0.4.8" }
 
 # External dependencies
 slotmap = { version = "1.0", features = ["serde"] }

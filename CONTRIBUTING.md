@@ -97,8 +97,8 @@ Releases are published to [crates.io](https://crates.io). The process:
    (L0 → L1 → L2 → L3 → L4) using **Trusted Publishing** (OIDC, no API token):
 
    ```bash
-   git tag v0.4.7
-   git push origin v0.4.7
+   git tag v0.4.8
+   git push origin v0.4.8
    ```
 
    > Trusted Publishing is configured per crate on crates.io (Settings →
@@ -112,7 +112,7 @@ Releases are published to [crates.io](https://crates.io). The process:
 4. Create a GitHub release:
 
    ```bash
-   gh release create v0.4.7 --title "..." --notes "..."
+   gh release create v0.4.8 --title "..." --notes "..."
    ```
 
 ### Manual fallback

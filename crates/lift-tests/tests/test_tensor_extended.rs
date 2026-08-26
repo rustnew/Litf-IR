@@ -430,7 +430,8 @@ fn test_shape_instance_norm() {
 fn test_shape_conv1d() {
     let input = make_tensor(vec![1, 3, 100], DataType::FP32);
     let kernel = make_tensor(vec![16, 3, 5], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::Conv1D, &[&input, &kernel], None).unwrap();
+    let result =
+        ShapeInference::infer_output_shape(&TensorOp::Conv1D, &[&input, &kernel], None).unwrap();
     assert_eq!(result[0].shape[0].static_value(), Some(1));
     assert_eq!(result[0].shape[1].static_value(), Some(16));
     assert_eq!(result[0].shape[2].static_value(), Some(96)); // 100-5+1
@@ -451,7 +452,8 @@ fn test_shape_max_pool2d() {
 #[test]
 fn test_shape_global_avg_pool() {
     let input = make_tensor(vec![8, 512, 7, 7], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::GlobalAvgPool, &[&input], None).unwrap();
+    let result =
+        ShapeInference::infer_output_shape(&TensorOp::GlobalAvgPool, &[&input], None).unwrap();
     assert_eq!(result[0].shape[0].static_value(), Some(8));
     assert_eq!(result[0].shape[1].static_value(), Some(512));
     assert_eq!(result[0].shape[2].static_value(), Some(1));
@@ -463,7 +465,8 @@ fn test_shape_attention() {
     let q = make_tensor(vec![2, 8, 128, 64], DataType::FP32);
     let k = make_tensor(vec![2, 8, 128, 64], DataType::FP32);
     let v = make_tensor(vec![2, 8, 128, 64], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::Attention, &[&q, &k, &v], None).unwrap();
+    let result =
+        ShapeInference::infer_output_shape(&TensorOp::Attention, &[&q, &k, &v], None).unwrap();
     assert_eq!(result[0].shape, q.shape);
 }
 
@@ -482,7 +485,8 @@ fn test_shape_flash_attention() {
 fn test_shape_sparse_matmul() {
     let a = make_tensor(vec![4, 3], DataType::FP32);
     let b = make_tensor(vec![3, 5], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::SparseMatMul, &[&a, &b], None).unwrap();
+    let result =
+        ShapeInference::infer_output_shape(&TensorOp::SparseMatMul, &[&a, &b], None).unwrap();
     assert_eq!(result[0].shape[0].static_value(), Some(4));
     assert_eq!(result[0].shape[1].static_value(), Some(5));
 }
@@ -492,7 +496,8 @@ fn test_shape_depthwise_conv2d() {
     let input = make_tensor(vec![1, 32, 28, 28], DataType::FP32);
     let kernel = make_tensor(vec![32, 1, 3, 3], DataType::FP32);
     let result =
-        ShapeInference::infer_output_shape(&TensorOp::DepthwiseConv2D, &[&input, &kernel], None).unwrap();
+        ShapeInference::infer_output_shape(&TensorOp::DepthwiseConv2D, &[&input, &kernel], None)
+            .unwrap();
     assert_eq!(result[0].shape[0].static_value(), Some(1));
     assert_eq!(result[0].shape[1].static_value(), Some(32));
     assert_eq!(result[0].shape[2].static_value(), Some(26)); // 28-3+1
