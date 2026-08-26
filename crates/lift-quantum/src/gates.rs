@@ -277,7 +277,15 @@ impl QuantumGate {
     pub fn is_self_inverse(&self) -> bool {
         matches!(
             self,
-            Self::H | Self::X | Self::Y | Self::Z | Self::CX | Self::CZ | Self::SWAP | Self::Rx180
+            Self::H
+                | Self::X
+                | Self::Y
+                | Self::Z
+                | Self::CX
+                | Self::CY
+                | Self::CZ
+                | Self::SWAP
+                | Self::Rx180
         )
     }
 
@@ -291,6 +299,7 @@ impl QuantumGate {
                 | Self::S
                 | Self::Sdg
                 | Self::CX
+                | Self::CY
                 | Self::CZ
                 | Self::SWAP
                 | Self::ISWAP

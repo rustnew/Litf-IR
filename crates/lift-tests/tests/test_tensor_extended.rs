@@ -386,14 +386,14 @@ fn test_is_zero_flop() {
 #[test]
 fn test_shape_leaky_relu() {
     let a = make_tensor(vec![2, 3, 4], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::LeakyReLU, &[&a]).unwrap();
+    let result = ShapeInference::infer_output_shape(&TensorOp::LeakyReLU, &[&a], None).unwrap();
     assert_eq!(result[0].shape, a.shape);
 }
 
 #[test]
 fn test_shape_elu() {
     let a = make_tensor(vec![8, 64], DataType::FP16);
-    let result = ShapeInference::infer_output_shape(&TensorOp::ELU, &[&a]).unwrap();
+    let result = ShapeInference::infer_output_shape(&TensorOp::ELU, &[&a], None).unwrap();
     assert_eq!(result[0].shape, a.shape);
     assert_eq!(result[0].dtype, DataType::FP16);
 }
@@ -401,28 +401,28 @@ fn test_shape_elu() {
 #[test]
 fn test_shape_mish() {
     let a = make_tensor(vec![4, 128], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::Mish, &[&a]).unwrap();
+    let result = ShapeInference::infer_output_shape(&TensorOp::Mish, &[&a], None).unwrap();
     assert_eq!(result[0].shape, a.shape);
 }
 
 #[test]
 fn test_shape_hard_swish() {
     let a = make_tensor(vec![1, 3, 224, 224], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::HardSwish, &[&a]).unwrap();
+    let result = ShapeInference::infer_output_shape(&TensorOp::HardSwish, &[&a], None).unwrap();
     assert_eq!(result[0].shape, a.shape);
 }
 
 #[test]
 fn test_shape_batch_norm() {
     let a = make_tensor(vec![8, 64, 32, 32], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::BatchNorm, &[&a]).unwrap();
+    let result = ShapeInference::infer_output_shape(&TensorOp::BatchNorm, &[&a], None).unwrap();
     assert_eq!(result[0].shape, a.shape);
 }
 
 #[test]
 fn test_shape_instance_norm() {
     let a = make_tensor(vec![8, 64, 32, 32], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::InstanceNorm, &[&a]).unwrap();
+    let result = ShapeInference::infer_output_shape(&TensorOp::InstanceNorm, &[&a], None).unwrap();
     assert_eq!(result[0].shape, a.shape);
 }
 
@@ -430,7 +430,7 @@ fn test_shape_instance_norm() {
 fn test_shape_conv1d() {
     let input = make_tensor(vec![1, 3, 100], DataType::FP32);
     let kernel = make_tensor(vec![16, 3, 5], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::Conv1D, &[&input, &kernel]).unwrap();
+    let result = ShapeInference::infer_output_shape(&TensorOp::Conv1D, &[&input, &kernel], None).unwrap();
     assert_eq!(result[0].shape[0].static_value(), Some(1));
     assert_eq!(result[0].shape[1].static_value(), Some(16));
     assert_eq!(result[0].shape[2].static_value(), Some(96)); // 100-5+1
@@ -441,7 +441,7 @@ fn test_shape_max_pool2d() {
     let input = make_tensor(vec![1, 64, 32, 32], DataType::FP32);
     let kernel = make_tensor(vec![2, 2], DataType::FP32);
     let result =
-        ShapeInference::infer_output_shape(&TensorOp::MaxPool2D, &[&input, &kernel]).unwrap();
+        ShapeInference::infer_output_shape(&TensorOp::MaxPool2D, &[&input, &kernel], None).unwrap();
     assert_eq!(result[0].shape[0].static_value(), Some(1));
     assert_eq!(result[0].shape[1].static_value(), Some(64));
     // Output depends on impl; just check rank is preserved
@@ -451,7 +451,7 @@ fn test_shape_max_pool2d() {
 #[test]
 fn test_shape_global_avg_pool() {
     let input = make_tensor(vec![8, 512, 7, 7], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::GlobalAvgPool, &[&input]).unwrap();
+    let result = ShapeInference::infer_output_shape(&TensorOp::GlobalAvgPool, &[&input], None).unwrap();
     assert_eq!(result[0].shape[0].static_value(), Some(8));
     assert_eq!(result[0].shape[1].static_value(), Some(512));
     assert_eq!(result[0].shape[2].static_value(), Some(1));
@@ -463,7 +463,7 @@ fn test_shape_attention() {
     let q = make_tensor(vec![2, 8, 128, 64], DataType::FP32);
     let k = make_tensor(vec![2, 8, 128, 64], DataType::FP32);
     let v = make_tensor(vec![2, 8, 128, 64], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::Attention, &[&q, &k, &v]).unwrap();
+    let result = ShapeInference::infer_output_shape(&TensorOp::Attention, &[&q, &k, &v], None).unwrap();
     assert_eq!(result[0].shape, q.shape);
 }
 
@@ -473,7 +473,7 @@ fn test_shape_flash_attention() {
     let k = make_tensor(vec![2, 8, 512, 64], DataType::FP16);
     let v = make_tensor(vec![2, 8, 512, 64], DataType::FP16);
     let result =
-        ShapeInference::infer_output_shape(&TensorOp::FlashAttention, &[&q, &k, &v]).unwrap();
+        ShapeInference::infer_output_shape(&TensorOp::FlashAttention, &[&q, &k, &v], None).unwrap();
     assert_eq!(result[0].shape, q.shape);
     assert_eq!(result[0].dtype, DataType::FP16);
 }
@@ -482,7 +482,7 @@ fn test_shape_flash_attention() {
 fn test_shape_sparse_matmul() {
     let a = make_tensor(vec![4, 3], DataType::FP32);
     let b = make_tensor(vec![3, 5], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::SparseMatMul, &[&a, &b]).unwrap();
+    let result = ShapeInference::infer_output_shape(&TensorOp::SparseMatMul, &[&a, &b], None).unwrap();
     assert_eq!(result[0].shape[0].static_value(), Some(4));
     assert_eq!(result[0].shape[1].static_value(), Some(5));
 }
@@ -492,7 +492,7 @@ fn test_shape_depthwise_conv2d() {
     let input = make_tensor(vec![1, 32, 28, 28], DataType::FP32);
     let kernel = make_tensor(vec![32, 1, 3, 3], DataType::FP32);
     let result =
-        ShapeInference::infer_output_shape(&TensorOp::DepthwiseConv2D, &[&input, &kernel]).unwrap();
+        ShapeInference::infer_output_shape(&TensorOp::DepthwiseConv2D, &[&input, &kernel], None).unwrap();
     assert_eq!(result[0].shape[0].static_value(), Some(1));
     assert_eq!(result[0].shape[1].static_value(), Some(32));
     assert_eq!(result[0].shape[2].static_value(), Some(26)); // 28-3+1
@@ -505,21 +505,21 @@ fn test_shape_depthwise_conv2d() {
 #[test]
 fn test_flops_zero_for_reshape() {
     let a = make_tensor(vec![2, 3, 4], DataType::FP32);
-    let flops = ShapeInference::compute_flops(&TensorOp::Reshape, &[&a]);
+    let flops = ShapeInference::compute_flops(&TensorOp::Reshape, &[&a], None);
     assert_eq!(flops, Some(0));
 }
 
 #[test]
 fn test_flops_zero_for_transpose() {
     let a = make_tensor(vec![4, 8], DataType::FP32);
-    let flops = ShapeInference::compute_flops(&TensorOp::Transpose, &[&a]);
+    let flops = ShapeInference::compute_flops(&TensorOp::Transpose, &[&a], None);
     assert_eq!(flops, Some(0));
 }
 
 #[test]
 fn test_flops_relu() {
     let a = make_tensor(vec![2, 3], DataType::FP32);
-    let flops = ShapeInference::compute_flops(&TensorOp::ReLU, &[&a]);
+    let flops = ShapeInference::compute_flops(&TensorOp::ReLU, &[&a], None);
     assert_eq!(flops, Some(6)); // 2*3
 }
 
@@ -527,7 +527,7 @@ fn test_flops_relu() {
 fn test_flops_matmul() {
     let a = make_tensor(vec![4, 3], DataType::FP32);
     let b = make_tensor(vec![3, 5], DataType::FP32);
-    let flops = ShapeInference::compute_flops(&TensorOp::MatMul, &[&a, &b]);
+    let flops = ShapeInference::compute_flops(&TensorOp::MatMul, &[&a, &b], None);
     assert_eq!(flops, Some(2 * 4 * 3 * 5));
 }
 
@@ -536,7 +536,7 @@ fn test_flops_attention() {
     let q = make_tensor(vec![1, 1, 4, 8], DataType::FP32);
     let k = make_tensor(vec![1, 1, 4, 8], DataType::FP32);
     let v = make_tensor(vec![1, 1, 4, 8], DataType::FP32);
-    let flops = ShapeInference::compute_flops(&TensorOp::Attention, &[&q, &k, &v]);
+    let flops = ShapeInference::compute_flops(&TensorOp::Attention, &[&q, &k, &v], None);
     assert!(flops.is_some());
     assert!(flops.unwrap() > 0);
 }
@@ -545,7 +545,7 @@ fn test_flops_attention() {
 fn test_flops_conv2d() {
     let input = make_tensor(vec![1, 3, 8, 8], DataType::FP32);
     let kernel = make_tensor(vec![16, 3, 3, 3], DataType::FP32);
-    let flops = ShapeInference::compute_flops(&TensorOp::Conv2D, &[&input, &kernel]);
+    let flops = ShapeInference::compute_flops(&TensorOp::Conv2D, &[&input, &kernel], None);
     assert!(flops.is_some());
     assert!(flops.unwrap() > 0);
 }
@@ -558,7 +558,7 @@ fn test_flops_conv2d() {
 fn test_memory_bytes_matmul() {
     let a = make_tensor(vec![4, 3], DataType::FP32);
     let b = make_tensor(vec![3, 5], DataType::FP32);
-    let mem = ShapeInference::compute_memory_bytes(&TensorOp::MatMul, &[&a, &b]);
+    let mem = ShapeInference::compute_memory_bytes(&TensorOp::MatMul, &[&a, &b], None);
     assert!(mem.is_some());
     assert!(mem.unwrap() > 0);
 }
@@ -567,8 +567,8 @@ fn test_memory_bytes_matmul() {
 fn test_memory_bytes_fp16_half_of_fp32() {
     let a_32 = make_tensor(vec![100, 100], DataType::FP32);
     let a_16 = make_tensor(vec![100, 100], DataType::FP16);
-    let mem32 = ShapeInference::compute_memory_bytes(&TensorOp::ReLU, &[&a_32]);
-    let mem16 = ShapeInference::compute_memory_bytes(&TensorOp::ReLU, &[&a_16]);
+    let mem32 = ShapeInference::compute_memory_bytes(&TensorOp::ReLU, &[&a_32], None);
+    let mem16 = ShapeInference::compute_memory_bytes(&TensorOp::ReLU, &[&a_16], None);
     assert!(mem32.unwrap() > mem16.unwrap());
 }
 

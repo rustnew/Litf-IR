@@ -71,6 +71,7 @@ impl<'a> Verifier<'a> {
 
     pub fn verify_all(&mut self) -> Result<(), Vec<VerifyError>> {
         self.verify_ssa();
+        self.verify_dominance();
         self.verify_well_formedness();
         self.verify_linearity();
 
@@ -87,6 +88,7 @@ impl<'a> Verifier<'a> {
         registry: &DialectRegistry,
     ) -> Result<(), Vec<VerifyError>> {
         self.verify_ssa();
+        self.verify_dominance();
         self.verify_well_formedness();
         self.verify_linearity();
         self.verify_semantics(registry);
@@ -156,6 +158,55 @@ impl<'a> Verifier<'a> {
         }
 
         self.defined = all_defined;
+    }
+
+    /// Checks that every op's inputs are defined before that op runs, within
+    /// its own block's program order (block args count as defined from the
+    /// start). `verify_ssa` only checks that a used value is defined
+    /// *somewhere* in the whole context, with no ordering — accepting a
+    /// value consumed by an op that appears before the op that defines it.
+    ///
+    /// Only values this same block itself defines (its own args, or results
+    /// of its own ops) are checked for ordering here: a value owned by a
+    /// different block is left to `verify_ssa`'s existence check. Every
+    /// function body today is a single block (no branches yet), so that
+    /// scope limit does not miss anything reachable in practice, and it
+    /// avoids false positives if a future multi-block construct legitimately
+    /// threads a value in from an enclosing scope.
+    fn verify_dominance(&mut self) {
+        use std::collections::HashMap;
+
+        let mut owner_block: HashMap<ValueKey, BlockKey> = HashMap::new();
+        for (block_key, block) in &self.ctx.blocks {
+            for &arg in &block.args {
+                owner_block.insert(arg, block_key);
+            }
+            for &op_key in &block.ops {
+                if let Some(op) = self.ctx.ops.get(op_key) {
+                    for &result in &op.results {
+                        owner_block.insert(result, block_key);
+                    }
+                }
+            }
+        }
+
+        for (block_key, block) in &self.ctx.blocks {
+            let mut visible: HashSet<ValueKey> = block.args.iter().copied().collect();
+            for &op_key in &block.ops {
+                let Some(op) = self.ctx.ops.get(op_key) else {
+                    continue;
+                };
+                for &input in &op.inputs {
+                    if owner_block.get(&input) == Some(&block_key) && !visible.contains(&input) {
+                        self.errors
+                            .push(VerifyError::DominanceViolation(input, block_key));
+                    }
+                }
+                for &result in &op.results {
+                    visible.insert(result);
+                }
+            }
+        }
     }
 
     fn verify_well_formedness(&mut self) {
@@ -293,6 +344,55 @@ mod tests {
         ctx.add_op_to_block(block, op);
 
         assert!(verify(&ctx).is_ok());
+    }
+
+    /// Regression test: an op consuming a value produced by a *later* op in
+    /// the same block (use-before-def / a textbook dominance violation) used
+    /// to verify successfully — `verify_ssa` only checked that the value
+    /// existed somewhere in the context, never that it was defined before
+    /// its use.
+    #[test]
+    fn test_use_before_def_is_a_dominance_violation() {
+        let mut ctx = Context::new();
+        let f32_ty = ctx.make_float_type(32);
+        let block = ctx.create_block();
+        let arg = ctx.create_block_arg(block, f32_ty);
+
+        // Create the op that DEFINES `later_result` first (in slotmap/build
+        // order), but only add it to the block AFTER the op that uses it —
+        // so in block.ops program order, the use comes before the def.
+        let (producer, producer_results) = ctx.create_op(
+            "tensor.relu",
+            "tensor",
+            vec![arg],
+            vec![f32_ty],
+            crate::attributes::Attributes::new(),
+            crate::location::Location::unknown(),
+        );
+        let (consumer, _) = ctx.create_op(
+            "tensor.relu",
+            "tensor",
+            vec![producer_results[0]],
+            vec![f32_ty],
+            crate::attributes::Attributes::new(),
+            crate::location::Location::unknown(),
+        );
+
+        // Program order: consumer, then producer — consumer's input is not
+        // yet defined at that point in the block.
+        ctx.add_op_to_block(block, consumer);
+        ctx.add_op_to_block(block, producer);
+
+        let result = verify(&ctx);
+        assert!(result.is_err(), "use-before-def must fail verification");
+        let errors = result.unwrap_err();
+        assert!(
+            errors
+                .iter()
+                .any(|e| matches!(e, VerifyError::DominanceViolation(_, _))),
+            "{:?}",
+            errors
+        );
     }
 
     #[test]

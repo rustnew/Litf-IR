@@ -678,7 +678,7 @@ fn test_shape_inference(passed: &mut u32, failed: &mut u32) {
         layout: MemoryLayout::Contiguous,
     };
 
-    let result = ShapeInference::infer_output_shape(&TensorOp::MatMul, &[&a, &b]);
+    let result = ShapeInference::infer_output_shape(&TensorOp::MatMul, &[&a, &b], None);
     match &result {
         Ok(shapes) => {
             println!(
@@ -695,12 +695,12 @@ fn test_shape_inference(passed: &mut u32, failed: &mut u32) {
     check(passed, failed, "MatMul shape inference", result.is_ok());
 
     // MatMul FLOPs: 2*M*N*K = 2*1*4*64 = 512
-    let flops = ShapeInference::compute_flops(&TensorOp::MatMul, &[&a, &b]);
+    let flops = ShapeInference::compute_flops(&TensorOp::MatMul, &[&a, &b], None);
     println!("    MatMul FLOPs: {:?}", flops);
     check(passed, failed, "MatMul FLOPs computation", flops.is_some());
 
     // Memory estimation
-    let mem = ShapeInference::compute_memory_bytes(&TensorOp::MatMul, &[&a, &b]);
+    let mem = ShapeInference::compute_memory_bytes(&TensorOp::MatMul, &[&a, &b], None);
     println!("    MatMul memory: {:?} bytes", mem);
     check(passed, failed, "MatMul memory estimation", mem.is_some());
 
@@ -725,7 +725,7 @@ fn test_shape_inference(passed: &mut u32, failed: &mut u32) {
         dtype: DataType::FP32,
         layout: MemoryLayout::Contiguous,
     };
-    let conv_flops = ShapeInference::compute_flops(&TensorOp::Conv2D, &[&img, &kernel]);
+    let conv_flops = ShapeInference::compute_flops(&TensorOp::Conv2D, &[&img, &kernel], None);
     println!("    Conv2d FLOPs: {:?}", conv_flops);
     check(
         passed,

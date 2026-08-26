@@ -63,12 +63,14 @@ impl Pass for GateCancellation {
                             None => continue,
                         };
 
-                        // Check if op2's input is op1's output (SSA chain)
-                        let same = if !op1.results.is_empty() && !op2.inputs.is_empty() {
-                            op1.results.iter().any(|r| op2.inputs.contains(r))
-                        } else {
-                            false
-                        };
+                        // Check that op2 consumes *every* wire of op1's output,
+                        // in the same order (not just some overlapping wire).
+                        // A 2-qubit gate like CX(q0,q1) followed by CX(q0,q2)
+                        // shares only wire 0 and must NOT be treated as a
+                        // cancelling pair: they act on different qubit pairs.
+                        let same = !op1.results.is_empty()
+                            && op1.results.len() == op2.inputs.len()
+                            && op1.results.iter().zip(op2.inputs.iter()).all(|(r, i)| r == i);
 
                         (g1, g2, same)
                     };
@@ -132,15 +134,20 @@ impl Pass for GateCancellation {
     }
 }
 
-/// Rewires the SSA chain so users of `op2`'s result use `op1`'s input, then
-/// marks both ops for removal. Returns `true` if a cancellation happened.
+/// Rewires the SSA chain so users of each of `op2`'s results use the
+/// corresponding wire of `op1`'s input, then marks both ops for removal.
+/// Returns `true` if a cancellation happened.
+///
+/// Every wire must be rewired, not just wire 0: for a multi-qubit gate (e.g.
+/// CX) leaving any wire un-rewired deletes a value that downstream ops still
+/// reference, corrupting the IR.
 fn cancel_pair(
     ctx: &mut Context,
     op1_key: lift_core::operations::OpKey,
     op2_key: lift_core::operations::OpKey,
     ops_to_remove: &mut HashSet<lift_core::operations::OpKey>,
 ) -> bool {
-    let (op1_input, op2_result) = {
+    let (op1_inputs, op2_results) = {
         let op1 = match ctx.ops.get(op1_key) {
             Some(o) => o,
             None => return false,
@@ -149,13 +156,16 @@ fn cancel_pair(
             Some(o) => o,
             None => return false,
         };
-        if op1.inputs.is_empty() || op2.results.is_empty() {
+        if op1.inputs.is_empty()
+            || op2.results.is_empty()
+            || op1.inputs.len() != op2.results.len()
+        {
             return false;
         }
-        (op1.inputs[0], op2.results[0])
+        (op1.inputs.clone(), op2.results.clone())
     };
 
-    // Update all uses of op2's result to use op1's input.
+    // Update all uses of each of op2's results to use the matching op1 input.
     let op_keys_all: Vec<_> = ctx.ops.keys().collect();
     for ok in op_keys_all {
         if ok == op1_key || ok == op2_key {
@@ -163,8 +173,8 @@ fn cancel_pair(
         }
         if let Some(op) = ctx.ops.get_mut(ok) {
             for input in &mut op.inputs {
-                if *input == op2_result {
-                    *input = op1_input;
+                if let Some(pos) = op2_results.iter().position(|r| r == input) {
+                    *input = op1_inputs[pos];
                 }
             }
         }
@@ -302,5 +312,81 @@ mod tests {
             .filter(|op| ctx.strings.resolve(op.name) == "quantum.h")
             .count();
         assert_eq!(h_count, 2);
+    }
+
+    /// CX(q0, q1) followed by CX(q0, q2) share only the control wire (q0) —
+    /// they act on different qubit pairs and must NOT cancel, even though
+    /// both are self-inverse CX gates and op2 consumes one of op1's results.
+    /// This is a regression test: the old `same_qubit` check used `.any(..)`
+    /// over op1's results, so sharing a single wire was enough to trigger a
+    /// false cancellation that also left a dangling reference to the deleted
+    /// second wire.
+    #[test]
+    fn test_no_cancel_when_only_one_wire_matches() {
+        let mut ctx = Context::new();
+        let qubit = ctx.make_qubit_type();
+        let block = ctx.create_block();
+        let q0 = ctx.create_block_arg(block, qubit);
+        let q1 = ctx.create_block_arg(block, qubit);
+        let q2 = ctx.create_block_arg(block, qubit);
+
+        let (cx1, cx1_res) = ctx.create_op(
+            "quantum.cx",
+            "quantum",
+            vec![q0, q1],
+            vec![qubit, qubit],
+            Attributes::new(),
+            Location::unknown(),
+        );
+        ctx.add_op_to_block(block, cx1);
+
+        let (cx2, cx2_res) = ctx.create_op(
+            "quantum.cx",
+            "quantum",
+            vec![cx1_res[0], q2],
+            vec![qubit, qubit],
+            Attributes::new(),
+            Location::unknown(),
+        );
+        ctx.add_op_to_block(block, cx2);
+
+        // A consumer of cx2's second wire, so a false cancellation that only
+        // rewires wire 0 would leave this input dangling.
+        let (h, _) = ctx.create_op(
+            "quantum.h",
+            "quantum",
+            vec![cx2_res[1]],
+            vec![qubit],
+            Attributes::new(),
+            Location::unknown(),
+        );
+        ctx.add_op_to_block(block, h);
+
+        let result = GateCancellation.run(&mut ctx, &mut AnalysisCache::new());
+        assert_eq!(
+            result,
+            PassResult::Unchanged,
+            "CX(q0,q1); CX(q0,q2) must not cancel: they act on different qubit pairs"
+        );
+
+        let cx_count = ctx
+            .ops
+            .values()
+            .filter(|op| ctx.strings.resolve(op.name) == "quantum.cx")
+            .count();
+        assert_eq!(cx_count, 2, "both CX ops must survive");
+
+        // The H's input must still resolve to a live value.
+        let h_op = ctx
+            .ops
+            .values()
+            .find(|op| ctx.strings.resolve(op.name) == "quantum.h")
+            .unwrap();
+        for &input in &h_op.inputs {
+            assert!(
+                ctx.values.get(input).is_some(),
+                "H's input value must not have been deleted"
+            );
+        }
     }
 }

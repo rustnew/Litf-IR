@@ -96,7 +96,10 @@ fn lift_op_to_onnx(op_name: &str) -> Option<(&str, &str)> {
         // Activations
         "tensor.relu" => ("Relu", ""),
         "tensor.gelu" => ("Gelu", ""),
-        "tensor.silu" => ("Sigmoid", ""), // SiLU = x * sigmoid(x), approximated
+        // SiLU is expanded into Sigmoid+Mul nodes at emission time (it is
+        // not a single ONNX op); this entry only feeds the "is this op
+        // mappable at all" check below.
+        "tensor.silu" => ("Sigmoid", ""),
         "tensor.sigmoid" => ("Sigmoid", ""),
         "tensor.tanh" => ("Tanh", ""),
         "tensor.softmax" => ("Softmax", ""),
@@ -324,6 +327,45 @@ impl OnnxExporter {
                                             })
                                             .collect();
 
+                                        // SiLU(x) = x * sigmoid(x) is not a
+                                        // single ONNX op: emitting it as a
+                                        // bare `Sigmoid` node (as the name
+                                        // mapping above does) computes
+                                        // sigmoid(x), not x*sigmoid(x) — a
+                                        // different function at every input
+                                        // (e.g. silu(0)=0 but sigmoid(0)=0.5).
+                                        // Expand it into the two ONNX nodes
+                                        // that actually implement it.
+                                        if op_name == "tensor.silu" {
+                                            let sigmoid_out =
+                                                format!("{}_sigmoid", node_name);
+                                            let _ = writeln!(out, "  node {{");
+                                            for iname in &input_names {
+                                                let _ = writeln!(out, "    input: \"{}\"", iname);
+                                            }
+                                            let _ = writeln!(out, "    output: \"{}\"", sigmoid_out);
+                                            let _ = writeln!(out, "    name: \"{}_sigmoid\"", node_name);
+                                            let _ = writeln!(out, "    op_type: \"Sigmoid\"");
+                                            let _ = writeln!(out, "  }}");
+                                            let _ = writeln!(out);
+
+                                            let _ = writeln!(out, "  node {{");
+                                            for iname in &input_names {
+                                                let _ = writeln!(out, "    input: \"{}\"", iname);
+                                            }
+                                            let _ = writeln!(out, "    input: \"{}\"", sigmoid_out);
+                                            for rname in &result_names {
+                                                let _ = writeln!(out, "    output: \"{}\"", rname);
+                                            }
+                                            let _ = writeln!(out, "    name: \"{}\"", node_name);
+                                            let _ = writeln!(out, "    op_type: \"Mul\"");
+                                            let _ = writeln!(out, "  }}");
+                                            let _ = writeln!(out);
+
+                                            node_counter += 1;
+                                            continue;
+                                        }
+
                                         // Emit node
                                         let _ = writeln!(out, "  node {{");
                                         for iname in &input_names {
@@ -454,6 +496,43 @@ impl OnnxExporter {
                                                 name
                                             })
                                             .collect();
+
+                                        if op_name == "tensor.silu" {
+                                            // See export()'s comment: SiLU(x)
+                                            // = x * sigmoid(x) is not one
+                                            // ONNX op, so emit Sigmoid then
+                                            // Mul rather than a bare Sigmoid
+                                            // (which computes a different
+                                            // function at every input).
+                                            let sigmoid_out = format!("{}_sigmoid", node_name);
+                                            let inputs_json: Vec<String> = input_names
+                                                .iter()
+                                                .map(|n| format!("\"{}\"", n))
+                                                .collect();
+                                            let outputs_json: Vec<String> = result_names
+                                                .iter()
+                                                .map(|n| format!("\"{}\"", n))
+                                                .collect();
+                                            nodes.push(format!(
+                                                "      {{ \"name\": \"{}_sigmoid\", \"opType\": \"Sigmoid\", \"input\": [{}], \"output\": [\"{}\"] }}",
+                                                node_name,
+                                                inputs_json.join(", "),
+                                                sigmoid_out
+                                            ));
+                                            let mul_inputs: Vec<String> = inputs_json
+                                                .iter()
+                                                .cloned()
+                                                .chain(std::iter::once(format!("\"{}\"", sigmoid_out)))
+                                                .collect();
+                                            nodes.push(format!(
+                                                "      {{ \"name\": \"{}\", \"opType\": \"Mul\", \"input\": [{}], \"output\": [{}] }}",
+                                                node_name,
+                                                mul_inputs.join(", "),
+                                                outputs_json.join(", ")
+                                            ));
+                                            node_counter += 1;
+                                            continue;
+                                        }
 
                                         let mut node_json = String::new();
                                         let _ = write!(node_json, "      {{");
@@ -692,5 +771,41 @@ mod tests {
         let json = exporter.export_json(&ctx).unwrap();
         assert!(json.contains("MatMul"));
         assert!(json.contains("test_onnx"));
+    }
+
+    /// Regression test: `tensor.silu` used to export as a bare `Sigmoid`
+    /// node, computing sigmoid(x) instead of SiLU(x) = x*sigmoid(x) — a
+    /// different function at every input (e.g. silu(0)=0 vs sigmoid(0)=0.5).
+    /// It must now expand to a Sigmoid node feeding a Mul node.
+    #[test]
+    fn test_silu_expands_to_sigmoid_and_mul() {
+        let model = lift_core::model_builder::ModelBuilder::new("silu_test")
+            .function("forward")
+            .param("x", lift_core::model_builder::tensor(&[1, 10], DataType::FP32))
+            .op(
+                "tensor.silu",
+                &["x"],
+                "out",
+                lift_core::model_builder::tensor(&[1, 10], DataType::FP32),
+            )
+            .returns("out")
+            .done();
+
+        let ctx = model.build_context();
+        let exporter = OnnxExporter::new();
+
+        let pbtxt = exporter.export(&ctx).unwrap();
+        assert!(
+            pbtxt.contains("op_type: \"Sigmoid\""),
+            "SiLU must emit a Sigmoid node: {pbtxt}"
+        );
+        assert!(
+            pbtxt.contains("op_type: \"Mul\""),
+            "SiLU must emit a Mul node to compute x * sigmoid(x): {pbtxt}"
+        );
+
+        let json = exporter.export_json(&ctx).unwrap();
+        assert!(json.contains("\"opType\": \"Sigmoid\""), "{json}");
+        assert!(json.contains("\"opType\": \"Mul\""), "{json}");
     }
 }

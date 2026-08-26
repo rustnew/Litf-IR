@@ -35,7 +35,8 @@ impl GateDecomposition {
             .find_map(|op| op.attrs.get_string_id("lift_provider"))
             .map(|id| ctx.strings.resolve(id).to_string());
         match provider_name.as_deref() {
-            Some("ibm") | Some("ibm_eagle") | Some("ibm_kyoto") => Provider::IbmEagle,
+            Some("ibm") | Some("ibm_eagle") => Provider::IbmEagle,
+            Some("ibm_kyoto") => Provider::IbmKyoto,
             Some("rigetti") => Provider::Rigetti,
             Some("ionq") => Provider::IonQ,
             Some("quantinuum") => Provider::Quantinuum,

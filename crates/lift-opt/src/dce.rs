@@ -24,8 +24,16 @@ impl Pass for DeadCodeElimination {
         let mut dead_ops: Vec<lift_core::operations::OpKey> = Vec::new();
         for (op_key, op) in &ctx.ops {
             let op_name = ctx.strings.resolve(op.name);
-            // Never remove terminators or side-effecting ops
-            if op_name == "core.return" || op_name == "core.br" || op_name == "core.cond_br" {
+            // Never remove terminators or side-effecting ops. `core.call`
+            // is included even though nothing constructs one yet (no call
+            // syntax in the parser): it is a recognised core op
+            // (dialect.rs) whose whole point is a side-effecting call, so an
+            // unused result must not make DCE delete the call itself.
+            if op_name == "core.return"
+                || op_name == "core.br"
+                || op_name == "core.cond_br"
+                || op_name == "core.call"
+            {
                 continue;
             }
             // Don't remove quantum ops (they have side effects on qubits)

@@ -1,12 +1,16 @@
 use lift_core::context::Context;
 use lift_core::pass::{AnalysisCache, Pass, PassResult};
 
-/// Quantisation pass: inserts quantize/dequantize pairs around compute-heavy ops
-/// to reduce memory footprint and accelerate inference.
+/// Quantisation pass: marks compute-heavy ops (MatMul, Linear) as quantised
+/// by setting `quantised`/`quant_method`/`quant_bits` attributes on them, so
+/// a later lowering/export stage can act on that intent.
+///
+/// This pass does not itself insert `quantize`/`dequantize` ops into the
+/// IR — it only annotates which ops should be quantised and how.
 ///
 /// Supported modes:
-/// - Dynamic: insert Q/DQ around MatMul and Linear
-/// - Static: insert Q/DQ with pre-computed scales from calibration
+/// - Dynamic: mark MatMul and Linear for quantisation directly
+/// - Static: mark them using pre-computed scales from calibration
 #[derive(Debug)]
 pub struct QuantisationPass {
     pub target_dtype: QuantTarget,

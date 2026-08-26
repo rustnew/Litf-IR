@@ -254,12 +254,22 @@ impl QasmExporter {
                         QuantumGate::CSWAP => {
                             let _ = writeln!(output, "cswap q[{}], q[{}], q[{}];", q0, q1, q2);
                         }
-                        // Multi-controlled
-                        QuantumGate::MCX => {
-                            let _ = writeln!(output, "mcx q[{}], q[{}], q[{}];", q0, q1, q2);
-                        }
-                        QuantumGate::MCZ => {
-                            let _ = writeln!(output, "mcz q[{}], q[{}], q[{}];", q0, q1, q2);
+                        // Multi-controlled: arity is variable (N controls +
+                        // 1 target), unlike every other gate here. Emitting
+                        // only q0/q1/q2 silently dropped every qubit past
+                        // the third for a 4+-qubit MCX/MCZ. Walk every input
+                        // instead so the emitted arity always matches the
+                        // op's actual arity.
+                        QuantumGate::MCX | QuantumGate::MCZ => {
+                            let mnemonic = if gate == QuantumGate::MCX { "mcx" } else { "mcz" };
+                            let qubits: Vec<String> = op
+                                .inputs
+                                .iter()
+                                .map(|&v| {
+                                    format!("q[{}]", resolve_qubit_index(ctx, &mut qubit_index, v))
+                                })
+                                .collect();
+                            let _ = writeln!(output, "{} {};", mnemonic, qubits.join(", "));
                         }
                         // Measurement and control
                         QuantumGate::Measure => {
@@ -429,6 +439,31 @@ mod tests {
         assert!(
             qasm.contains("cx q[0], q[1];"),
             "control must stay on q0, target on q1:\n{qasm}"
+        );
+    }
+
+    /// Regression test: MCX/MCZ export used to hardcode exactly 3 qubits
+    /// (`q0`, `q1`, `q2`), silently dropping every control qubit past index
+    /// 2. A 5-qubit MCX (4 controls + 1 target) must emit all 5.
+    #[test]
+    fn test_mcx_emits_every_control_qubit_not_just_three() {
+        let mut ctx = Context::new();
+        let (block, qubits) = build_module(&mut ctx, 5);
+        let qty = ctx.make_qubit_type();
+        let (op, _) = ctx.create_op(
+            "quantum.mcx",
+            "quantum",
+            qubits.clone(),
+            vec![qty; 5],
+            Attributes::new(),
+            Location::unknown(),
+        );
+        ctx.add_op_to_block(block, op);
+
+        let qasm = QasmExporter::new().export(&ctx).unwrap();
+        assert!(
+            qasm.contains("mcx q[0], q[1], q[2], q[3], q[4];"),
+            "all 5 qubits must be emitted, not truncated to 3:\n{qasm}"
         );
     }
 }

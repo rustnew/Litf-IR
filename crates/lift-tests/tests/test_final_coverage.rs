@@ -27,14 +27,14 @@ fn mk(shape: Vec<usize>, dtype: DataType) -> TensorTypeInfo {
 fn test_shape_embedding() {
     let indices = mk(vec![4, 10], DataType::INT32);
     let table = mk(vec![1000, 256], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::Embedding, &[&indices, &table]);
+    let result = ShapeInference::infer_output_shape(&TensorOp::Embedding, &[&indices, &table], None);
     assert!(result.is_ok());
 }
 
 #[test]
 fn test_shape_softmax() {
     let a = mk(vec![2, 10], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::Softmax, &[&a]).unwrap();
+    let result = ShapeInference::infer_output_shape(&TensorOp::Softmax, &[&a], None).unwrap();
     assert_eq!(result[0].shape, a.shape);
 }
 
@@ -42,7 +42,7 @@ fn test_shape_softmax() {
 fn test_shape_layer_norm() {
     let a = mk(vec![2, 8, 64], DataType::FP32);
     let scale = mk(vec![64], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::LayerNorm, &[&a, &scale]).unwrap();
+    let result = ShapeInference::infer_output_shape(&TensorOp::LayerNorm, &[&a, &scale], None).unwrap();
     assert_eq!(result[0].shape, a.shape);
 }
 
@@ -50,7 +50,7 @@ fn test_shape_layer_norm() {
 fn test_shape_rms_norm() {
     let a = mk(vec![4, 128], DataType::FP16);
     let scale = mk(vec![128], DataType::FP16);
-    let result = ShapeInference::infer_output_shape(&TensorOp::RMSNorm, &[&a, &scale]).unwrap();
+    let result = ShapeInference::infer_output_shape(&TensorOp::RMSNorm, &[&a, &scale], None).unwrap();
     assert_eq!(result[0].shape, a.shape);
 }
 
@@ -58,7 +58,7 @@ fn test_shape_rms_norm() {
 fn test_shape_div() {
     let a = mk(vec![3, 4], DataType::FP32);
     let b = mk(vec![3, 4], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::Div, &[&a, &b]).unwrap();
+    let result = ShapeInference::infer_output_shape(&TensorOp::Div, &[&a, &b], None).unwrap();
     assert_eq!(result[0].shape, a.shape);
 }
 
@@ -66,35 +66,35 @@ fn test_shape_div() {
 fn test_shape_sub() {
     let a = mk(vec![5], DataType::FP32);
     let b = mk(vec![5], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::Sub, &[&a, &b]).unwrap();
+    let result = ShapeInference::infer_output_shape(&TensorOp::Sub, &[&a, &b], None).unwrap();
     assert_eq!(result[0].shape, a.shape);
 }
 
 #[test]
 fn test_shape_neg() {
     let a = mk(vec![2, 3], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::Neg, &[&a]).unwrap();
+    let result = ShapeInference::infer_output_shape(&TensorOp::Neg, &[&a], None).unwrap();
     assert_eq!(result[0].shape, a.shape);
 }
 
 #[test]
 fn test_shape_sigmoid() {
     let a = mk(vec![1, 100], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::Sigmoid, &[&a]).unwrap();
+    let result = ShapeInference::infer_output_shape(&TensorOp::Sigmoid, &[&a], None).unwrap();
     assert_eq!(result[0].shape, a.shape);
 }
 
 #[test]
 fn test_shape_tanh() {
     let a = mk(vec![8, 64], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::Tanh, &[&a]).unwrap();
+    let result = ShapeInference::infer_output_shape(&TensorOp::Tanh, &[&a], None).unwrap();
     assert_eq!(result[0].shape, a.shape);
 }
 
 #[test]
 fn test_shape_silu() {
     let a = mk(vec![4, 256], DataType::FP16);
-    let result = ShapeInference::infer_output_shape(&TensorOp::SiLU, &[&a]).unwrap();
+    let result = ShapeInference::infer_output_shape(&TensorOp::SiLU, &[&a], None).unwrap();
     assert_eq!(result[0].shape, a.shape);
 }
 
@@ -107,7 +107,7 @@ fn test_flops_linear() {
     let x = mk(vec![1, 128], DataType::FP32);
     let w = mk(vec![128, 64], DataType::FP32);
     let b = mk(vec![64], DataType::FP32);
-    let flops = ShapeInference::compute_flops(&TensorOp::Linear, &[&x, &w, &b]);
+    let flops = ShapeInference::compute_flops(&TensorOp::Linear, &[&x, &w, &b], None);
     assert!(flops.is_some());
     assert!(flops.unwrap() > 0);
 }
@@ -115,7 +115,7 @@ fn test_flops_linear() {
 #[test]
 fn test_flops_softmax() {
     let a = mk(vec![2, 100], DataType::FP32);
-    let flops = ShapeInference::compute_flops(&TensorOp::Softmax, &[&a]);
+    let flops = ShapeInference::compute_flops(&TensorOp::Softmax, &[&a], None);
     assert!(flops.is_some());
     assert!(flops.unwrap() > 0);
 }
@@ -123,7 +123,7 @@ fn test_flops_softmax() {
 #[test]
 fn test_flops_layer_norm() {
     let a = mk(vec![2, 64], DataType::FP32);
-    let flops = ShapeInference::compute_flops(&TensorOp::LayerNorm, &[&a]);
+    let flops = ShapeInference::compute_flops(&TensorOp::LayerNorm, &[&a], None);
     assert!(flops.is_some());
     assert!(flops.unwrap() > 0);
 }
@@ -132,14 +132,14 @@ fn test_flops_layer_norm() {
 fn test_flops_add() {
     let a = mk(vec![10, 10], DataType::FP32);
     let b = mk(vec![10, 10], DataType::FP32);
-    let flops = ShapeInference::compute_flops(&TensorOp::Add, &[&a, &b]);
+    let flops = ShapeInference::compute_flops(&TensorOp::Add, &[&a, &b], None);
     assert_eq!(flops, Some(100));
 }
 
 #[test]
 fn test_flops_gelu() {
     let a = mk(vec![4, 4], DataType::FP32);
-    let flops = ShapeInference::compute_flops(&TensorOp::GeLU, &[&a]);
+    let flops = ShapeInference::compute_flops(&TensorOp::GeLU, &[&a], None);
     assert!(flops.is_some());
     assert!(flops.unwrap() > 16); // more than N due to approximation
 }
@@ -153,7 +153,7 @@ fn test_memory_linear() {
     let x = mk(vec![1, 128], DataType::FP32);
     let w = mk(vec![128, 64], DataType::FP32);
     let b = mk(vec![64], DataType::FP32);
-    let mem = ShapeInference::compute_memory_bytes(&TensorOp::Linear, &[&x, &w, &b]);
+    let mem = ShapeInference::compute_memory_bytes(&TensorOp::Linear, &[&x, &w, &b], None);
     assert!(mem.is_some());
     assert!(mem.unwrap() > 0);
 }
@@ -161,8 +161,9 @@ fn test_memory_linear() {
 #[test]
 fn test_memory_bf16() {
     let a = mk(vec![100], DataType::BF16);
-    let mem = ShapeInference::compute_memory_bytes(&TensorOp::ReLU, &[&a]);
-    assert_eq!(mem, Some(200)); // 100 * 2 bytes
+    let mem = ShapeInference::compute_memory_bytes(&TensorOp::ReLU, &[&a], None);
+    // Input (100 * 2 bytes) + output, same shape/dtype for ReLU (100 * 2 bytes).
+    assert_eq!(mem, Some(400));
 }
 
 // ═══════════════════════════════════════════════════════════

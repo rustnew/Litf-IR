@@ -39,14 +39,18 @@ pub fn analyze_module(ctx: &Context) -> AnalysisReport {
 
                 if let Some(tensor_op) = lift_tensor::TensorOp::from_name(&op_name) {
                     let input_refs: Vec<&TensorTypeInfo> = input_infos.to_vec();
-                    if let Some(flops) =
-                        lift_tensor::ShapeInference::compute_flops(&tensor_op, &input_refs)
-                    {
+                    if let Some(flops) = lift_tensor::ShapeInference::compute_flops(
+                        &tensor_op,
+                        &input_refs,
+                        Some(&op.attrs),
+                    ) {
                         report.total_flops += flops;
                     }
-                    if let Some(mem) =
-                        lift_tensor::ShapeInference::compute_memory_bytes(&tensor_op, &input_refs)
-                    {
+                    if let Some(mem) = lift_tensor::ShapeInference::compute_memory_bytes(
+                        &tensor_op,
+                        &input_refs,
+                        Some(&op.attrs),
+                    ) {
                         report.total_memory_bytes += mem;
                     }
                 }

@@ -24,14 +24,14 @@ fn mk(shape: Vec<usize>, dtype: DataType) -> TensorTypeInfo {
 
 #[test]
 fn test_shape_infer_no_inputs() {
-    let result = ShapeInference::infer_output_shape(&TensorOp::Add, &[]);
+    let result = ShapeInference::infer_output_shape(&TensorOp::Add, &[], None);
     assert!(result.is_err());
 }
 
 #[test]
 fn test_shape_infer_wrong_input_count() {
     let a = mk(vec![2, 3], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::Add, &[&a]);
+    let result = ShapeInference::infer_output_shape(&TensorOp::Add, &[&a], None);
     assert!(result.is_err());
 }
 
@@ -39,14 +39,14 @@ fn test_shape_infer_wrong_input_count() {
 fn test_shape_matmul_incompatible() {
     let a = mk(vec![2, 3], DataType::FP32);
     let b = mk(vec![5, 4], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::MatMul, &[&a, &b]);
+    let result = ShapeInference::infer_output_shape(&TensorOp::MatMul, &[&a, &b], None);
     assert!(result.is_err());
 }
 
 #[test]
 fn test_shape_scalar_relu() {
     let a = mk(vec![1], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::ReLU, &[&a]).unwrap();
+    let result = ShapeInference::infer_output_shape(&TensorOp::ReLU, &[&a], None).unwrap();
     assert_eq!(result[0].shape.len(), 1);
     assert_eq!(result[0].shape[0].static_value(), Some(1));
 }
@@ -55,7 +55,7 @@ fn test_shape_scalar_relu() {
 fn test_shape_broadcast_1d() {
     let a = mk(vec![1], DataType::FP32);
     let b = mk(vec![5], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::Add, &[&a, &b]).unwrap();
+    let result = ShapeInference::infer_output_shape(&TensorOp::Add, &[&a, &b], None).unwrap();
     assert_eq!(result[0].shape[0].static_value(), Some(5));
 }
 
@@ -63,7 +63,7 @@ fn test_shape_broadcast_1d() {
 fn test_shape_broadcast_multidim() {
     let a = mk(vec![2, 1, 4], DataType::FP32);
     let b = mk(vec![1, 3, 4], DataType::FP32);
-    let result = ShapeInference::infer_output_shape(&TensorOp::Mul, &[&a, &b]).unwrap();
+    let result = ShapeInference::infer_output_shape(&TensorOp::Mul, &[&a, &b], None).unwrap();
     assert_eq!(result[0].shape[0].static_value(), Some(2));
     assert_eq!(result[0].shape[1].static_value(), Some(3));
     assert_eq!(result[0].shape[2].static_value(), Some(4));

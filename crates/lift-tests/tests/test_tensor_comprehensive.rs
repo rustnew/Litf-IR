@@ -102,7 +102,7 @@ fn test_every_op_has_tensor_prefix() {
 fn test_matmul_2d() {
     let a = mk(vec![4, 3], DataType::FP32);
     let b = mk(vec![3, 5], DataType::FP32);
-    let out = ShapeInference::infer_output_shape(&TensorOp::MatMul, &[&a, &b]).unwrap();
+    let out = ShapeInference::infer_output_shape(&TensorOp::MatMul, &[&a, &b], None).unwrap();
     assert_eq!(out[0].shape[0].static_value(), Some(4));
     assert_eq!(out[0].shape[1].static_value(), Some(5));
 }
@@ -111,7 +111,7 @@ fn test_matmul_2d() {
 fn test_matmul_3d_batch() {
     let a = mk(vec![8, 4, 3], DataType::FP32);
     let b = mk(vec![8, 3, 5], DataType::FP32);
-    let out = ShapeInference::infer_output_shape(&TensorOp::MatMul, &[&a, &b]).unwrap();
+    let out = ShapeInference::infer_output_shape(&TensorOp::MatMul, &[&a, &b], None).unwrap();
     assert_eq!(out[0].shape.len(), 3);
     assert_eq!(out[0].shape[0].static_value(), Some(8));
     assert_eq!(out[0].shape[1].static_value(), Some(4));
@@ -122,7 +122,7 @@ fn test_matmul_3d_batch() {
 fn test_matmul_dimension_mismatch() {
     let a = mk(vec![4, 3], DataType::FP32);
     let b = mk(vec![5, 6], DataType::FP32);
-    assert!(ShapeInference::infer_output_shape(&TensorOp::MatMul, &[&a, &b]).is_err());
+    assert!(ShapeInference::infer_output_shape(&TensorOp::MatMul, &[&a, &b], None).is_err());
 }
 
 #[test]
@@ -130,7 +130,7 @@ fn test_elementwise_ops_shapes() {
     let a = mk(vec![2, 3], DataType::FP32);
     let b = mk(vec![2, 3], DataType::FP32);
     for op in &[TensorOp::Add, TensorOp::Sub, TensorOp::Mul, TensorOp::Div] {
-        let out = ShapeInference::infer_output_shape(op, &[&a, &b]).unwrap();
+        let out = ShapeInference::infer_output_shape(op, &[&a, &b], None).unwrap();
         assert_eq!(out[0].shape[0].static_value(), Some(2));
         assert_eq!(out[0].shape[1].static_value(), Some(3));
     }
@@ -146,7 +146,7 @@ fn test_unary_ops_preserve_shape() {
         TensorOp::Tanh,
         TensorOp::Neg,
     ] {
-        let out = ShapeInference::infer_output_shape(op, &[&a]).unwrap();
+        let out = ShapeInference::infer_output_shape(op, &[&a], None).unwrap();
         assert_eq!(out[0].shape.len(), 3, "{:?} must preserve rank", op);
         assert_eq!(out[0].shape[0].static_value(), Some(4));
         assert_eq!(out[0].shape[1].static_value(), Some(8));
@@ -158,7 +158,7 @@ fn test_unary_ops_preserve_shape() {
 fn test_conv2d_shape() {
     let input = mk(vec![1, 3, 28, 28], DataType::FP32);
     let kernel = mk(vec![16, 3, 5, 5], DataType::FP32);
-    let out = ShapeInference::infer_output_shape(&TensorOp::Conv2D, &[&input, &kernel]).unwrap();
+    let out = ShapeInference::infer_output_shape(&TensorOp::Conv2D, &[&input, &kernel], None).unwrap();
     assert_eq!(out[0].shape[0].static_value(), Some(1));
     assert_eq!(out[0].shape[1].static_value(), Some(16));
     assert_eq!(out[0].shape[2].static_value(), Some(24));
@@ -169,7 +169,7 @@ fn test_conv2d_shape() {
 fn test_layernorm_shape() {
     let a = mk(vec![2, 128, 64], DataType::FP32);
     let w = mk(vec![64], DataType::FP32);
-    let out = ShapeInference::infer_output_shape(&TensorOp::LayerNorm, &[&a, &w]).unwrap();
+    let out = ShapeInference::infer_output_shape(&TensorOp::LayerNorm, &[&a, &w], None).unwrap();
     assert_eq!(out[0].shape.len(), 3);
     assert_eq!(out[0].shape[2].static_value(), Some(64));
 }
@@ -182,7 +182,7 @@ fn test_layernorm_shape() {
 fn test_matmul_flops_exact() {
     let a = mk(vec![128, 256], DataType::FP32);
     let b = mk(vec![256, 512], DataType::FP32);
-    let flops = ShapeInference::compute_flops(&TensorOp::MatMul, &[&a, &b]).unwrap();
+    let flops = ShapeInference::compute_flops(&TensorOp::MatMul, &[&a, &b], None).unwrap();
     assert_eq!(flops, 2 * 128 * 256 * 512);
 }
 
@@ -190,7 +190,7 @@ fn test_matmul_flops_exact() {
 fn test_matmul_flops_batch() {
     let a = mk(vec![8, 64, 128], DataType::FP32);
     let b = mk(vec![8, 128, 256], DataType::FP32);
-    let flops = ShapeInference::compute_flops(&TensorOp::MatMul, &[&a, &b]).unwrap();
+    let flops = ShapeInference::compute_flops(&TensorOp::MatMul, &[&a, &b], None).unwrap();
     assert_eq!(flops, 8 * 2 * 64 * 128 * 256);
 }
 
@@ -198,7 +198,7 @@ fn test_matmul_flops_batch() {
 fn test_conv2d_flops_exact() {
     let input = mk(vec![1, 3, 32, 32], DataType::FP32);
     let kernel = mk(vec![64, 3, 3, 3], DataType::FP32);
-    let flops = ShapeInference::compute_flops(&TensorOp::Conv2D, &[&input, &kernel]).unwrap();
+    let flops = ShapeInference::compute_flops(&TensorOp::Conv2D, &[&input, &kernel], None).unwrap();
     assert_eq!(flops, 2 * 64 * 30 * 30 * 3 * 3 * 3);
 }
 
@@ -206,14 +206,14 @@ fn test_conv2d_flops_exact() {
 fn test_elementwise_flops() {
     let a = mk(vec![1024, 1024], DataType::FP32);
     let b = mk(vec![1024, 1024], DataType::FP32);
-    let flops = ShapeInference::compute_flops(&TensorOp::Add, &[&a, &b]).unwrap();
+    let flops = ShapeInference::compute_flops(&TensorOp::Add, &[&a, &b], None).unwrap();
     assert_eq!(flops, 1024 * 1024);
 }
 
 #[test]
 fn test_relu_flops() {
     let a = mk(vec![256, 512], DataType::FP32);
-    let flops = ShapeInference::compute_flops(&TensorOp::ReLU, &[&a]).unwrap();
+    let flops = ShapeInference::compute_flops(&TensorOp::ReLU, &[&a], None).unwrap();
     assert_eq!(flops, 256 * 512);
 }
 
@@ -225,7 +225,7 @@ fn test_relu_flops() {
 fn test_memory_matmul() {
     let a = mk(vec![64, 128], DataType::FP32);
     let b = mk(vec![128, 256], DataType::FP32);
-    let mem = ShapeInference::compute_memory_bytes(&TensorOp::MatMul, &[&a, &b]).unwrap();
+    let mem = ShapeInference::compute_memory_bytes(&TensorOp::MatMul, &[&a, &b], None).unwrap();
     let expected = (64 * 128 + 128 * 256 + 64 * 256) * 4;
     assert_eq!(mem, expected);
 }
@@ -234,8 +234,8 @@ fn test_memory_matmul() {
 fn test_memory_fp16_vs_fp32() {
     let fp32 = mk(vec![1024, 1024], DataType::FP32);
     let fp16 = mk(vec![1024, 1024], DataType::FP16);
-    let mem32 = ShapeInference::compute_memory_bytes(&TensorOp::ReLU, &[&fp32]).unwrap();
-    let mem16 = ShapeInference::compute_memory_bytes(&TensorOp::ReLU, &[&fp16]).unwrap();
+    let mem32 = ShapeInference::compute_memory_bytes(&TensorOp::ReLU, &[&fp32], None).unwrap();
+    let mem16 = ShapeInference::compute_memory_bytes(&TensorOp::ReLU, &[&fp16], None).unwrap();
     assert_eq!(mem32, 2 * mem16);
 }
 
@@ -243,8 +243,8 @@ fn test_memory_fp16_vs_fp32() {
 fn test_memory_int8_vs_fp32() {
     let fp32 = mk(vec![1024, 1024], DataType::FP32);
     let int8 = mk(vec![1024, 1024], DataType::INT8);
-    let mem32 = ShapeInference::compute_memory_bytes(&TensorOp::ReLU, &[&fp32]).unwrap();
-    let mem8 = ShapeInference::compute_memory_bytes(&TensorOp::ReLU, &[&int8]).unwrap();
+    let mem32 = ShapeInference::compute_memory_bytes(&TensorOp::ReLU, &[&fp32], None).unwrap();
+    let mem8 = ShapeInference::compute_memory_bytes(&TensorOp::ReLU, &[&int8], None).unwrap();
     assert_eq!(mem32, 4 * mem8);
 }
 
@@ -256,7 +256,7 @@ fn test_memory_int8_vs_fp32() {
 fn test_benchmark_resnet50_first_conv() {
     let input = mk(vec![1, 3, 224, 224], DataType::FP32);
     let kernel = mk(vec![64, 3, 7, 7], DataType::FP32);
-    let flops = ShapeInference::compute_flops(&TensorOp::Conv2D, &[&input, &kernel]).unwrap();
+    let flops = ShapeInference::compute_flops(&TensorOp::Conv2D, &[&input, &kernel], None).unwrap();
     assert!(
         flops > 100_000_000,
         "ResNet-50 first conv > 100M FLOPs: {}",
@@ -268,7 +268,7 @@ fn test_benchmark_resnet50_first_conv() {
 fn test_benchmark_gpt2_qk_matmul() {
     let q = mk(vec![1024, 64], DataType::FP32);
     let k = mk(vec![64, 1024], DataType::FP32);
-    let flops = ShapeInference::compute_flops(&TensorOp::MatMul, &[&q, &k]).unwrap();
+    let flops = ShapeInference::compute_flops(&TensorOp::MatMul, &[&q, &k], None).unwrap();
     assert_eq!(flops, 2 * 1024 * 64 * 1024);
     let total_heads = 12 * flops;
     assert!(total_heads > 1_500_000_000);
@@ -278,7 +278,7 @@ fn test_benchmark_gpt2_qk_matmul() {
 fn test_benchmark_bert_base_matmul() {
     let x = mk(vec![512, 768], DataType::FP32);
     let w = mk(vec![768, 768], DataType::FP32);
-    let flops = ShapeInference::compute_flops(&TensorOp::MatMul, &[&x, &w]).unwrap();
+    let flops = ShapeInference::compute_flops(&TensorOp::MatMul, &[&x, &w], None).unwrap();
     assert_eq!(flops, 2 * 512 * 768 * 768);
     let total = 48 * flops;
     assert!(total > 20_000_000_000);
@@ -288,11 +288,11 @@ fn test_benchmark_bert_base_matmul() {
 fn test_benchmark_llama7b_layer() {
     let x = mk(vec![2048, 4096], DataType::FP16);
     let wq = mk(vec![4096, 4096], DataType::FP16);
-    let q_flops = ShapeInference::compute_flops(&TensorOp::MatMul, &[&x, &wq]).unwrap();
+    let q_flops = ShapeInference::compute_flops(&TensorOp::MatMul, &[&x, &wq], None).unwrap();
     assert_eq!(q_flops, 2 * 2048 * 4096 * 4096);
 
     let wup = mk(vec![4096, 11008], DataType::FP16);
-    let ffn_flops = ShapeInference::compute_flops(&TensorOp::MatMul, &[&x, &wup]).unwrap();
+    let ffn_flops = ShapeInference::compute_flops(&TensorOp::MatMul, &[&x, &wup], None).unwrap();
     assert_eq!(ffn_flops, 2 * 2048 * 4096 * 11008);
 
     let layer_flops = 4 * q_flops + 3 * ffn_flops;

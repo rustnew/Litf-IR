@@ -42,12 +42,12 @@ fn test_resnet50_bottleneck_flops() {
 
     let x = mk(vec![1, 256, 56, 56], DataType::FP32);
     let w1 = mk(vec![64, 256, 1, 1], DataType::FP32);
-    let f1 = ShapeInference::compute_flops(&TensorOp::Conv2D, &[&x, &w1]).unwrap();
+    let f1 = ShapeInference::compute_flops(&TensorOp::Conv2D, &[&x, &w1], None).unwrap();
     assert_eq!(f1, (2 * 64 * 56 * 56 * 256));
 
     let h = mk(vec![1, 64, 56, 56], DataType::FP32);
     let w2 = mk(vec![64, 64, 3, 3], DataType::FP32);
-    let f2 = ShapeInference::compute_flops(&TensorOp::Conv2D, &[&h, &w2]).unwrap();
+    let f2 = ShapeInference::compute_flops(&TensorOp::Conv2D, &[&h, &w2], None).unwrap();
     let out_h = 56 - 3 + 1;
     assert_eq!(f2, 2 * 64 * out_h * out_h * 64 * 3 * 3);
 
@@ -73,7 +73,7 @@ fn test_resnet50_total_flops_subset() {
     for (inp, ker) in &layers {
         let i = mk(inp.clone(), DataType::FP32);
         let k = mk(ker.clone(), DataType::FP32);
-        if let Some(f) = ShapeInference::compute_flops(&TensorOp::Conv2D, &[&i, &k]) {
+        if let Some(f) = ShapeInference::compute_flops(&TensorOp::Conv2D, &[&i, &k], None) {
             total += f;
         }
     }
@@ -97,24 +97,24 @@ fn test_gpt2_small_single_layer() {
 
     let x = mk(vec![seq, hidden], DataType::FP32);
     let wqkv = mk(vec![hidden, hidden], DataType::FP32);
-    let qkv_flops = ShapeInference::compute_flops(&TensorOp::MatMul, &[&x, &wqkv]).unwrap();
+    let qkv_flops = ShapeInference::compute_flops(&TensorOp::MatMul, &[&x, &wqkv], None).unwrap();
     let total_qkv = 3 * qkv_flops;
 
     let q = mk(vec![seq, head_dim], DataType::FP32);
     let kt = mk(vec![head_dim, seq], DataType::FP32);
-    let qk_flops = ShapeInference::compute_flops(&TensorOp::MatMul, &[&q, &kt]).unwrap();
+    let qk_flops = ShapeInference::compute_flops(&TensorOp::MatMul, &[&q, &kt], None).unwrap();
     let total_qk = heads * qk_flops;
 
     let attn = mk(vec![seq, seq], DataType::FP32);
     let v = mk(vec![seq, head_dim], DataType::FP32);
-    let av_flops = ShapeInference::compute_flops(&TensorOp::MatMul, &[&attn, &v]).unwrap();
+    let av_flops = ShapeInference::compute_flops(&TensorOp::MatMul, &[&attn, &v], None).unwrap();
     let total_av = heads * av_flops;
 
     let wffn1 = mk(vec![hidden, ffn], DataType::FP32);
-    let ffn1 = ShapeInference::compute_flops(&TensorOp::MatMul, &[&x, &wffn1]).unwrap();
+    let ffn1 = ShapeInference::compute_flops(&TensorOp::MatMul, &[&x, &wffn1], None).unwrap();
     let xffn = mk(vec![seq, ffn], DataType::FP32);
     let wffn2 = mk(vec![ffn, hidden], DataType::FP32);
-    let ffn2 = ShapeInference::compute_flops(&TensorOp::MatMul, &[&xffn, &wffn2]).unwrap();
+    let ffn2 = ShapeInference::compute_flops(&TensorOp::MatMul, &[&xffn, &wffn2], None).unwrap();
 
     let layer = total_qkv + total_qk + total_av + qkv_flops + ffn1 + ffn2;
     assert!(layer > 1_500_000_000, "GPT-2 layer > 1.5G: {}", layer);
@@ -159,12 +159,12 @@ fn test_precision_fp32_vs_fp16() {
     let a16 = mk(vec![512, 768], DataType::FP16);
     let b16 = mk(vec![768, 768], DataType::FP16);
 
-    let f32_ = ShapeInference::compute_flops(&TensorOp::MatMul, &[&a32, &b32]).unwrap();
-    let f16_ = ShapeInference::compute_flops(&TensorOp::MatMul, &[&a16, &b16]).unwrap();
+    let f32_ = ShapeInference::compute_flops(&TensorOp::MatMul, &[&a32, &b32], None).unwrap();
+    let f16_ = ShapeInference::compute_flops(&TensorOp::MatMul, &[&a16, &b16], None).unwrap();
     assert_eq!(f32_, f16_, "FLOP count is precision-independent");
 
-    let m32 = ShapeInference::compute_memory_bytes(&TensorOp::MatMul, &[&a32, &b32]).unwrap();
-    let m16 = ShapeInference::compute_memory_bytes(&TensorOp::MatMul, &[&a16, &b16]).unwrap();
+    let m32 = ShapeInference::compute_memory_bytes(&TensorOp::MatMul, &[&a32, &b32], None).unwrap();
+    let m16 = ShapeInference::compute_memory_bytes(&TensorOp::MatMul, &[&a16, &b16], None).unwrap();
     assert_eq!(m32, 2 * m16, "FP32 = 2x FP16 memory");
 
     let a100 = lift_sim::cost::CostModel::a100();
@@ -275,6 +275,7 @@ fn test_edge_1d_tensor() {
     let out = lift_tensor::shape::ShapeInference::infer_output_shape(
         &lift_tensor::ops::TensorOp::Add,
         &[&a, &b],
+        None,
     )
     .unwrap();
     assert_eq!(out[0].shape[0].static_value(), Some(1));
@@ -302,6 +303,6 @@ fn test_edge_zero_flop_reshape() {
     use lift_tensor::ops::TensorOp;
     use lift_tensor::shape::ShapeInference;
     let a = mk(vec![4, 8], DataType::FP32);
-    let flops = ShapeInference::compute_flops(&TensorOp::Reshape, &[&a]);
+    let flops = ShapeInference::compute_flops(&TensorOp::Reshape, &[&a], None);
     assert!(flops.is_none() || flops == Some(0));
 }

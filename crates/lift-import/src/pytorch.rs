@@ -19,26 +19,50 @@ impl PyTorchFxImporter {
 
     pub fn import_from_json(
         &self,
-        ctx: &mut Context,
+        _ctx: &mut Context,
         json: &serde_json::Value,
     ) -> Result<(), PyTorchImportError> {
-        let nodes = json
+        let _nodes = json
             .get("nodes")
             .and_then(|n| n.as_array())
             .ok_or_else(|| PyTorchImportError::General("Missing 'nodes' array".into()))?;
 
-        let module_idx = ctx.create_module("pytorch_import");
-        let func_name = ctx.intern_string("forward");
-        let func = lift_core::functions::FunctionData::new(func_name, vec![], vec![]);
-        ctx.add_function_to_module(module_idx, func);
-
-        let _ = nodes.len();
-        Ok(())
+        // No node-to-op translation is implemented yet — only the top-level
+        // 'nodes' array is validated. Returning `Ok(())` with an empty
+        // module+function here used to silently discard every node in the
+        // FX graph, so a caller checking only the `Result` would believe
+        // the model imported successfully when the IR is actually empty.
+        // Fail loudly instead until real translation exists.
+        Err(PyTorchImportError::General(
+            "PyTorch FX node-to-op translation is not implemented yet; only the top-level 'nodes' array is validated".into(),
+        ))
     }
 }
 
 impl Default for PyTorchFxImporter {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Regression test: importing a well-formed FX graph used to silently
+    /// succeed with an empty module, discarding every node — a caller
+    /// checking only `Result` would believe the model imported when the IR
+    /// is actually empty. It must now fail loudly instead.
+    #[test]
+    fn test_import_fails_loudly_instead_of_silently_discarding_nodes() {
+        let mut ctx = Context::new();
+        let json = serde_json::json!({
+            "nodes": [{"op": "call_function", "target": "relu"}]
+        });
+        let result = PyTorchFxImporter::new().import_from_json(&mut ctx, &json);
+        assert!(
+            result.is_err(),
+            "unimplemented node translation must not report success"
+        );
     }
 }
